@@ -1,18 +1,31 @@
-# plots a problem and a trajectory
+rect(w, h, x, y) = Shape(x + [0,w,w,0], y + [0,0,h,h])
 
 @recipe function f(h::AbstractPOMDPHistory{Vec2})
-    x = collect(s[1] for s in state_hist(h))
-    y = collect(s[2] for s in state_hist(h))
+    sh = state_hist(h)
+    x = collect(s[1] for s in sh[1:end-1])
+    y = collect(s[2] for s in sh[1:end-1])
     @series begin
-        label --> "true"
+        label --> "true state"
+        color --> :orange
         x, y
     end
-    xo = collect(o[1] for o in observation_hist(h))
-    yo = collect(o[2] for o in observation_hist(h))
+    ah = action_hist(h)
+    xa = [last(x), last(x)+ah[end][1]]
+    ya = [last(y), last(y)+ah[end][2]]
+    @series begin
+        label --> "action"
+        color --> :blue
+        linestyle --> :dash
+        xa, ya
+    end
+    xo = collect(o[1] for o in observation_hist(h)[1:end-1])
+    yo = collect(o[2] for o in observation_hist(h)[1:end-1])
     @series begin
         label --> "observed"
         seriestype --> :scatter
         color --> :green
+        # markersize -->  
+        marker --> :cross
         xo, yo
     end
 end
@@ -21,9 +34,10 @@ end
     kwargd = Dict{Symbol, Any}() # can't figure out how to intercept keywords
     xlim = get(kwargd, :xlim, (-1.0,11.0))
     X = linspace(xlim...)
-    ylim = get(kwargd, :ylim, (-10.0,10.0))
+    ylim = get(kwargd, :ylim, (-100.0,100.0))
     Y = linspace(ylim...)
-    inv_grays = cgrad([RGB(.95,.95,.95),RGB(.05,.05,.05)])
+    inv_grays = cgrad([RGB(1.0, 1.0, 1.0),RGB(0.0,0.0,0.0)])
+    bg_inside := :black
     @series begin
         fill := true
         color := inv_grays
@@ -31,8 +45,8 @@ end
         X, Y, (x,y)->obs_std(p,x)
     end
     @series begin
-        label := ""
-        color --> :black
+        label := "target"
+        color --> :red
         pts = Plots.partialcircle(0, 2*pi, 100, p.term_radius)
         x, y = Plots.unzip(pts)
         x, y
@@ -43,13 +57,16 @@ end
     kwargd = Dict{Symbol, Any}() # can't figure out how to intercept keywords
     xlim = get(kwargd, :xlim, (-1.0,11.0))
     X = linspace(xlim...)
-    ylim = get(kwargd, :ylim, (-10.0,10.0))
+    ylim = get(kwargd, :ylim, (-100.0,100.0))
     Y = linspace(ylim...)
     inv_grays = cgrad([RGB(1.0,1.0,1.0),RGB(0.0,0.0,0.0)])
-    fill := true
-    color := inv_grays
-    seriestype := :contour
-    X, Y, (x,y)->obs_std(p,x)
+    bg_inside := :black
+    @series begin
+        fill := true
+        color := inv_grays
+        seriestype := :contour
+        X, Y, (x,y)->obs_std(p,x)
+    end
 end
 
 @recipe function f(b::SymmetricNormal2)

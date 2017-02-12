@@ -18,6 +18,12 @@ abstract AbstractLD2 <: POMDP{Vec2, Vec2, Vec2}
 
     term_radius::Float64
         problem will terminate if the state is within this radius of zero
+
+    init_dist::Any
+        initial state distribution
+
+    discount::Float64
+        discount factor
 """
 @with_kw type LightDark2D <: AbstractLD2
     min_noise::Float64      = 0.0
@@ -32,7 +38,9 @@ end
 generate_s(::AbstractLD2, s::Vec2, a::Vec2) = s + a
 generate_s(p::AbstractLD2, s::Vec2, a::Vec2, rng::AbstractRNG) = generate_s(p, s, a)
 
-# changed on 2/2/17
+# chose this on 2/6/17 because I like the bowtie particle patterns it produces
+# unclear which one was actually used in the paper
+# Masters Thesis by Pas assumes the sqrt version
 obs_std(p::AbstractLD2, x::Float64) = sqrt(0.5*(p.min_noise_loc-x)^2 + p.min_noise)
 # obs_std(p::AbstractLD2, x::Float64) = 0.5*(p.min_noise_loc-x)^2 + p.min_noise
 
