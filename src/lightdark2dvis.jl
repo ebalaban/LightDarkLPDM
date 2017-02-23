@@ -31,13 +31,12 @@ rect(w, h, x, y) = Shape(x + [0,w,w,0], y + [0,0,h,h])
 end
 
 @recipe function f(p::LightDark2DTarget)
-    kwargd = Dict{Symbol, Any}() # can't figure out how to intercept keywords
-    xlim = get(kwargd, :xlim, (-1.0,11.0))
-    X = linspace(xlim...)
-    ylim = get(kwargd, :ylim, (-100.0,100.0))
-    Y = linspace(ylim...)
+    X = linspace(-1.0, 11.0)
+    Y = linspace(-100.0, 100.0)
     inv_grays = cgrad([RGB(1.0, 1.0, 1.0),RGB(0.0,0.0,0.0)])
     bg_inside := :black
+    xlim --> (-3,10)
+    ylim --> (-4,8)
     @series begin
         fill := true
         color := inv_grays
@@ -54,13 +53,12 @@ end
 end
 
 @recipe function f(p::LightDark2D)
-    kwargd = Dict{Symbol, Any}() # can't figure out how to intercept keywords
-    xlim = get(kwargd, :xlim, (-1.0,11.0))
-    X = linspace(xlim...)
-    ylim = get(kwargd, :ylim, (-100.0,100.0))
-    Y = linspace(ylim...)
+    X = linspace(-1.0, 11.0)
+    Y = linspace(-100.0, 100.0)
     inv_grays = cgrad([RGB(1.0,1.0,1.0),RGB(0.0,0.0,0.0)])
     bg_inside := :black
+    xlim --> (-3,10)
+    ylim --> (-4,8)
     @series begin
         fill := true
         color := inv_grays

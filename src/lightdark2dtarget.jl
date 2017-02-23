@@ -7,4 +7,6 @@
     discount::Float64       = 1.0
 end
 
-reward(p::LightDark2DTarget, s::Vec2, a::Vec2, sp::Vec2) = -1.0
+reward(p::LightDark2DTarget, s::Vec2) = -1.0
+reward(p::LightDark2DTarget, s::Vec2, a::Vec2) = reward(p, s)
+reward(p::LightDark2DTarget, s::Vec2, a::Vec2, sp::Vec2) = reward(p, s)
