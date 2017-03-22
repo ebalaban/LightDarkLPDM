@@ -33,25 +33,18 @@ abstract AbstractLD2 <: POMDP{Vec2, Vec2, Vec2}
     term_radius::Float64    = 1e-5
     init_dist::Any          = SymmetricNormal2([2.0, 2.0], 0.5)
     discount::Float64       = 1.0
+    count::Int              = 0
 end
 
-generate_s(::AbstractLD2, s::Vec2, a::Vec2) = s + a
+# POMDPs.jl API functions:
 generate_s(p::AbstractLD2, s::Vec2, a::Vec2, rng::AbstractRNG) = generate_s(p, s, a)
-
-# chose this on 2/6/17 because I like the bowtie particle patterns it produces
-# unclear which one was actually used in the paper
-# Masters Thesis by Pas assumes the sqrt version
-obs_std(p::AbstractLD2, x::Float64) = sqrt(0.5*(p.min_noise_loc-x)^2 + p.min_noise)
-# obs_std(p::AbstractLD2, x::Float64) = 0.5*(p.min_noise_loc-x)^2 + p.min_noise
-
 generate_o(p::AbstractLD2, s::Vec2, a::Vec2, sp::Vec2, rng::AbstractRNG) = generate_o(p, sp, rng)
-generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG) = rand(rng, observation(p, sp))
-
 observation(p::AbstractLD2, a::Vec2, sp::Vec2) = observation(p, sp)
-observation(p::AbstractLD2, sp::Vec2) = SymmetricNormal2(sp, obs_std(p, sp[1]))
-
+isterminal(p::AbstractLD2, s::Vec2) = norm(s) <= p.term_radius
+initial_state_distribution(p::AbstractLD2) = p.init_dist
 reward(p::AbstractLD2, s::Vec2, a::Vec2, sp::Vec2) = -(dot(s, p.Q*s) + dot(a, p.R*a))
 discount(p::AbstractLD2) = p.discount
+
 
 immutable SymmetricNormal2
     mean::Vec2
@@ -63,7 +56,15 @@ mean(d::SymmetricNormal2) = d.mean
 mode(d::SymmetricNormal2) = d.mean
 Base.eltype(::Type{SymmetricNormal2}) = Vec2
 
-initial_state_distribution(p::AbstractLD2) = p.init_dist
+# chose this on 2/6/17 because I like the bowtie particle patterns it produces
+# unclear which one was actually used in the paper
+# Masters Thesis by Pas assumes the sqrt version
+obs_std(p::AbstractLD2, x::Float64) = sqrt(0.5*(p.min_noise_loc-x)^2 + p.min_noise)
+# obs_std(p::AbstractLD2, x::Float64) = 0.5*(p.min_noise_loc-x)^2 + p.min_noise
 
-isterminal(p::AbstractLD2, s::Vec2) = norm(s) <= p.term_radius
-
+function generate_s(p::AbstractLD2, s::Vec2, a::Vec2)
+    p.count += 1
+    return s+a
+end
+observation(p::AbstractLD2, sp::Vec2) = SymmetricNormal2(sp, obs_std(p, sp[1]))
+generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG) = rand(rng, observation(p, sp))

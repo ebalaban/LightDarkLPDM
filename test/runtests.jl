@@ -21,6 +21,7 @@ h = sim(p, simulator=hr) do o
     @show o
     action(pol, o)
 end
+@show p.count
 
 # plot(p, h)
 bpol = FunctionPolicy(b -> -0.5*b.mean)
@@ -36,6 +37,5 @@ plot(p)
 up = SIRParticleUpdater(p, 100)
 b = initialize_belief(up, initial_state_distribution(p))
 plot!(b)
-=#
-
 gui()
+=#

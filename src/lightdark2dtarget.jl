@@ -5,6 +5,7 @@
     term_radius::Float64    = 0.05
     init_dist::Any          = SymmetricNormal2([2.0, 2.0], 0.5)
     discount::Float64       = 1.0
+    count::Int              = 0
 end
 
 reward(p::LightDark2DTarget, s::Vec2) = -1.0
