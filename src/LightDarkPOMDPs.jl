@@ -11,7 +11,9 @@ using POMDPToolbox
 using Parameters # for @with_kw
 using ParticleFilters # for AbstractParticleBelief
 
-export LightDark2D,
+export 
+    AbstractLD2,
+    LightDark2D,
     LightDark2DTarget,
     LightDark2DKalman,
     SymmetricNormal2,
