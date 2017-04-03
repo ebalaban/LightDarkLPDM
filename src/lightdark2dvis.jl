@@ -44,7 +44,7 @@ end
         X, Y, (x,y)->obs_std(p,x)
     end
     @series begin
-        label := "target"
+        label --> "target"
         color --> :red
         pts = Plots.partialcircle(0, 2*pi, 100, p.term_radius)
         x, y = Plots.unzip(pts)
