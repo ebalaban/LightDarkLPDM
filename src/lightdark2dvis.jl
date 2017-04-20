@@ -96,3 +96,11 @@ end
     markersize --> [10.0*sqrt(weight(b,i)) for i in 1:n_particles(b)]
     x, y
 end
+
+Base.show(io::IO, mime::MIME"image/png", p::LightDark2DTarget) = show(io, mime, plot(p))
+
+function Base.show(io::IO, mime::MIME"image/png", t::Tuple{LightDark2DTarget, AbstractPOMDPHistory})
+    p = plot(first(t))
+    plot!(p, last(t))
+    show(io, mime, p)
+end
