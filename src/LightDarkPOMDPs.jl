@@ -3,7 +3,6 @@
 module LightDarkPOMDPs
 
 importall POMDPs
-importall GenerativeModels
 
 using StaticArrays
 using Plots
