@@ -4,9 +4,7 @@ using POMDPs
 using POMDPToolbox
 using StaticArrays
 using Plots
-
-using Gallium
-# Gallium.breakpoint(Pkg.dir("POMDPToolbox","src","simulators","history_recorder.jl"), 109)
+using ParticleFilters
 
 p = LightDark2D()
 
@@ -23,19 +21,19 @@ h = sim(p, simulator=hr) do o
 end
 @show p.count
 
-# plot(p, h)
 bpol = FunctionPolicy(b -> -0.5*b.mean)
 
 up = LightDark2DKalman(p)
 
 h = simulate(hr, p, bpol, up)
 
-# plot(p, h, plot_belief=true, plot_observations=true)
-
-#=
+plotly()
 plot(p)
-up = SIRParticleUpdater(p, 100)
+plot!(h)
+# gui()
+
+plot(p)
+up = SIRParticleFilter(p, 100)
 b = initialize_belief(up, initial_state_distribution(p))
 plot!(b)
-gui()
-=#
+# gui()
