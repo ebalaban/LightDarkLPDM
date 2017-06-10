@@ -27,10 +27,10 @@ up = LightDark2DKalman(p)
 
 h = simulate(hr, p, bpol, up)
 
-gr()
+pyplot()
 plot(p)
 plot!(h)
-# gui()
+gui()
 
 plot(p)
 up = SIRParticleFilter(p, 100)
