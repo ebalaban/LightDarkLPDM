@@ -43,6 +43,7 @@ observation(p::AbstractLD2, a::Vec2, sp::Vec2) = observation(p, sp)
 isterminal(p::AbstractLD2, s::Vec2) = norm(s) <= p.term_radius
 initial_state_distribution(p::AbstractLD2) = p.init_dist
 reward(p::AbstractLD2, s::Vec2, a::Vec2, sp::Vec2) = -(dot(s, p.Q*s) + dot(a, p.R*a))
+reward(p::AbstractLD2, s::Vec2, a::Vec2) = -(dot(s, p.Q*s) + dot(a, p.R*a))
 discount(p::AbstractLD2) = p.discount
 
 
@@ -50,7 +51,7 @@ immutable SymmetricNormal2
     mean::Vec2
     std::Float64
 end
-rand(rng::AbstractRNG, d::SymmetricNormal2) = d.mean + d.std*Vec2(randn(rng, 2))
+# rand(rng::AbstractRNG, d::SymmetricNormal2) = d.mean + d.std*Vec2(randn(rng, 2))
 pdf(d::SymmetricNormal2, s::Vec2) = exp(-0.5*sum((s-d.mean).^2)/d.std^2)/(2*pi*d.std^2)
 mean(d::SymmetricNormal2) = d.mean
 mode(d::SymmetricNormal2) = d.mean
@@ -68,3 +69,4 @@ function generate_s(p::AbstractLD2, s::Vec2, a::Vec2)
 end
 observation(p::AbstractLD2, sp::Vec2) = SymmetricNormal2(sp, obs_std(p, sp[1]))
 generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG) = rand(rng, observation(p, sp))
+

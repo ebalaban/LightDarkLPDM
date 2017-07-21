@@ -18,25 +18,26 @@ h = sim(p, simulator=hr) do o
 end
 @show p.count
 
+
 # simulate with a kalman filter
 bpol = FunctionPolicy(b -> -0.5*mean(b))
 up = LightDark2DKalman(p)
 h = simulate(hr, p, bpol, up)
 
-plotly()
-plot(p)
-plot!(h)
+# plotly()
+pl = plot(p);
+plot!(pl, h)
 # gui()
 
 #### LightDark2DTarget Problem ####
 
 p = LightDark2DTarget()
 
-plot(p)
+pl = plot(p);
 up = SIRParticleFilter(p, 1000)
 b = initialize_belief(up, initial_state_distribution(p))
-plot!(b)
-# gui()
+plot!(pl, b)
+gui()
 
 hist = simulate(hr, p, bpol, up)
 println("state trajectory")
