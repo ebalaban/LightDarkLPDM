@@ -4,9 +4,9 @@ immutable LDBounds
 end
 
 function LPDM.bounds(b::LDBounds,
-    pomdp::AbstractLD2,
-    particles::Vector{LPDMParticle{LDState}},
-    config::LPDMConfig)
+                     pomdp::AbstractLD2,
+                     particles::Vector{LPDMParticle{LDState}},
+                     config::LPDMConfig)
 
     ub = Array{Int8}(0);
     lb = Array{Int8}(0);
@@ -30,7 +30,7 @@ function lowerBound(p::LightDark2DTarget, particle::POMDPToolbox.Particle{Vec2})
     r::Int8 = 0;
     remx::Float64 = 0;
     remy::Float64 = 0;
-    ##  Move x to low noise region
+
     r1,remx = take_action(p.min_noise_loc-s[1], p.term_radius, actions)         # calculate cost for moving x to low noise region
     r2,remy = take_action(s[2], p.term_radius, actions)                         # calculate cost for moving y to target coordinate
     r3,remx = take_action(p.min_noise_loc-remx, p.term_radius, actions)         # calculate cost for moving x to target coordinate from where it reached in the low noise region
