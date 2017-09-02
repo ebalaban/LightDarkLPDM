@@ -1,7 +1,7 @@
 
-typealias Vec2 SVector{2,Float64}
+const Vec2 = SVector{2,Float64}
 
-abstract AbstractLD2 <: POMDP{Vec2, Vec2, Vec2}
+abstract type AbstractLD2 <: POMDP{Vec2, Vec2, Vec2} end
 
 """
 2-Dimensional light-dark problem

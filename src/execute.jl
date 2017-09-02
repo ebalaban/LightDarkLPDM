@@ -1,6 +1,6 @@
 
 # using Plots
-importall POMDPs
+import POMDPs: action
 
 using Combinatorics
 # using Plots
@@ -11,10 +11,10 @@ import LPDM: init_bounds
 
 
 # Typealias appropriately
-typealias LDState   SVector{2,Float64}
-typealias LDAction  SVector{2,Float64}
-typealias LDObs     SVector{2,Float64}
-typealias LDBelief  LPDMBelief
+const LDState  = SVector{2,Float64}
+const LDAction = SVector{2,Float64}
+const LDObs    = SVector{2,Float64}
+const LDBelief = LPDMBelief
 include("LPDMBounds.jl")
 
 
@@ -39,9 +39,9 @@ function execute(n_sims::Int64 = 100)
     custom_bounds = LDBounds()                                                              # bounds object
 
     solver = LPDMSolver{LDState,
-    LDAction,
-    LDObs,
-    LDBounds}(bounds = custom_bounds)
+                        LDAction,
+                        LDObs,
+                        LDBounds}(bounds = custom_bounds)
     init_solver(solver, p)
 
     policy::LPDMPolicy = POMDPs.solve(solver, p)
