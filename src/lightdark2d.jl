@@ -1,5 +1,6 @@
 
 const Vec2 = SVector{2,Float64}
+Vec2() = Vec2(0, 0)
 
 abstract type AbstractLD2 <: POMDP{Vec2, Vec2, Vec2} end
 
@@ -43,7 +44,7 @@ observation(p::AbstractLD2, a::Vec2, sp::Vec2) = observation(p, sp)
 isterminal(p::AbstractLD2, s::Vec2) = norm(s) <= p.term_radius
 initial_state_distribution(p::AbstractLD2) = p.init_dist
 reward(p::AbstractLD2, s::Vec2, a::Vec2, sp::Vec2) = -(dot(s, p.Q*s) + dot(a, p.R*a))
-reward(p::AbstractLD2, s::Vec2, a::Vec2) = -(dot(s, p.Q*s) + dot(a, p.R*a))
+reward(p::AbstractLD2, s::Vec2, a::Vec2)           = -(dot(s, p.Q*s) + dot(a, p.R*a))
 discount(p::AbstractLD2) = p.discount
 
 
@@ -70,3 +71,14 @@ end
 observation(p::AbstractLD2, sp::Vec2) = SymmetricNormal2(sp, obs_std(p, sp[1]))
 generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG) = rand(rng, observation(p, sp))
 
+function POMDPs.generate_sor(p::AbstractLD2, s::Vec2, a::Vec2, rng::AbstractRNG)
+
+    s = generate_s(p,s,a,rng)
+    o = generate_o(p,s,rng)
+    r = reward(p,s,a)
+
+    return s, o, r
+end
+
+### Shouldn't need this:
+# generate_o(p::AbstractLD2, sp::Vec2, rng::LPDM.RNGVector) = generate_o(p, sp, rng)
