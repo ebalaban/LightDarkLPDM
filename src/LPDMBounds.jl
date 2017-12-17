@@ -1,18 +1,36 @@
-import LPDM: bounds
+import LPDM: bounds, default_action
 
-immutable LDBounds end
+type LDBounds
+    a_star::Tuple{Float64,Float64}
+
+    function LDBounds()
+        this = new()
+        this.a_star = (0.0,0.0)
+        return this
+    end
+end
 
 function LPDM.bounds(b::LDBounds,
                      pomdp::AbstractLD2,
                      particles::Vector{LPDMParticle{LDState}},
                      config::LPDMConfig)
 
-    ub = Array{Int8}(0);
-    lb = Array{Int8}(0);
+    ub = Vector{Int8}(0)
+    lb = Vector{Int8}(0)
+    a_star = Vector{Tuple{Float64,Float64}}()
+    ub_value = Int8(0)
+    lb_value = Int8(0)
+    a_star_value::Tuple{Float64,Float64}=(0.0,0.0)
+    a_star_void::Tuple{Float64,Float64}=(0.0,0.0)
+
     for s in particles
-        push!(ub, upperBound(pomdp, s))
-        push!(lb, lowerBound(pomdp, s))
+        ub_value, a_star_value = upperBound(pomdp, s)
+        lb_value, a_star_void = lowerBound(pomdp, s)
+        push!(ub, ub_value)
+        push!(a_star, a_star_value)
+        push!(lb, lb_value)
     end
+    b.a_star = a_star[indmax(ub)]
 
     return minimum(lb), maximum(ub)
 end
@@ -26,15 +44,18 @@ function lowerBound(p::LightDark2DTarget, particle::POMDPToolbox.Particle{Vec2})
 
     s = particle.state
     actions = POMDPs.actions(p, true);
-    r::Int8 = 0;
+    # r::Int8 = 0;
     remx::Float64 = 0;
     remy::Float64 = 0;
+    a_star_x::Float64 = 0.0;
+    a_star_y::Float64 = 0.0;
+    a_void::Float64 = 0.0;
 
-    r1,remx = take_action(p.min_noise_loc-s[1], p.term_radius, actions)         # calculate cost for moving x to low noise region
-    r2,remy = take_action(s[2], p.term_radius, actions)                         # calculate cost for moving y to target coordinate
-    r3,remx = take_action(p.min_noise_loc-remx, p.term_radius, actions)         # calculate cost for moving x to target coordinate from where it reached in the low noise region
+    r1,remx, a_star_x = take_action(p.min_noise_loc-s[1], p.term_radius, actions)         # calculate cost for moving x to low noise region
+    r2,remy, a_star_y = take_action(s[2], p.term_radius, actions)                         # calculate cost for moving y to target coordinate
+    r3,remx, a_void = take_action(p.min_noise_loc-remx, p.term_radius, actions)         # calculate cost for moving x to target coordinate from where it reached in the low noise region
 
-    return -(r1 + r2 + r3)
+    return -(r1 + r2 + r3), (a_star_x, a_star_y)
 end
 lowerBound(p::LightDark2DTarget, particle::LPDM.LPDMParticle{Vec2}) = lowerBound(p, POMDPToolbox.Particle{Vec2}(particle.state, particle.weight))
 
@@ -47,12 +68,14 @@ function upperBound(p::LightDark2DTarget, particle::POMDPToolbox.Particle{Vec2})
     ry::Int8 = 0
     remx::Float64 = 0
     remy::Float64 = 0
+    a_star_x::Float64 = 0
+    a_star_y::Float64 = 0
 
-    rx,remx = take_action(s[1], p.term_radius, actions)        ##  for x: cost to move x in a straight line to within target region
-    ry,remy = take_action(s[2], p.term_radius, actions)        ##  same for y
+    rx, remx, a_star_x = take_action(s[1], p.term_radius, actions)        ##  for x: cost to move x in a straight line to within target region
+    ry, remy, a_star_y = take_action(s[2], p.term_radius, actions)        ##  same for y
 
     r = rx > ry ? rx : ry                                  ## pick the larger of the two
-    return -r
+    return -r, (a_star_x, a_star_y)
 end
 upperBound(p::LightDark2DTarget, particle::LPDM.LPDMParticle{Vec2}) = upperBound(p, POMDPToolbox.Particle{Vec2}(particle.state, particle.weight))
 
@@ -78,12 +101,15 @@ upperBound(p::LightDark2DTarget, particle::LPDM.LPDMParticle{Vec2}) = upperBound
 function take_action(x::Float64, terminal::Float64, actions::Array{Float64,1})
     r::Int8 = 0;
     x = abs(x);
-    if x > terminal && terminal>minimum(actions)
+    a_star::Float64 = 0.0
+
+    if x > terminal && terminal > minimum(actions)
         for a in actions
             if x > a && x > terminal
                 steps = floor(x/a)
                 x -= steps*a;
                 r += steps
+                a_star == 0.0 && (a_star = a) # record the first action chosen (to be used as default)
             end
         end
     elseif terminal < minimum(actions)
@@ -94,5 +120,10 @@ function take_action(x::Float64, terminal::Float64, actions::Array{Float64,1})
                     actions = $actions
             """)
     end
-    return r, x
+    return r, x, a_star
 end
+
+LPDM.default_action(b::LDBounds,
+                     ::LightDark2DTarget,
+                     ::Vector{LPDMParticle{LDState}},
+                     ::LPDMConfig)::Tuple{Float64,Float64} = b.a_star

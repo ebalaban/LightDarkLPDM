@@ -6,7 +6,8 @@ using Combinatorics
 # using Plots
 using POMDPToolbox, Parameters, ParticleFilters, StaticArrays
 using LPDM
-using LightDarkPOMDPs
+include("LightDarkPOMDPs.jl")
+using LightDarkPOMDPs #TODO: need to describe as a package
 using StatsFuns
 import LPDM: init_bounds!
 
@@ -62,7 +63,6 @@ function execute()#n_sims::Int64 = 100)
     config = LPDMConfig();
     config.n_particles = 100;
     config.sim_len = 100;
-    p.n_rand = 2;                   # NOTE: Is n_rand a vestige from old LPDM code? I don't think it's still necessary
     config.search_depth = 10;
 
     s::LDState                  = LDState(π, e);
@@ -84,12 +84,12 @@ function execute()#n_sims::Int64 = 100)
 
     solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds, RNGVector}( bounds = custom_bounds,
                                                                         rng = sim_rng)
-    
+
 
     init_solver!(solver, p)
 
     policy::LPDMPolicy = POMDPs.solve(solver, p)
-    
+
     seed  ::UInt32   = convert(UInt32, 42)
     world_rng = RNGVector(1, seed)
     LPDM.set!(world_rng, 1)
