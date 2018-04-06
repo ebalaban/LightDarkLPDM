@@ -1,3 +1,4 @@
+include("LightDarkPOMDPs.jl")
 
 # using Plots
 import POMDPs: action, generate_o
@@ -62,14 +63,13 @@ function execute()#n_sims::Int64 = 100)
     config = LPDMConfig();
     config.n_particles = 100;
     config.sim_len = 100;
-    p.n_rand = 2;                   # NOTE: Is n_rand a vestige from old LPDM code? I don't think it's still necessary
     config.search_depth = 10;
 
     s::LDState                  = LDState(π, e);
     rewards::Array{Float64}     = Array{Float64}(0)
 #---------------------------------------------------------------------------------
     # Belief
-    bu = LPDMBeliefUpdater{LDState, LDAction, LDObs}(p, n_particles = config.n_particles);  # initialize belief updater
+    bu = LPDMBeliefUpdater(p, n_particles = config.n_particles);  # initialize belief updater
     initial_states = state_distribution(p, s, config)                                   # create initial  distribution
     current_belief = LPDM.create_belief(bu)                                                 # allocate an updated belief object
 
@@ -84,12 +84,12 @@ function execute()#n_sims::Int64 = 100)
 
     solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds, RNGVector}( bounds = custom_bounds,
                                                                         rng = sim_rng)
-    
+
 
     init_solver!(solver, p)
 
     policy::LPDMPolicy = POMDPs.solve(solver, p)
-    
+
     seed  ::UInt32   = convert(UInt32, 42)
     world_rng = RNGVector(1, seed)
     LPDM.set!(world_rng, 1)
@@ -97,16 +97,16 @@ function execute()#n_sims::Int64 = 100)
     sim_steps::Int64 = 1
     r::Float64 = 0.0
 
-    println(updated_belief)
+    println("updated belief: $(current_belief)")
 
     tic() # start the clock
     while !isterminal(p, s) && (solver.config.sim_len == -1 || sim_steps < solver.config.sim_len)
         a = POMDPs.action(policy, current_belief)
-        println(a)
+        println("action: $a")
 
         s, o, r = POMDPs.generate_sor(p, s, a, world_rng)
         push!(rewards, r)
-        println(rewards)
+        println("rewards: $rewards")
         # update belief
         POMDPs.update(bu, current_belief, a, o, updated_belief)
         current_belief = deepcopy(updated_belief)
