@@ -16,11 +16,12 @@ include("lightdark2d.jl")
 include("lightdark2dtarget.jl")
 include("lightdark2dfilter.jl")
 # include("lightdark2dvis.jl")
-export 
+export
     AbstractLD2,
     LightDark2D,
     LightDark2DTarget,
     LightDark2DKalman,
     SymmetricNormal2,
-    Vec2
+    Vec2,
+    obs_std
 end # module

@@ -1,7 +1,10 @@
 using LPDM
-using POMDPToolbox, Parameters, ParticleFilters, StaticArrays
+using POMDPToolbox, Parameters, ParticleFilters, StaticArrays, Plots
 
 include("LightDarkPOMDPs.jl")
+using LightDarkPOMDPs
+
+include("lightdark2dvis.jl")
 
 # using Plots
 import POMDPs: action, generate_o
@@ -61,6 +64,8 @@ end
 function execute()#n_sims::Int64 = 100)
 
     p = LightDark2DTarget()
+    plot(p)
+
     config = LPDMConfig();
     config.n_particles = 100;
     config.sim_len = 100;
