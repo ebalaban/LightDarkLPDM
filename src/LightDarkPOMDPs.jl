@@ -10,6 +10,7 @@ using Combinatorics
 using POMDPToolbox
 using Parameters # for @with_kw
 using ParticleFilters # for AbstractParticleBelief
+using LPDM
 
 include("lightdark2d.jl")
 include("lightdark2dtarget.jl")

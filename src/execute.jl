@@ -1,3 +1,6 @@
+using LPDM
+using POMDPToolbox, Parameters, ParticleFilters, StaticArrays
+
 include("LightDarkPOMDPs.jl")
 
 # using Plots
@@ -5,12 +8,10 @@ import POMDPs: action, generate_o
 
 using Combinatorics
 # using Plots
-using POMDPToolbox, Parameters, ParticleFilters, StaticArrays
-using LPDM
+
 using LightDarkPOMDPs
 using StatsFuns
 import LPDM: init_bounds!
-
 
 # Typealias appropriately
 const LDState  = SVector{2,Float64}
@@ -43,7 +44,7 @@ function state_distribution(p::AbstractLD2, s::Vec2, config::LPDMConfig)
     return states
 end
 
-Base.rand(p::AbstractLD2, s::Vec2, rng::LPDM.RNGVector) = rand(rng, SymmetricNormal(s, p.init_dist.std))
+Base.rand(p::AbstractLD2, s::Vec2, rng::LPDM.RNGVector) = rand(rng, SymmetricNormal2(s, p.init_dist.std))
 
 function Base.rand(rng::LPDM.RNGVector,
                    d::SymmetricNormal2)
@@ -80,7 +81,7 @@ function execute()#n_sims::Int64 = 100)
 
     sim_seed = UInt32(91)
     sim_rng  = RNGVector(config.n_particles, sim_seed)
-    custom_bounds = LDBounds()    # bounds object
+    custom_bounds = LDBounds{LDAction}()    # bounds object
 
     solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds, RNGVector}( bounds = custom_bounds,
                                                                         rng = sim_rng)
@@ -98,6 +99,7 @@ function execute()#n_sims::Int64 = 100)
     r::Float64 = 0.0
 
     println("updated belief: $(current_belief)")
+    println("actions: $(POMDPs.actions(p, true))")
 
     tic() # start the clock
     while !isterminal(p, s) && (solver.config.sim_len == -1 || sim_steps < solver.config.sim_len)
