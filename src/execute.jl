@@ -38,10 +38,11 @@ function state_distribution(p::AbstractLD2, s::Vec2, config::LPDMConfig)
     randx = randn(config.n_particles);
     randy = randn(config.n_particles);
     states = Vector{POMDPToolbox.Particle{Vec2}}();
-    particle = POMDPToolbox.Particle{Vec2}([0,0],1)
+    weight = 1/(config.n_particles^2) # weight of each individual particle
+    particle = POMDPToolbox.Particle{Vec2}([0,0], weight)
 
     for rx in randx, ry in randy
-        particle = POMDPToolbox.Particle{Vec2}([s[1]+rx, s[2]+ry],1)
+        particle = POMDPToolbox.Particle{Vec2}([s[1]+rx, s[2]+ry], weight)
         push!(states, particle)
     end
     return states
@@ -64,7 +65,10 @@ end
 function execute()#n_sims::Int64 = 100)
 
     p = LightDark2DTarget()
-    plot(p)
+    # gr()
+    # plot(p)
+    # Base.invokelatest(gui()) #HACK: this is to get rid of the "The applicable method may be too new:
+    #                     #running in world age 22059, while current world is 22060"
 
     config = LPDMConfig();
     config.n_particles = 100;
@@ -76,11 +80,13 @@ function execute()#n_sims::Int64 = 100)
 #---------------------------------------------------------------------------------
     # Belief
     bu = LPDMBeliefUpdater(p, n_particles = config.n_particles);  # initialize belief updater
-    initial_states = state_distribution(p, s, config)                                   # create initial  distribution
-    current_belief = LPDM.create_belief(bu)                                                 # allocate an updated belief object
+    initial_states = state_distribution(p, s, config)             # create initial  distribution
+    println("initial_states size: $(size(initial_states))")
+    current_belief = LPDM.create_belief(bu)                       # allocate an updated belief object
 
-    LPDM.initialize_belief(bu, initial_states, current_belief)                              # initialize belief
-    updated_belief = LPDM.create_belief(bu)                                                 # update belief now that it has been initialized
+    LPDM.initialize_belief(bu, initial_states, current_belief)    # initialize belief
+    show(current_belief)
+    updated_belief = LPDM.create_belief(bu)                       # update belief now that it has been initialized
 #---------------------------------------------------------------------------------
 
 
@@ -108,12 +114,20 @@ function execute()#n_sims::Int64 = 100)
 
     tic() # start the clock
     while !isterminal(p, s) && (solver.config.sim_len == -1 || sim_steps < solver.config.sim_len)
+
+        println("")
+        println("=============== Step $sim_steps ================")
+        println("s: $s")
         a = POMDPs.action(policy, current_belief)
-        println("action: $a")
+        println("a: $a")
 
         s, o, r = POMDPs.generate_sor(p, s, a, world_rng)
+        println("s': $s")
+        println("o': $o")
+        println("r: $r")
         push!(rewards, r)
-        println("rewards: $rewards")
+        println("=======================================")
+
         # update belief
         POMDPs.update(bu, current_belief, a, o, updated_belief)
         current_belief = deepcopy(updated_belief)
