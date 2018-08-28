@@ -33,20 +33,36 @@ include("LPDMBounds.jl")
 function LPDM.init_bounds!(::LDBounds, ::AbstractLD2, ::LPDM.LPDMConfig)
 end
 
-
-function state_distribution(p::AbstractLD2, s::Vec2, config::LPDMConfig)
-    randx = randn(config.n_particles);
-    randy = randn(config.n_particles);
+# Just use the initial distribution in the POMDP
+function state_distribution(pomdp::AbstractLD2, config::LPDMConfig, rng::RNGVector)
     states = Vector{POMDPToolbox.Particle{Vec2}}();
     weight = 1/(config.n_particles^2) # weight of each individual particle
     particle = POMDPToolbox.Particle{Vec2}([0,0], weight)
 
-    for rx in randx, ry in randy
-        particle = POMDPToolbox.Particle{Vec2}([s[1]+rx, s[2]+ry], weight)
+    for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
+        particle = POMDPToolbox.Particle{Vec2}(rand(rng, pomdp.init_dist), weight)
         push!(states, particle)
     end
+    println("n states: $(length(states))")
     return states
 end
+
+# function state_distribution(p::AbstractLD2, s::Vec2, config::LPDMConfig)
+#     randx = randn(config.n_particles);
+#     randy = randn(config.n_particles);
+#     states = Vector{POMDPToolbox.Particle{Vec2}}();
+#     weight = 1/(config.n_particles^2) # weight of each individual particle
+#     particle = POMDPToolbox.Particle{Vec2}([0,0], weight)
+#
+#     for rx in randx, ry in randy
+#         particle = POMDPToolbox.Particle{Vec2}([s[1]+rx, s[2]+ry], weight)
+#         push!(states, particle)
+#     end
+#     println("n states: $(length(states))")
+#     println(states)
+#     error("done")
+#     return states
+# end
 
 Base.rand(p::AbstractLD2, s::Vec2, rng::LPDM.RNGVector) = rand(rng, SymmetricNormal2(s, p.init_dist.std))
 
@@ -71,45 +87,48 @@ function execute()#n_sims::Int64 = 100)
     #                     #running in world age 22059, while current world is 22060"
 
     config = LPDMConfig();
-    config.n_particles = 100;
-    config.sim_len = 100;
-    config.search_depth = 10;
+    # config.n_particles = 100;
+    config.n_particles = 10;
+    config.sim_len = 2;
+    # config.sim_len = 100;
+    config.search_depth = 10; #TODO: relax
 
-    s::LDState                  = LDState(π, e);
+    sim_seed = UInt32(91)
+    sim_rng  = RNGVector(config.n_particles, sim_seed)
+
+    world_seed  ::UInt32   = convert(UInt32, 42)
+    world_rng = RNGVector(1, world_seed)
+    LPDM.set!(world_rng, 1)
+
+    s::LDState                  = LDState(π, e);    # initial state
     rewards::Array{Float64}     = Array{Float64}(0)
 #---------------------------------------------------------------------------------
     # Belief
     bu = LPDMBeliefUpdater(p, n_particles = config.n_particles);  # initialize belief updater
-    initial_states = state_distribution(p, s, config)             # create initial  distribution
-    println("initial_states size: $(size(initial_states))")
+    initial_states = state_distribution(p, config, world_rng)     # create initial  distribution
     current_belief = LPDM.create_belief(bu)                       # allocate an updated belief object
 
     LPDM.initialize_belief(bu, initial_states, current_belief)    # initialize belief
     show(current_belief)
-    updated_belief = LPDM.create_belief(bu)                       # update belief now that it has been initialized
+    updated_belief = LPDM.create_belief(bu)
 #---------------------------------------------------------------------------------
 
-
-    sim_seed = UInt32(91)
-    sim_rng  = RNGVector(config.n_particles, sim_seed)
     custom_bounds = LDBounds{LDAction}()    # bounds object
 
     solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds, RNGVector}( bounds = custom_bounds,
-                                                                        rng = sim_rng)
-
+                                                                        rng = sim_rng,
+                                                                        debug = 2,
+                                                                        time_per_move = 10.0,  #sec
+                                                                        max_trials = 10)
 
     init_solver!(solver, p)
 
     policy::LPDMPolicy = POMDPs.solve(solver, p)
 
-    seed  ::UInt32   = convert(UInt32, 42)
-    world_rng = RNGVector(1, seed)
-    LPDM.set!(world_rng, 1)
-
     sim_steps::Int64 = 1
     r::Float64 = 0.0
 
-    println("updated belief: $(current_belief)")
+    # println("updated belief: $(current_belief)")
     println("actions: $(POMDPs.actions(p, true))")
 
     tic() # start the clock
