@@ -15,6 +15,7 @@ using LPDM
 include("lightdark2d.jl")
 include("lightdark2dtarget.jl")
 include("lightdark2dfilter.jl")
+include("lightdark2ddespot.jl")
 # include("lightdark2dvis.jl")
 export
     AbstractLD2,

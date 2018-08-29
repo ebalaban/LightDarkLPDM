@@ -4,7 +4,7 @@ using POMDPToolbox, Parameters, ParticleFilters, StaticArrays, Plots
 include("LightDarkPOMDPs.jl")
 using LightDarkPOMDPs
 
-include("lightdark2dvis.jl")
+include("lightdark2ddespot.jl")
 
 # using Plots
 import POMDPs: action, generate_o
@@ -80,7 +80,7 @@ end
 
 function execute()#n_sims::Int64 = 100)
 
-    p = LightDark2DTarget()
+    p = LightDark2DDespot()
     # gr()
     # plot(p)
     # Base.invokelatest(gui()) #HACK: this is to get rid of the "The applicable method may be too new:
