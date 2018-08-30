@@ -41,9 +41,8 @@ function generate_o(p::LightDark2DDespot, sp::Vec2, rng::AbstractRNG)
     o_disc = Vec2()
     o = rand(rng, observation(p, sp))
     show(o); println("")
-    o_disc[1] = encode(p.lindisc,o[1])
-    o_disc[2] = encode(p.lindisc,o[2])
+    o_disc = Vec2(encode(p.lindisc,o[1]), encode(p.lindisc,o[2]))
     return obs_index(p,o_disc) # return a single combined obs index
 end
 
-obs_index(p::LightDark2DDespot, o_disc::Vec2) = p.n_bins*o_disc[1] + o_disc[2]
+obs_index(p::LightDark2DDespot, o_disc::Vec2) = p.n_bins*(o_disc[1]-1) + o_disc[2]
