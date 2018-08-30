@@ -33,7 +33,7 @@ function LPDM.bounds(b::LDBounds,
     return b.lb, b.ub
 end
 
-function lowerBound(p::LightDark2DTarget, particle::POMDPToolbox.Particle{Vec2})
+function lowerBound(p::LightDark2DDespot, particle::POMDPToolbox.Particle{Vec2})
 # computes the cost of traveling to the low noise region and only then towards target. i.e. a slow approach
    #       s__________
    #                  |
@@ -53,10 +53,10 @@ function lowerBound(p::LightDark2DTarget, particle::POMDPToolbox.Particle{Vec2})
 
     return -(r1 + r2 + r3)
 end
-lowerBound(p::LightDark2DTarget, particle::LPDM.LPDMParticle{Vec2}) = lowerBound(p, POMDPToolbox.Particle{Vec2}(particle.state, particle.weight))
+lowerBound(p::LightDark2DDespot, particle::LPDM.LPDMParticle{Vec2}) = lowerBound(p, POMDPToolbox.Particle{Vec2}(particle.state, particle.weight))
 
 
-function upperBound(p::LightDark2DTarget, particle::POMDPToolbox.Particle{Vec2})
+function upperBound(p::LightDark2DDespot, particle::POMDPToolbox.Particle{Vec2})
     # computes the reward for the straight-line path to target
     s = particle.state
     actions = POMDPs.actions(p, true);
@@ -70,7 +70,7 @@ function upperBound(p::LightDark2DTarget, particle::POMDPToolbox.Particle{Vec2})
     r = rx > ry ? rx : ry                                  ## pick the larger of the two
     return -r
 end
-upperBound(p::LightDark2DTarget, particle::LPDM.LPDMParticle{Vec2}) = upperBound(p, POMDPToolbox.Particle{Vec2}(particle.state, particle.weight))
+upperBound(p::LightDark2DDespot, particle::LPDM.LPDMParticle{Vec2}) = upperBound(p, POMDPToolbox.Particle{Vec2}(particle.state, particle.weight))
 
 
 # function take_action(x::Float64, terminal::Float64, actions::Array{Float64,1})

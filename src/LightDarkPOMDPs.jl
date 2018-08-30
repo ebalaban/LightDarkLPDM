@@ -21,8 +21,10 @@ export
     AbstractLD2,
     LightDark2D,
     LightDark2DTarget,
+    LightDark2DDespot,
     LightDark2DKalman,
     SymmetricNormal2,
     Vec2,
     obs_std
+
 end # module

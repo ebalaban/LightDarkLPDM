@@ -1,6 +1,6 @@
 
 const Vec2 = SVector{2,Float64}
-Vec2() = Vec2(0, 0)
+Vec2() = Vec2(0.0,0.0)
 
 abstract type AbstractLD2 <: POMDP{Vec2, Vec2, Vec2} end
 
