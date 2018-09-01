@@ -31,6 +31,8 @@ using Discretizers
         return this
     end
 end
+# POMDPs.actions(p::LightDark2DDespot, ::Bool) = [1.0, 0.5, 0.1, 0.01, 0.0];
+POMDPs.actions(p::LightDark2DDespot, ::Bool) = [0.1, 0.01]
 
 reward(p::LightDark2DDespot, s::Vec2) = -1.0
 reward(p::LightDark2DDespot, s::Vec2, a::Vec2) = reward(p, s)

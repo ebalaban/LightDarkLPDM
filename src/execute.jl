@@ -108,7 +108,7 @@ function execute()#n_sims::Int64 = 100)
                                                                         n_particles = 10,
                                                                         seed = UInt32(1),
                                                                         # max_trials = 10)
-                                                                        max_trials = 2)
+                                                                        max_trials = 1)
 
 #---------------------------------------------------------------------------------
     # Belief
@@ -136,10 +136,10 @@ function execute()#n_sims::Int64 = 100)
     r::Float64 = 0.0
 
     # println("updated belief: $(current_belief)")
-    println("actions: $(POMDPs.actions(p, true))")
+    # println("actions: $(POMDPs.actions(p, true))")
 
     tic() # start the clock
-    println("sim_len: $(solver.config.sim_len)")
+    # println("sim_len: $(solver.config.sim_len)")
     while !isterminal(p, s) && (solver.config.sim_len == -1 || sim_steps <= solver.config.sim_len)
 
         println("")
@@ -170,7 +170,7 @@ function execute()#n_sims::Int64 = 100)
         multiplier *= p.discount
     end
 
-    println("root q nodes are: $(typeof(solver.root.q_nodes)) of length $(length(solver.root.q_nodes)), start is $(start(solver.root.q_nodes))")
+    # println("root q nodes are: $(typeof(solver.root.q_nodes)) of length $(length(solver.root.q_nodes)), start is $(start(solver.root.q_nodes))")
     t = LPDM.d3tree(solver)
     inchrome(t)
 
