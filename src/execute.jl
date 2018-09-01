@@ -1,5 +1,5 @@
 using LPDM
-using POMDPToolbox, Parameters, ParticleFilters, StaticArrays, Plots
+using POMDPToolbox, Parameters, ParticleFilters, StaticArrays, Plots, D3Trees
 
 include("LightDarkPOMDPs.jl")
 using LightDarkPOMDPs
@@ -84,15 +84,10 @@ function execute()#n_sims::Int64 = 100)
     # Base.invokelatest(gui()) #HACK: this is to get rid of the "The applicable method may be too new:
     #                     #running in world age 22059, while current world is 22060"
 
-    config = LPDMConfig();
     # config.n_particles = 100;
-    config.n_particles = 10;
-    config.sim_len = 2;
-    # config.sim_len = 100;
-    config.search_depth = 10; #TODO: relax
-
-    sim_seed = UInt32(91)
-    sim_rng  = RNGVector(config.n_particles, sim_seed)
+    # n_particles = 10;
+    # sim_seed = UInt32(1)
+    # sim_rng  = RNGVector(n_particles, sim_seed)
 
     world_seed  ::UInt32   = convert(UInt32, 42)
     world_rng = RNGVector(1, world_seed)
@@ -100,26 +95,40 @@ function execute()#n_sims::Int64 = 100)
 
     s::LDState                  = LDState(π, e);    # initial state
     rewards::Array{Float64}     = Array{Float64}(0)
-#---------------------------------------------------------------------------------
-    # Belief
-    bu = LPDMBeliefUpdater(p, n_particles = config.n_particles);  # initialize belief updater
-    initial_states = state_distribution(p, config, world_rng)     # create initial  distribution
-    current_belief = LPDM.create_belief(bu)                       # allocate an updated belief object
-
-    LPDM.initialize_belief(bu, initial_states, current_belief)    # initialize belief
-    show(current_belief)
-    updated_belief = LPDM.create_belief(bu)
-#---------------------------------------------------------------------------------
 
     custom_bounds = LDBounds{LDAction}()    # bounds object
 
+    # TODO: consider if using floats as observations is better
     solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds, RNGVector}( bounds = custom_bounds,
-                                                                        rng = sim_rng,
+                                                                        # rng = sim_rng,
                                                                         debug = 2,
                                                                         time_per_move = 10.0,  #sec
-                                                                        max_trials = 10)
+                                                                        sim_len = 1,
+                                                                        search_depth = 10,
+                                                                        n_particles = 10,
+                                                                        seed = UInt32(1),
+                                                                        # max_trials = 10)
+                                                                        max_trials = 2)
 
-    init_solver!(solver, p)
+#---------------------------------------------------------------------------------
+    # Belief
+    bu = LPDMBeliefUpdater(p, n_particles = solver.config.n_particles);  # initialize belief updater
+    initial_states = state_distribution(p, solver.config, world_rng)     # create initial  distribution
+    current_belief = LPDM.create_belief(bu)                       # allocate an updated belief object
+
+    LPDM.initialize_belief(bu, initial_states, current_belief)    # initialize belief
+    # show(current_belief)
+    updated_belief = LPDM.create_belief(bu)
+#---------------------------------------------------------------------------------
+
+    # solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds, RNGVector}( bounds = custom_bounds,
+    #                                                                     rng = sim_rng,
+    #                                                                     debug = 2,
+    #                                                                     time_per_move = 10.0,  #sec
+    #                                                                     max_trials = 10)
+
+    # Not needed for now
+    # init_solver!(solver, p)
 
     policy::LPDMPolicy = POMDPs.solve(solver, p)
 
@@ -130,7 +139,8 @@ function execute()#n_sims::Int64 = 100)
     println("actions: $(POMDPs.actions(p, true))")
 
     tic() # start the clock
-    while !isterminal(p, s) && (solver.config.sim_len == -1 || sim_steps < solver.config.sim_len)
+    println("sim_len: $(solver.config.sim_len)")
+    while !isterminal(p, s) && (solver.config.sim_len == -1 || sim_steps <= solver.config.sim_len)
 
         println("")
         println("=============== Step $sim_steps ================")
@@ -159,6 +169,10 @@ function execute()#n_sims::Int64 = 100)
         discounted_reward += multiplier * r
         multiplier *= p.discount
     end
+
+    println("root q nodes are: $(typeof(solver.root.q_nodes)) of length $(length(solver.root.q_nodes)), start is $(start(solver.root.q_nodes))")
+    t = LPDM.d3tree(solver)
+    inchrome(t)
 
     return sim_steps, sum(rewards), discounted_reward, run_time
 end
