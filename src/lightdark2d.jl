@@ -1,6 +1,9 @@
+import Base.show
+
 
 const Vec2 = SVector{2,Float64}
 Vec2() = Vec2(0.0,0.0)
+Base.show(io::IO, x::Vec2) = print(io,"[$(@sprintf("%.2f", x[1])),$(@sprintf("%.2f",x[2]))]")
 
 abstract type AbstractLD2 <: POMDP{Vec2, Vec2, Vec2} end
 

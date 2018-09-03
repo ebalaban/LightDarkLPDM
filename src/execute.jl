@@ -105,10 +105,10 @@ function execute()#n_sims::Int64 = 100)
                                                                         time_per_move = 10.0,  #sec
                                                                         sim_len = 1,
                                                                         search_depth = 10,
-                                                                        n_particles = 10,
+                                                                        n_particles = 3,
                                                                         seed = UInt32(1),
                                                                         # max_trials = 10)
-                                                                        max_trials = 1)
+                                                                        max_trials = 8)
 
 #---------------------------------------------------------------------------------
     # Belief
@@ -170,7 +170,6 @@ function execute()#n_sims::Int64 = 100)
         multiplier *= p.discount
     end
 
-    # println("root q nodes are: $(typeof(solver.root.q_nodes)) of length $(length(solver.root.q_nodes)), start is $(start(solver.root.q_nodes))")
     t = LPDM.d3tree(solver)
     inchrome(t)
 
