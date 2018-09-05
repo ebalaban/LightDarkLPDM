@@ -101,14 +101,14 @@ function execute()#n_sims::Int64 = 100)
     # TODO: consider if using floats as observations is better
     solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds, RNGVector}( bounds = custom_bounds,
                                                                         # rng = sim_rng,
-                                                                        debug = 2,
+                                                                        debug = 1,
                                                                         time_per_move = 10.0,  #sec
-                                                                        sim_len = 1,
-                                                                        search_depth = 10,
-                                                                        n_particles = 3,
-                                                                        seed = UInt32(1),
+                                                                        sim_len = -1,
+                                                                        search_depth = 25,
+                                                                        n_particles = 10,
+                                                                        seed = UInt32(91),
                                                                         # max_trials = 10)
-                                                                        max_trials = 8)
+                                                                        max_trials = -1)
 
 #---------------------------------------------------------------------------------
     # Belief
@@ -170,8 +170,11 @@ function execute()#n_sims::Int64 = 100)
         multiplier *= p.discount
     end
 
-    t = LPDM.d3tree(solver)
-    inchrome(t)
+    # t = LPDM.d3tree(solver)
+    # # # show(t)
+    # inchrome(t)
+    # # blink(t)
 
     return sim_steps, sum(rewards), discounted_reward, run_time
+    # return t
 end
