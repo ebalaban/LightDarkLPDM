@@ -3,6 +3,8 @@ using Discretizers
 @with_kw type LightDark1DDespot <: AbstractLD1
     min_noise::Float64
     min_noise_loc::Float64
+    Q::Float64
+    R::Float64
     term_radius::Float64
     n_bins::Int         # per linear dimension
     max_x::Float64     # assume symmetry in x and y for simplicity
@@ -19,6 +21,8 @@ using Discretizers
         this = new()
         this.min_noise               = 0.0
         this.min_noise_loc           = 5.0
+        Q::Float64                   = 0.5
+        R::Float64                   = 0.5
         this.term_radius             = 0.05
         this.n_bins                  = n_bins # per linear dimension
         this.max_x                   = 10     # assume symmetry in x and y for simplicity
@@ -34,7 +38,7 @@ using Discretizers
         return this
     end
 end
-POMDPs.actions(p::LightDark1DDespot) = [1.0, 0.5, 0.1, 0.01, 0.0];
+POMDPs.actions(p::LightDark1DDespot) = [-1.0, -0.5, -0.1, -0.01, 0.0, 0.01, 0.1, 0.5, 1.0];
 
 
 # POMDPs.actions(p::LightDark1DDespot, ::Bool) = [0.1, 0.01]

@@ -60,43 +60,30 @@ end
 function execute()#n_sims::Int64 = 100)
 
     p = LightDarkPOMDPs.LightDark1DDespot()
-        println("#-6")
     world_seed  ::UInt32   = convert(UInt32, 42)
-        println("#-5")
     world_rng = RNGVector(1, world_seed)
-        println("#-4")
     LPDM.set!(world_rng, 1)
-        println("#-3")
     s::LDState                  = LDState(π);    # initial state
-        println("#-2")
     rewards::Array{Float64}     = Array{Float64}(0)
-        println("#-1")
     custom_bounds = LDBounds1d{LDAction}()    # bounds object
-        println("#1")
     solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}( bounds = custom_bounds,
                                                                         # rng = sim_rng,
                                                                         debug = 1,
-                                                                        time_per_move = 10.0,  #sec
-                                                                        sim_len = -1,
+                                                                        time_per_move = 1.0,  #sec
+                                                                        sim_len = 2,
                                                                         search_depth = 25,
                                                                         n_particles = 10,
                                                                         seed = UInt32(91),
                                                                         # max_trials = 10)
-                                                                        max_trials = -1)
-        println("#2")
+                                                                        max_trials = 10)
 #---------------------------------------------------------------------------------
     # Belief
     bu = LPDMBeliefUpdater(p, n_particles = solver.config.n_particles);  # initialize belief updater
-        println("#3")
     initial_states = state_distribution(p, solver.config, world_rng)     # create initial  distribution
-        println("#4")
     current_belief = LPDM.create_belief(bu)                       # allocate an updated belief object
-        println("#5")
     LPDM.initialize_belief(bu, initial_states, current_belief)    # initialize belief
-        println("#6")
     # show(current_belief)
     updated_belief = LPDM.create_belief(bu)
-        println("#7")
 #---------------------------------------------------------------------------------
 
     # solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}( bounds = custom_bounds,
@@ -109,7 +96,6 @@ function execute()#n_sims::Int64 = 100)
     # init_solver!(solver, p)
 
     policy::LPDMPolicy = POMDPs.solve(solver, p)
-        println("#8")
 
     sim_steps::Int64 = 1
     r::Float64 = 0.0
@@ -149,10 +135,10 @@ function execute()#n_sims::Int64 = 100)
         multiplier *= p.discount
     end
 
-    # t = LPDM.d3tree(solver)
-    # # # show(t)
-    # inchrome(t)
-    # # blink(t)
+    t = LPDM.d3tree(solver)
+    # # show(t)
+    inchrome(t)
+    # blink(t)
 
     return sim_steps, sum(rewards), discounted_reward, run_time
     # return t

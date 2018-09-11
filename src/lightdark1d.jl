@@ -1,4 +1,5 @@
 import Base.show
+Base.show(io::IO, x::Float64) = print(io,"$(@sprintf("%.2f", x))")
 
 abstract type AbstractLD1 <: POMDP{Float64, Float64, Float64} end
 
@@ -65,7 +66,7 @@ function generate_s(p::AbstractLD1, s::Float64, a::Float64)
     p.count += 1
     return s+a
 end
-observation(p::AbstractLD1, sp::Float64) = Normal(sp, obs_std(p, sp))
+observation(p::AbstractLD1, sp::Float64) = Distributions.Normal(sp, obs_std(p, sp))
 generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG) = rand(rng, observation(p, sp))
 
 function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG)
