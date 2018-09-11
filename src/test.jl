@@ -1,3 +1,3 @@
 
-import Tmp
-Tmp.execute1d()
+import execute1d
+execute1d.execute()

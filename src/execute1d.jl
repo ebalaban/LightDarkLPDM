@@ -1,6 +1,6 @@
-module Tmp
+module execute1d
 using LPDM
-using POMDPToolbox, Parameters, ParticleFilters, StaticArrays, Plots, D3Trees
+using POMDPs, POMDPToolbox, Parameters, ParticleFilters, StaticArrays, Plots, D3Trees, Distributions
 
 include("LightDarkPOMDPs.jl")
 using LightDarkPOMDPs
@@ -28,11 +28,11 @@ include("LPDMBounds1d.jl")
 # POMDPs.generate_o(p::AbstractLD1, sp::Float64, rng::LPDM.RNGVector) = LightDarkPOMDPs.generate_o(p, sp, rng)
 
 
-function LPDM.init_bounds!(::LDBounds1d, ::AbstractLD1, ::LPDM.LPDMConfig)
+function LPDM.init_bounds!(::LDBounds1d, ::LightDarkPOMDPs.AbstractLD1, ::LPDM.LPDMConfig)
 end
 
 # Just use the initial distribution in the POMDP
-function state_distribution(pomdp::AbstractLD1, config::LPDMConfig, rng::RNGVector)
+function state_distribution(pomdp::LightDarkPOMDPs.AbstractLD1, config::LPDMConfig, rng::RNGVector)
     states = Vector{POMDPToolbox.Particle{Float64}}();
     weight = 1/(config.n_particles^2) # weight of each individual particle
     particle = POMDPToolbox.Particle{Float64}(0.0, weight)
@@ -45,13 +45,13 @@ function state_distribution(pomdp::AbstractLD1, config::LPDMConfig, rng::RNGVect
     return states
 end
 
-Base.rand(p::AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, p.init_dist.std))
+Base.rand(p::LightDarkPOMDPs.AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, p.init_dist.std))
 
 function Base.rand(rng::LPDM.RNGVector,
                    d::Normal)
 
     # a random number selected from normal distribution
-    r1 = norminvcdf(d.mean, d.std, rand(rng))
+    r1 = norminvcdf(mean(d), std(d), rand(rng))
     return r1
 end
 
@@ -59,7 +59,7 @@ end
 
 function execute()#n_sims::Int64 = 100)
 
-    p = LightDark1DDespot()
+    p = LightDarkPOMDPs.LightDark1DDespot()
         println("#-6")
     world_seed  ::UInt32   = convert(UInt32, 42)
         println("#-5")

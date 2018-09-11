@@ -24,7 +24,7 @@ abstract type AbstractLD1 <: POMDP{Float64, Float64, Float64} end
     discount::Float64
         discount factor
 """
-@with_kw type LightDark1D <: AbstractLD1
+@with_kw type LightDark1D <: LightDarkPOMDPs.AbstractLD1
     min_noise::Float64      = 0.0
     min_noise_loc::Float64  = 5.0
     Q::Float64              = 0.5
@@ -39,12 +39,11 @@ end
 generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = generate_s(p, s, a)
 generate_o(p::AbstractLD1, s::Float64, a::Float64, sp::Float64, rng::AbstractRNG) = generate_o(p, sp, rng)
 observation(p::AbstractLD1, a::Float64, sp::Float64) = observation(p, sp)
-isterminal(p::AbstractLD1, s::Float64) = norm(s) <= p.term_radius
+POMDPs.isterminal(p::AbstractLD1, s::Float64) = norm(s) <= p.term_radius
 initial_state_distribution(p::AbstractLD1) = p.init_dist
 reward(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = -(p.Q*s^2 + p.R*a^2)
 reward(p::AbstractLD1, s::Float64, a::Float64)              = -(p.Q*s^2 + p.R*a^2)
 discount(p::AbstractLD1) = p.discount
-
 
 immutable Normal
     mean::Float64

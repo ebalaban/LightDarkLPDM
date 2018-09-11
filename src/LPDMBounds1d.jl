@@ -1,4 +1,5 @@
 import LPDM: bounds
+using LightDarkPOMDPs
 
 mutable struct LDBounds1d{A}
     lb    ::Float64
@@ -15,7 +16,7 @@ mutable struct LDBounds1d{A}
 end
 
 function LPDM.bounds(b::LDBounds1d,
-                     pomdp::AbstractLD1,
+                     pomdp::LightDarkPOMDPs.AbstractLD1,
                      particles::Vector{LPDMParticle{LDState}},
                      config::LPDMConfig)
 
@@ -33,7 +34,7 @@ function LPDM.bounds(b::LDBounds1d,
     return b.lb, b.ub
 end
 
-function lowerBound(p::LightDark1DDespot, particle::POMDPToolbox.Particle{Float64})
+function lowerBound(p::LightDarkPOMDPs.LightDark1DDespot, particle::POMDPToolbox.Particle{Float64})
 # computes the cost of traveling to the low noise region and only then towards target. i.e. a slow approach
 
     s = particle.state
@@ -49,10 +50,10 @@ function lowerBound(p::LightDark1DDespot, particle::POMDPToolbox.Particle{Float6
 
     return -(r1 + r3)
 end
-lowerBound(p::LightDark1DDespot, particle::LPDM.LPDMParticle{Float64}) = lowerBound(p, POMDPToolbox.Particle{Float64}(particle.state, particle.weight))
+lowerBound(p::LightDarkPOMDPs.LightDark1DDespot, particle::LPDM.LPDMParticle{Float64}) = lowerBound(p, POMDPToolbox.Particle{Float64}(particle.state, particle.weight))
 
 
-function upperBound(p::LightDark1DDespot, particle::POMDPToolbox.Particle{Float64})
+function upperBound(p::LightDarkPOMDPs.LightDark1DDespot, particle::POMDPToolbox.Particle{Float64})
     # computes the reward for the straight-line path to target
     s = particle.state
     actions = POMDPs.actions(p)
@@ -64,7 +65,7 @@ function upperBound(p::LightDark1DDespot, particle::POMDPToolbox.Particle{Float6
     # r = rx > ry ? rx : ry                                  ## pick the larger of the two
     return -rx
 end
-upperBound(p::LightDark1DDespot, particle::LPDM.LPDMParticle{Float64}) = upperBound(p, POMDPToolbox.Particle{Float64}(particle.state, particle.weight))
+upperBound(p::LightDarkPOMDPs.LightDark1DDespot, particle::LPDM.LPDMParticle{Float64}) = upperBound(p, POMDPToolbox.Particle{Float64}(particle.state, particle.weight))
 
 
 # function take_action(x::Float64, terminal::Float64, actions::Array{Float64,1})

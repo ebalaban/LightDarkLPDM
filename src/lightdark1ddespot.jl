@@ -25,7 +25,7 @@ using Discretizers
         this.bin_edges               = collect(-this.max_x:(2*this.max_x)/this.n_bins:this.max_x)
         this.bin_centers             = [(this.bin_edges[i]+this.bin_edges[i+1])/2 for i=1:n_bins]
         this.lindisc                 = LinearDiscretizer(this.bin_edges)
-        this.init_dist               = Normal(2.0, 0.5)
+        this.init_dist               = Distributions.Normal(2.0, 0.5)
         this.discount                = 1.0
         this.count                   = 0
         this.n_rand                  = 0
@@ -35,6 +35,8 @@ using Discretizers
     end
 end
 POMDPs.actions(p::LightDark1DDespot) = [1.0, 0.5, 0.1, 0.01, 0.0];
+
+
 # POMDPs.actions(p::LightDark1DDespot, ::Bool) = [0.1, 0.01]
 #POMDPs.actions(p::LightDark1DDespot) = Float64Iter(collect(permutations(vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true)), 2)))
 
