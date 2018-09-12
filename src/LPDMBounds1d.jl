@@ -65,7 +65,7 @@ function move_reward(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)
         Δx = dest - x
         a = maximum(actions[actions .<= Δx]) # maximum action not exceeding Δx
         r += reward(p, x, a) # use current state for computing the reward (NOTE: assumes reward symmetry)
-        println("BOUNDS: x=$x, Δx=$(Δx), x1=$x1, x2=$x2, orig=$orig, dest=$dest, actions=$(actions[actions .< Δx]), a=$a,  r=$r ")
+        # println("BOUNDS: x=$x, Δx=$(Δx), x1=$x1, x2=$x2, orig=$orig, dest=$dest, actions=$(actions[actions .< Δx]), a=$a,  r=$r ")
         x += a # take the step
         # error("done")
     end

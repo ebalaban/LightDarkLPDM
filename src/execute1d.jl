@@ -45,7 +45,7 @@ function state_distribution(pomdp::LightDarkPOMDPs.AbstractLD1, config::LPDMConf
     return states
 end
 
-Base.rand(p::LightDarkPOMDPs.AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, p.init_dist.std))
+Base.rand(p::LightDarkPOMDPs.AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, std(p.init_dist)))
 
 function Base.rand(rng::LPDM.RNGVector,
                    d::Normal)
@@ -66,16 +66,16 @@ function execute()#n_sims::Int64 = 100)
     s::LDState                  = LDState(π);    # initial state
     rewards::Array{Float64}     = Array{Float64}(0)
     custom_bounds = LDBounds1d{LDAction}()    # bounds object
-    solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}( bounds = custom_bounds,
+    solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}(bounds = custom_bounds,
                                                                         # rng = sim_rng,
-                                                                        debug = 3,
+                                                                        debug = 1,
                                                                         time_per_move = 1.0,  #sec
-                                                                        sim_len = 1,
-                                                                        search_depth = 10,
-                                                                        n_particles = 3,
+                                                                        sim_len = 100,
+                                                                        search_depth = 50,
+                                                                        n_particles = 20,
                                                                         seed = UInt32(91),
                                                                         # max_trials = 10)
-                                                                        max_trials = 10)
+                                                                        max_trials = 100)
 #---------------------------------------------------------------------------------
     # Belief
     bu = LPDMBeliefUpdater(p, n_particles = solver.config.n_particles);  # initialize belief updater

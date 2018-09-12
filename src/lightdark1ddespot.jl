@@ -21,8 +21,8 @@ using Discretizers
         this = new()
         this.min_noise               = 0.0
         this.min_noise_loc           = 5.0
-        Q::Float64                   = 0.5
-        R::Float64                   = 0.5
+        this.Q                       = 0.5
+        this.R                       = 0.5
         this.term_radius             = 0.05
         this.n_bins                  = n_bins # per linear dimension
         this.max_x                   = 10     # assume symmetry in x and y for simplicity
@@ -39,15 +39,24 @@ using Discretizers
     end
 end
 
-POMDPs.actions(p::LightDark1DDespot, ::Bool) = [1.0, 0.5, 0.1, 0.01, 0.0];
-POMDPs.actions(p::LightDark1DDespot) = vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true))
+POMDPs.actions(p::LightDark1DDespot, ::Bool) = [1.0, 0.5, 0.1, 0.01];
+POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), POMDPs.actions(p,true))
+# POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), [0.0], POMDPs.actions(p,true))
 
 # POMDPs.actions(p::LightDark1DDespot, ::Bool) = [0.1, 0.01]
 #POMDPs.actions(p::LightDark1DDespot) = Float64Iter(collect(permutations(vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true)), 2)))
 
-# reward(p::LightDark1DDespot, s::Float64) = -1.0
-# reward(p::LightDark1DDespot, s::Float64, a::Float64) = reward(p, s)
-# reward(p::LightDark1DDespot, s::Float64, a::Float64, sp::Float64) = reward(p, s)
+# reward(p::LightDark1DDespot, s::Float64, a::Float64, sp::Float64) = -(p.Q*(s^2) + p.R*(a^2))
+# reward(p::LightDark1DDespot, s::Float64, a::Float64)              = -(p.Q*(s^2) + p.R*(a^2))
+
+# function reward(p::LightDark1DDespot, s::Float64, a::Float64)
+#     # println("REWARD: s=$s, a=$a, Q=$(p.Q), R=$(p.R), r=$(-(p.Q*(s^2) + p.R*(a^2)))")
+#     return -(p.Q*(s^2) + p.R*(a^2))
+# end
+
+reward(p::LightDark1DDespot, s::Float64) = -1.0
+reward(p::LightDark1DDespot, s::Float64, a::Float64) = reward(p, s)
+reward(p::LightDark1DDespot, s::Float64, a::Float64, sp::Float64) = reward(p, s)
 
 # Version with discrete observations
 function generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG)
