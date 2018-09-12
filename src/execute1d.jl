@@ -68,11 +68,11 @@ function execute()#n_sims::Int64 = 100)
     custom_bounds = LDBounds1d{LDAction}()    # bounds object
     solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}( bounds = custom_bounds,
                                                                         # rng = sim_rng,
-                                                                        debug = 1,
+                                                                        debug = 3,
                                                                         time_per_move = 1.0,  #sec
-                                                                        sim_len = 2,
-                                                                        search_depth = 25,
-                                                                        n_particles = 10,
+                                                                        sim_len = 1,
+                                                                        search_depth = 10,
+                                                                        n_particles = 3,
                                                                         seed = UInt32(91),
                                                                         # max_trials = 10)
                                                                         max_trials = 10)

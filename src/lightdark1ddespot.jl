@@ -38,8 +38,9 @@ using Discretizers
         return this
     end
 end
-POMDPs.actions(p::LightDark1DDespot) = [-1.0, -0.5, -0.1, -0.01, 0.0, 0.01, 0.1, 0.5, 1.0];
 
+POMDPs.actions(p::LightDark1DDespot, ::Bool) = [1.0, 0.5, 0.1, 0.01, 0.0];
+POMDPs.actions(p::LightDark1DDespot) = vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true))
 
 # POMDPs.actions(p::LightDark1DDespot, ::Bool) = [0.1, 0.01]
 #POMDPs.actions(p::LightDark1DDespot) = Float64Iter(collect(permutations(vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true)), 2)))
