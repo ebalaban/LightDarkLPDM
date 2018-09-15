@@ -1,4 +1,5 @@
 using Discretizers
+import LPDM: default_action
 
 @with_kw type LightDark1DDespot <: AbstractLD1
     min_noise::Float64
@@ -41,6 +42,7 @@ end
 
 POMDPs.actions(p::LightDark1DDespot, ::Bool) = [1.0, 0.5, 0.1, 0.01];
 POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), POMDPs.actions(p,true))
+LPDM.default_action(p::LightDark1DDespot) = NaN
 # POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), [0.0], POMDPs.actions(p,true))
 
 # POMDPs.actions(p::LightDark1DDespot, ::Bool) = [0.1, 0.01]

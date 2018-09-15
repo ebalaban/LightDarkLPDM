@@ -57,7 +57,7 @@ end
 
 
 
-function execute()#n_sims::Int64 = 100)
+function execute(vis::Bool=true)#n_sims::Int64 = 100)
 
     p = LightDarkPOMDPs.LightDark1DDespot()
     world_seed  ::UInt32   = convert(UInt32, 42)
@@ -70,9 +70,9 @@ function execute()#n_sims::Int64 = 100)
                                                                         # rng = sim_rng,
                                                                         debug = 1,
                                                                         time_per_move = 1.0,  #sec
-                                                                        sim_len = 100,
-                                                                        search_depth = 50,
-                                                                        n_particles = 20,
+                                                                        sim_len = 1,
+                                                                        search_depth = 25,
+                                                                        n_particles = 5,
                                                                         seed = UInt32(91),
                                                                         # max_trials = 10)
                                                                         max_trials = 100)
@@ -135,10 +135,12 @@ function execute()#n_sims::Int64 = 100)
         multiplier *= p.discount
     end
 
-    t = LPDM.d3tree(solver)
-    # # show(t)
-    inchrome(t)
-    # blink(t)
+    if vis
+        t = LPDM.d3tree(solver)
+        # # show(t)
+        inchrome(t)
+        # blink(t)
+    end
 
     return sim_steps, sum(rewards), discounted_reward, run_time
     # return t
