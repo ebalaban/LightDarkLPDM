@@ -18,7 +18,7 @@ import LPDM: default_action
     n_rand::Int
 
 
-    function LightDark1DDespot(n_bins = 10)
+    function LightDark1DDespot(n_bins = 100)
         this = new()
         this.min_noise               = 0.0
         this.min_noise_loc           = 5.0
@@ -40,10 +40,12 @@ import LPDM: default_action
     end
 end
 
+# POMDPs.actions(p::LightDark1DDespot, ::Bool) = [1.0, 0.5, 0.1, 0.01];
 POMDPs.actions(p::LightDark1DDespot, ::Bool) = [1.0, 0.5, 0.1, 0.01];
-POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), POMDPs.actions(p,true))
-LPDM.default_action(p::LightDark1DDespot) = NaN
-# POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), [0.0], POMDPs.actions(p,true))
+# POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), POMDPs.actions(p,true))
+POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), [0.0], POMDPs.actions(p,true))
+LPDM.default_action(p::LightDark1DDespot) = 0.01 # use a small action by default
+
 
 # POMDPs.actions(p::LightDark1DDespot, ::Bool) = [0.1, 0.01]
 #POMDPs.actions(p::LightDark1DDespot) = Float64Iter(collect(permutations(vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true)), 2)))
@@ -56,13 +58,36 @@ LPDM.default_action(p::LightDark1DDespot) = NaN
 #     return -(p.Q*(s^2) + p.R*(a^2))
 # end
 
-reward(p::LightDark1DDespot, s::Float64) = -1.0
-reward(p::LightDark1DDespot, s::Float64, a::Float64) = reward(p, s)
-reward(p::LightDark1DDespot, s::Float64, a::Float64, sp::Float64) = reward(p, s)
+# ORIGINAL
+# reward(p::LightDark1DDespot, s::Float64) = -1.0
+# reward(p::LightDark1DDespot, s::Float64, a::Float64) = reward(p, s)
+# reward(p::LightDark1DDespot, s::Float64, a::Float64, sp::Float64) = reward(p, s)
+
+function reward(p::LightDark1DDespot, s::Float64, a::Float64)
+    r = -1.0 # default
+    if (abs(s) <= p.term_radius) && a == 0.0
+        r = 100
+    elseif a == 0.0 # don't take a=0.0 elsewhere
+        r = -100
+    end
+    return r
+end
+
+reward(p::LightDark1DDespot, s::Float64, a::Float64, sp::Float64) = reward(p,s,a)
 
 # Version with discrete observations
+# function generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG)
+#     o = rand(rng, observation(p, sp))
+#     o_disc = p.bin_centers[encode(p.lindisc,o)]
+#     # println("$o -> $o_disc")
+#     return o_disc
+#     # return obs_index(p,o_disc) # return a single combined obs index
+# end
+
+#DEBUG VERSION
+#generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG) = sp
 function generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG)
-    o = rand(rng, observation(p, sp))
+    o = sp
     o_disc = p.bin_centers[encode(p.lindisc,o)]
     # println("$o -> $o_disc")
     return o_disc

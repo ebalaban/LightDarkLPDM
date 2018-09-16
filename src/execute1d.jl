@@ -32,18 +32,33 @@ function LPDM.init_bounds!(::LDBounds1d, ::LightDarkPOMDPs.AbstractLD1, ::LPDM.L
 end
 
 # Just use the initial distribution in the POMDP
+# function state_distribution(pomdp::LightDarkPOMDPs.AbstractLD1, config::LPDMConfig, rng::RNGVector)
+#     states = Vector{POMDPToolbox.Particle{Float64}}();
+#     weight = 1/(config.n_particles^2) # weight of each individual particle
+#     particle = POMDPToolbox.Particle{Float64}(0.0, weight)
+#
+#     for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
+#         particle = POMDPToolbox.Particle{Float64}(rand(rng, pomdp.init_dist), weight)
+#         push!(states, particle)
+#     end
+#     println("n states: $(length(states))")
+#     return states
+# end
+
+#DEBUG VERSION
 function state_distribution(pomdp::LightDarkPOMDPs.AbstractLD1, config::LPDMConfig, rng::RNGVector)
     states = Vector{POMDPToolbox.Particle{Float64}}();
     weight = 1/(config.n_particles^2) # weight of each individual particle
     particle = POMDPToolbox.Particle{Float64}(0.0, weight)
 
     for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
-        particle = POMDPToolbox.Particle{Float64}(rand(rng, pomdp.init_dist), weight)
+        particle = POMDPToolbox.Particle{Float64}(3.0, weight)
         push!(states, particle)
     end
     println("n states: $(length(states))")
     return states
 end
+
 
 Base.rand(p::LightDarkPOMDPs.AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, std(p.init_dist)))
 
@@ -63,17 +78,17 @@ function execute(vis::Bool=true)#n_sims::Int64 = 100)
     world_seed  ::UInt32   = convert(UInt32, 42)
     world_rng = RNGVector(1, world_seed)
     LPDM.set!(world_rng, 1)
-    s::LDState                  = LDState(π);    # initial state
+    s::LDState                  = LDState(3.0);    # initial state
     rewards::Array{Float64}     = Array{Float64}(0)
     custom_bounds = LDBounds1d{LDAction}()    # bounds object
     solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}(bounds = custom_bounds,
                                                                         # rng = sim_rng,
                                                                         debug = 1,
                                                                         time_per_move = 1.0,  #sec
-                                                                        sim_len = 1,
-                                                                        search_depth = 25,
+                                                                        sim_len = 20,
+                                                                        search_depth = 100,
                                                                         n_particles = 5,
-                                                                        seed = UInt32(91),
+                                                                        seed = UInt32(5),
                                                                         # max_trials = 10)
                                                                         max_trials = 100)
 #---------------------------------------------------------------------------------
@@ -145,4 +160,19 @@ function execute(vis::Bool=true)#n_sims::Int64 = 100)
     return sim_steps, sum(rewards), discounted_reward, run_time
     # return t
 end
+
+function test_move()
+    p = LightDarkPOMDPs.LightDark1DDespot()
+
+    coordinates = Vector{Tuple{Float64,Float64}}()
+    push!(coordinates,(5.0,0.0))
+    push!(coordinates,(-5.0,0.0))
+    push!(coordinates,(3.14,4.50))
+
+    for c in coordinates
+        r,a = move(p,c[1],c[2])
+        println("x1=$(c[1]), x2=$(c[2]), r=$r, a=$a")
+    end
 end
+
+end #module
