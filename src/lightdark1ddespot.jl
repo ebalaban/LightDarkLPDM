@@ -44,7 +44,7 @@ end
 POMDPs.actions(p::LightDark1DDespot, ::Bool) = [1.0, 0.5, 0.1, 0.01];
 # POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), POMDPs.actions(p,true))
 POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), [0.0], POMDPs.actions(p,true))
-LPDM.default_action(p::LightDark1DDespot) = 0.01 # use a small action by default
+LPDM.default_action(p::LightDark1DDespot) = 0.00
 
 
 # POMDPs.actions(p::LightDark1DDespot, ::Bool) = [0.1, 0.01]

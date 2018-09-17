@@ -34,7 +34,7 @@ function LPDM.bounds(b::LDBounds1d,
 
     b.lb_ = minimum(lb)
     b.ub_ = maximum(ub)
-
+    # config.debug >= 2 && println("s=$(particles[1].state), lb=$(b.lb_), ub=$(b.ub_)")
     return b.lb_, b.ub_
 end
 
@@ -42,7 +42,7 @@ best_ub_action(b::LDBounds1d) = isnan(b.best_lb_action_) ? error("best_lb_action
 best_ub_action(b::LDBounds1d) = isnan(b.best_ub_action_) ? error("best_ub_action undefined. Call bounds() first") : b.best_ub_action_
 
 function move(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
-    # println("entering move $x1 -> $x2")
+    # x1 < 0.15 && println("entering move $x1 -> $x2")
     direction = x2 > x1 ? 1 : -1
     actions = Base.findnz(POMDPs.actions(p,true)')[3] # get only positive non-zero actions
     min_a = minimum(actions)
@@ -66,7 +66,7 @@ function move(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)#::(Float
         if isnan(first_a)
             first_a = a_dir # assign first action (directional)
         end
-        r += reward(p, x, a_dir) # use current state for computing the reward (NOTE: assumes reward symmetry)
+        r += reward(p, x, a_dir) # use current state for computing the reward
         # println("BOUNDS: x=$x, x1=$x1, x2=$x2, actions=$(actions[actions .< abs(x2-x)]), a_dir=$a_dir,  r=$r ")
         x += a_dir # take the step
         # error("done")

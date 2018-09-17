@@ -32,32 +32,32 @@ function LPDM.init_bounds!(::LDBounds1d, ::LightDarkPOMDPs.AbstractLD1, ::LPDM.L
 end
 
 # Just use the initial distribution in the POMDP
-# function state_distribution(pomdp::LightDarkPOMDPs.AbstractLD1, config::LPDMConfig, rng::RNGVector)
-#     states = Vector{POMDPToolbox.Particle{Float64}}();
-#     weight = 1/(config.n_particles^2) # weight of each individual particle
-#     particle = POMDPToolbox.Particle{Float64}(0.0, weight)
-#
-#     for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
-#         particle = POMDPToolbox.Particle{Float64}(rand(rng, pomdp.init_dist), weight)
-#         push!(states, particle)
-#     end
-#     println("n states: $(length(states))")
-#     return states
-# end
-
-#DEBUG VERSION
 function state_distribution(pomdp::LightDarkPOMDPs.AbstractLD1, config::LPDMConfig, rng::RNGVector)
     states = Vector{POMDPToolbox.Particle{Float64}}();
     weight = 1/(config.n_particles^2) # weight of each individual particle
     particle = POMDPToolbox.Particle{Float64}(0.0, weight)
 
     for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
-        particle = POMDPToolbox.Particle{Float64}(3.0, weight)
+        particle = POMDPToolbox.Particle{Float64}(rand(rng, pomdp.init_dist), weight)
         push!(states, particle)
     end
     println("n states: $(length(states))")
     return states
 end
+
+#DEBUG VERSION
+# function state_distribution(pomdp::LightDarkPOMDPs.AbstractLD1, config::LPDMConfig, rng::RNGVector)
+#     states = Vector{POMDPToolbox.Particle{Float64}}();
+#     weight = 1/(config.n_particles^2) # weight of each individual particle
+#     particle = POMDPToolbox.Particle{Float64}(0.0, weight)
+#
+#     for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
+#         particle = POMDPToolbox.Particle{Float64}(3.0, weight)
+#         push!(states, particle)
+#     end
+#     println("n states: $(length(states))")
+#     return states
+# end
 
 
 Base.rand(p::LightDarkPOMDPs.AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, std(p.init_dist)))
@@ -78,19 +78,19 @@ function execute(vis::Bool=true)#n_sims::Int64 = 100)
     world_seed  ::UInt32   = convert(UInt32, 42)
     world_rng = RNGVector(1, world_seed)
     LPDM.set!(world_rng, 1)
-    s::LDState                  = LDState(3.0);    # initial state
+    s::LDState                  = LDState(π);    # initial state
     rewards::Array{Float64}     = Array{Float64}(0)
     custom_bounds = LDBounds1d{LDAction}()    # bounds object
     solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}(bounds = custom_bounds,
                                                                         # rng = sim_rng,
                                                                         debug = 1,
                                                                         time_per_move = 1.0,  #sec
-                                                                        sim_len = 20,
+                                                                        sim_len = -1,
                                                                         search_depth = 100,
-                                                                        n_particles = 1,
+                                                                        n_particles = 100,
                                                                         seed = UInt32(5),
                                                                         # max_trials = 10)
-                                                                        max_trials = 100)
+                                                                        max_trials = -1)
 #---------------------------------------------------------------------------------
     # Belief
     bu = LPDMBeliefUpdater(p, n_particles = solver.config.n_particles);  # initialize belief updater
@@ -124,6 +124,7 @@ function execute(vis::Bool=true)#n_sims::Int64 = 100)
 
         println("")
         println("=============== Step $sim_steps ================")
+        show(current_belief)
         println("s: $s")
         a = POMDPs.action(policy, current_belief)
         println("a: $a")
@@ -138,6 +139,13 @@ function execute(vis::Bool=true)#n_sims::Int64 = 100)
         # update belief
         POMDPs.update(bu, current_belief, a, o, updated_belief)
         current_belief = deepcopy(updated_belief)
+        show(current_belief)
+
+        if LPDM.isterminal(p, current_belief.particles)
+            println("Terminal belief. Execution completed.")
+            show(current_belief)
+            break
+        end
         sim_steps += 1
     end
     run_time::Float64 = toq() # stop the clock

@@ -68,9 +68,9 @@ function generate_s(p::AbstractLD1, s::Float64, a::Float64)
 end
 
 #REAL VERSION
-# observation(p::AbstractLD1, sp::Float64) = Distributions.Normal(sp, obs_std(p, sp))
+observation(p::AbstractLD1, sp::Float64) = Distributions.Normal(sp, obs_std(p, sp))
 #DEBUG VERSION - dummy distribution
-observation(p::AbstractLD1, sp::Float64) = Distributions.Normal(0.0,1.0)
+# observation(p::AbstractLD1, sp::Float64) = Distributions.Normal(0.0,1.0)
 generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG) = rand(rng, observation(p, sp))
 # generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG) = sp #DEBUG: trying no noise at all
 
