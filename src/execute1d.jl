@@ -87,7 +87,7 @@ function execute(vis::Bool=true)#n_sims::Int64 = 100)
                                                                         time_per_move = 1.0,  #sec
                                                                         sim_len = 20,
                                                                         search_depth = 100,
-                                                                        n_particles = 5,
+                                                                        n_particles = 1,
                                                                         seed = UInt32(5),
                                                                         # max_trials = 10)
                                                                         max_trials = 100)

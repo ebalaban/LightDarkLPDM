@@ -64,11 +64,12 @@ LPDM.default_action(p::LightDark1DDespot) = 0.01 # use a small action by default
 # reward(p::LightDark1DDespot, s::Float64, a::Float64, sp::Float64) = reward(p, s)
 
 function reward(p::LightDark1DDespot, s::Float64, a::Float64)
-    r = -1.0 # default
+    # r = -1.0 # default
+    r = -(p.Q*s^2 + p.R*a^2)
     if (abs(s) <= p.term_radius) && a == 0.0
-        r = 100
+        r = 100.0
     elseif a == 0.0 # don't take a=0.0 elsewhere
-        r = -100
+        r = -100.0
     end
     return r
 end

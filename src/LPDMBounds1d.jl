@@ -26,7 +26,9 @@ function LPDM.bounds(b::LDBounds1d,
     lb = Array{Float64}(0);
 
     for p in particles
+        # println("UB")
         push!(ub, upper_bound(pomdp,p)[1])
+        # println("LB")
         push!(lb, lower_bound(pomdp,p)[1])
     end
 
@@ -40,6 +42,7 @@ best_ub_action(b::LDBounds1d) = isnan(b.best_lb_action_) ? error("best_lb_action
 best_ub_action(b::LDBounds1d) = isnan(b.best_ub_action_) ? error("best_ub_action undefined. Call bounds() first") : b.best_ub_action_
 
 function move(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
+    # println("entering move $x1 -> $x2")
     direction = x2 > x1 ? 1 : -1
     actions = Base.findnz(POMDPs.actions(p,true)')[3] # get only positive non-zero actions
     min_a = minimum(actions)
@@ -48,29 +51,31 @@ function move(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)#::(Float
     # dest = maximum(abs.([x1,x2]))
 
     r = 0.0
-    Δx = 0.0
     x = x1
     first_a = NaN
     a_dir = NaN
 
     if abs(x1) <= p.term_radius
+        # println("TERMINATION REWARD #1 FOR x1=$x1")
         return reward(p,x1,0.0), 0.0
     end
 
-    while (abs(x2-x) > min_a) && (abs(x) > p.term_radius)
+    while (abs(x2-x) > min_a) && (abs(x) >= p.term_radius)
         a = maximum(actions[actions .<= abs(x2-x)]) # maximum action not exceeding Δx
         a_dir = direction * a
         if isnan(first_a)
             first_a = a_dir # assign first action (directional)
         end
         r += reward(p, x, a_dir) # use current state for computing the reward (NOTE: assumes reward symmetry)
-        # println("BOUNDS: x=$x, Δx=$(Δx), x1=$x1, x2=$x2, orig=$orig, dest=$dest, actions=$(actions[actions .< Δx]), a=$a,  r=$r ")
+        # println("BOUNDS: x=$x, x1=$x1, x2=$x2, actions=$(actions[actions .< abs(x2-x)]), a_dir=$a_dir,  r=$r ")
         x += a_dir # take the step
         # error("done")
     end
-    if abs(x) <= p.term_radius
+    if abs(x2) <= p.term_radius
+        # println("TERMINATION REWARD #2 FOR x2=$x")
         r += reward(p,x,0.0) #termination reward
     end
+    # println("exiting move $x1 -> $x2")
     return r, first_a #action sign depends on the direction
 end
 
@@ -78,17 +83,26 @@ end
 # computes the cost of traveling to the low noise region and only then towards target. i.e. a slow approach
 function lower_bound(p::LightDarkPOMDPs.LightDark1DDespot, particle::POMDPToolbox.Particle{Float64})
 
-    r1,a1 = move(p, particle.state, p.min_noise_loc)         # estimate cost of moving x to low noise x
-    # estimate cost of moving x to the target from the low noise region (will terminate earlier)
-    r2,a2 = move(p, p.min_noise_loc, 0.0)
-
+    if abs(particle.state) < p.term_radius
+        return reward(p, particle.state, 0.0)
+    else
+        r1,a1 = move(p, particle.state, p.min_noise_loc)         # estimate cost of moving x to low noise x
+        # estimate cost of moving x to the target from the low noise region (will terminate earlier)
+        r2,a2 = move(p, p.min_noise_loc, 0.0)
+    end
     return r1+r2, a1
 end
 lower_bound(p::LightDarkPOMDPs.LightDark1DDespot, particle::LPDM.LPDMParticle{Float64}) = lower_bound(p, POMDPToolbox.Particle{Float64}(particle.state, particle.weight))
 
 # NOTE: not for direct calling
 # computes the reward for the straight-line path to target
-upper_bound(p::LightDarkPOMDPs.LightDark1DDespot, particle::POMDPToolbox.Particle{Float64}) = move(p, particle.state, 0.0)
+function upper_bound(p::LightDarkPOMDPs.LightDark1DDespot, particle::POMDPToolbox.Particle{Float64})
+    if abs(particle.state) < p.term_radius
+        return reward(p, particle.state, 0.0), 0.0
+    else
+        return move(p, particle.state, 0.0)
+    end
+end
 upper_bound(p::LightDarkPOMDPs.LightDark1DDespot, particle::LPDM.LPDMParticle{Float64}) = upper_bound(p, POMDPToolbox.Particle{Float64}(particle.state, particle.weight))
 
 
