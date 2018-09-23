@@ -1,4 +1,4 @@
-import LPDM: bounds
+import LPDM: bounds, best_lb_action, best_ub_action
 using LightDarkPOMDPs
 
 mutable struct LDBounds1d{A}
@@ -22,24 +22,49 @@ function LPDM.bounds(b::LDBounds1d,
                      particles::Vector{LPDMParticle{LDState}},
                      config::LPDMConfig)
 
-    ub = Array{Float64}(0);
-    lb = Array{Float64}(0);
+    # reset every time bounds are about to be recomputed
+    b.lb_ = +Inf
+    b.ub_ = -Inf
+    b.best_lb_action_ = NaN
+    b.best_ub_action_ = NaN
+
+    tmp_lb = 0.0
+    tmp_ub = 0.0
+    tmp_lb_action = 0.0
+    tmp_ub_action = 0.0
+
+    # lb = Array{Float64}(0)
+    # ub = Array{Float64}(0)
+    # lb_action = Array{Float64}(0)
+    # ub_action = Array{Float64}(0)
 
     for p in particles
-        # println("UB")
-        push!(ub, upper_bound(pomdp,p)[1])
-        # println("LB")
-        push!(lb, lower_bound(pomdp,p)[1])
+        # push!(ub, upper_bound(pomdp,p)[1])
+        # push!(lb, lower_bound(pomdp,p)[1])
+        tmp_lb, tmp_lb_action = lower_bound(pomdp,p)
+        tmp_ub, tmp_ub_action = upper_bound(pomdp,p)
+
+        if tmp_lb < b.lb_
+            b.lb_             = tmp_lb
+            b.best_lb_action_ = tmp_lb_action
+        end
+        if tmp_ub > b.ub_
+            b.ub_             = tmp_ub
+            b.best_ub_action_ = tmp_ub_action
+        end
     end
 
-    b.lb_ = minimum(lb)
-    b.ub_ = maximum(ub)
+    # b.lb_ = minimum(lb)
+    # b.ub_ = maximum(ub)
     # config.debug >= 2 && println("s=$(particles[1].state), lb=$(b.lb_), ub=$(b.ub_)")
+    if b.ub_ > 100.0 #DEBUG, remove
+        error("BOUNDS: ub=$(b.ub_)")
+    end
     return b.lb_, b.ub_
 end
 
-best_ub_action(b::LDBounds1d) = isnan(b.best_lb_action_) ? error("best_lb_action undefined. Call bounds() first") : b.best_lb_action_
-best_ub_action(b::LDBounds1d) = isnan(b.best_ub_action_) ? error("best_ub_action undefined. Call bounds() first") : b.best_ub_action_
+LPDM.best_lb_action(b::LDBounds1d) = isnan(b.best_lb_action_) ? error("best_lb_action undefined. Call bounds() first") : b.best_lb_action_
+LPDM.best_ub_action(b::LDBounds1d) = isnan(b.best_ub_action_) ? error("best_ub_action undefined. Call bounds() first") : b.best_ub_action_
 
 function move(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
     # x1 < 0.15 && println("entering move $x1 -> $x2")
@@ -84,7 +109,7 @@ end
 function lower_bound(p::LightDarkPOMDPs.LightDark1DDespot, particle::POMDPToolbox.Particle{Float64})
 
     if abs(particle.state) < p.term_radius
-        return reward(p, particle.state, 0.0)
+        return reward(p, particle.state, 0.0), 0.0
     else
         r1,a1 = move(p, particle.state, p.min_noise_loc)         # estimate cost of moving x to low noise x
         # estimate cost of moving x to the target from the low noise region (will terminate earlier)

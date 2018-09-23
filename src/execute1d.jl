@@ -85,8 +85,8 @@ function execute(vis::Bool=true)#n_sims::Int64 = 100)
                                                                         # rng = sim_rng,
                                                                         debug = 1,
                                                                         time_per_move = 1.0,  #sec
-                                                                        sim_len = -1,
-                                                                        search_depth = 100,
+                                                                        sim_len = 2,
+                                                                        search_depth = 15,
                                                                         n_particles = 100,
                                                                         seed = UInt32(5),
                                                                         # max_trials = 10)
@@ -146,6 +146,13 @@ function execute(vis::Bool=true)#n_sims::Int64 = 100)
             show(current_belief)
             break
         end
+
+        if vis
+            t = LPDM.d3tree(solver)
+            # # show(t)
+            inchrome(t)
+            # blink(t)
+        end
         sim_steps += 1
     end
     run_time::Float64 = toq() # stop the clock
@@ -157,13 +164,7 @@ function execute(vis::Bool=true)#n_sims::Int64 = 100)
         discounted_reward += multiplier * r
         multiplier *= p.discount
     end
-
-    if vis
-        t = LPDM.d3tree(solver)
-        # # show(t)
-        inchrome(t)
-        # blink(t)
-    end
+    println("Discounted reward: $discounted_reward")
 
     return sim_steps, sum(rewards), discounted_reward, run_time
     # return t
