@@ -10,7 +10,7 @@ using Distributions
 # using Plots
 using POMDPToolbox
 using Parameters # for @with_kw
-using ParticleFilters # for AbstractParticleBelief
+# using ParticleFilters # for AbstractParticleBelief
 using LPDM
 
 include("lightdark1d.jl")

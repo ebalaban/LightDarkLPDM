@@ -1,6 +1,6 @@
 module execute1d
 using LPDM
-using POMDPs, POMDPToolbox, Parameters, ParticleFilters, StaticArrays, Plots, D3Trees, Distributions
+using POMDPs, POMDPToolbox, Parameters, StaticArrays, Plots, D3Trees, Distributions#, ParticleFilters
 
 include("LightDarkPOMDPs.jl")
 using LightDarkPOMDPs
@@ -72,20 +72,21 @@ end
 
 
 
-function execute(vis::Bool=true)#n_sims::Int64 = 100)
+function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
 
     p = LightDarkPOMDPs.LightDark1DDespot()
     world_seed  ::UInt32   = convert(UInt32, 42)
     world_rng = RNGVector(1, world_seed)
     LPDM.set!(world_rng, 1)
-    s::LDState                  = LDState(π);    # initial state
+    # s::LDState                  = LDState(π);    # initial state
+    s::LDState                  = LDState(-π);    # initial state
     rewards::Array{Float64}     = Array{Float64}(0)
     custom_bounds = LDBounds1d{LDAction}()    # bounds object
     solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}(bounds = custom_bounds,
                                                                         # rng = sim_rng,
                                                                         debug = 1,
                                                                         time_per_move = 1.0,  #sec
-                                                                        sim_len = 2,
+                                                                        sim_len = -1,
                                                                         search_depth = 15,
                                                                         n_particles = 100,
                                                                         seed = UInt32(5),
@@ -147,7 +148,7 @@ function execute(vis::Bool=true)#n_sims::Int64 = 100)
             break
         end
 
-        if vis
+        if sim_steps ∈ vis
             t = LPDM.d3tree(solver)
             # # show(t)
             inchrome(t)

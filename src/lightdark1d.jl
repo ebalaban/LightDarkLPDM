@@ -1,4 +1,7 @@
 import Base.show
+import POMDPs.isterminal
+import LPDM.isterminal
+
 Base.show(io::IO, x::Float64) = print(io,"$(@sprintf("%.2f", x))")
 
 abstract type AbstractLD1 <: POMDP{Float64, Float64, Float64} end
@@ -40,11 +43,30 @@ end
 generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = generate_s(p, s, a)
 generate_o(p::AbstractLD1, s::Float64, a::Float64, sp::Float64, rng::AbstractRNG) = generate_o(p, sp, rng)
 observation(p::AbstractLD1, a::Float64, sp::Float64) = observation(p, sp)
-POMDPs.isterminal(p::AbstractLD1, s::Float64) = norm(s) <= p.term_radius
 initial_state_distribution(p::AbstractLD1) = p.init_dist
 reward(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = -(p.Q*s^2 + p.R*a^2)
 reward(p::AbstractLD1, s::Float64, a::Float64)              = -(p.Q*s^2 + p.R*a^2)
 discount(p::AbstractLD1) = p.discount
+
+POMDPs.isterminal(p::AbstractLD1, s::Float64) = (abs(s) <= p.term_radius)
+# function POMDPs.isterminal(p::AbstractLD1, s::Float64) #DEBUG
+#     println("_______ISTERMINAL(s=$s)=$(abs(s) <= p.term_radius)_______")
+#     return abs(s) <= p.term_radius
+# end
+
+# Compute the expected state and determine whether it is terminal
+# function LPDM.isterminal(pomdp::AbstractLD1, particles::Vector{LPDMParticle{Float64}})
+#     wt_sum = 0.0
+#     exp_s  = 0.0 # expected state
+#     for p in particles
+#         exp_s += p.state*p.weight
+#         wt_sum += p.weight
+#     end
+#     # println("ISTERMINAL($(POMDPs.isterminal(pomdp, exp_s/wt_sum))): E(s)=$(exp_s/wt_sum). Particles:")
+#     # show(particles); println("")
+#     # println("THIS BLOODY ISTERMINAL: $(@which(POMDPs.isterminal(pomdp, exp_s/wt_sum)))")
+#     return POMDPs.isterminal(pomdp, exp_s/wt_sum)
+# end
 
 immutable Normal
     mean::Float64

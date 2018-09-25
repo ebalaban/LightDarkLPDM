@@ -63,16 +63,22 @@ LPDM.default_action(p::LightDark1DDespot) = 0.00
 # reward(p::LightDark1DDespot, s::Float64, a::Float64) = reward(p, s)
 # reward(p::LightDark1DDespot, s::Float64, a::Float64, sp::Float64) = reward(p, s)
 
-function reward(p::LightDark1DDespot, s::Float64, a::Float64)
-    # r = -1.0 # default
-    r = -(p.Q*s^2 + p.R*a^2)
-    if (abs(s) <= p.term_radius) && a == 0.0
-        r = 100.0
-    elseif a == 0.0 # don't take a=0.0 elsewhere
-        r = -100.0
-    end
-    return r
-end
+# This is somewhat resembling Zach's version
+# function reward(p::LightDark1DDespot, s::Float64, a::Float64)
+#     # r = -1.0 # default
+#     if isterminal(p,s) && a == 0.0
+#         r = 100.0
+#     elseif a == 0.0 # don't take a=0.0 elsewhere
+#         # error("giving a negative reward for a==0")
+#         r = -100.0
+#     else
+#         r = -(p.Q*s^2 + p.R*a^2)
+#     end
+#     return r
+# end
+
+# Simple reward (same as "Belief space planning assuming maximum likelihood observations")
+reward(p::LightDark1DDespot, s::Float64, a::Float64) = -(p.Q*s^2 + p.R*a^2)
 
 reward(p::LightDark1DDespot, s::Float64, a::Float64, sp::Float64) = reward(p,s,a)
 

@@ -67,7 +67,7 @@ LPDM.best_lb_action(b::LDBounds1d) = isnan(b.best_lb_action_) ? error("best_lb_a
 LPDM.best_ub_action(b::LDBounds1d) = isnan(b.best_ub_action_) ? error("best_ub_action undefined. Call bounds() first") : b.best_ub_action_
 
 function move(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
-    # x1 < 0.15 && println("entering move $x1 -> $x2")
+    # x1 < 0.7 && println("entering move $x1 -> $x2")
     direction = x2 > x1 ? 1 : -1
     actions = Base.findnz(POMDPs.actions(p,true)')[3] # get only positive non-zero actions
     min_a = minimum(actions)
@@ -81,7 +81,7 @@ function move(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)#::(Float
     a_dir = NaN
 
     if abs(x1) <= p.term_radius
-        # println("TERMINATION REWARD #1 FOR x1=$x1")
+        # x1 < 0.7 && println("TERMINATION REWARD #1 FOR x1=$x1")
         return reward(p,x1,0.0), 0.0
     end
 
@@ -97,10 +97,10 @@ function move(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)#::(Float
         # error("done")
     end
     if abs(x2) <= p.term_radius
-        # println("TERMINATION REWARD #2 FOR x2=$x")
-        r += reward(p,x,0.0) #termination reward
+        # x1 < 0.7 && println("TERMINATION REWARD #2 FOR x2=$x")
+        r += reward(p,x2,0.0) #termination reward
     end
-    # println("exiting move $x1 -> $x2")
+    # x1 < 0.7 && println("exiting move $x1 -> $x2")
     return r, first_a #action sign depends on the direction
 end
 
