@@ -2,8 +2,8 @@
 
 module LightDarkPOMDPs
 
-importall POMDPs
-
+# importall POMDPs
+using POMDPs
 using StaticArrays
 using Combinatorics
 using Distributions

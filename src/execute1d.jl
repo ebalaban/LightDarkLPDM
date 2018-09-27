@@ -6,7 +6,7 @@ include("LightDarkPOMDPs.jl")
 using LightDarkPOMDPs
 
 # using Plots
-import POMDPs: action, generate_o
+# import POMDPs: action, generate_o
 
 using Combinatorics
 # using Plots
@@ -87,7 +87,7 @@ function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
                                                                         debug = 1,
                                                                         time_per_move = 1.0,  #sec
                                                                         sim_len = -1,
-                                                                        search_depth = 15,
+                                                                        search_depth = 50,
                                                                         n_particles = 100,
                                                                         seed = UInt32(5),
                                                                         # max_trials = 10)
@@ -137,6 +137,7 @@ function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
         push!(rewards, r)
         println("=======================================")
 
+        # error("$(@which(POMDPs.update(bu, current_belief, a, o, updated_belief)))")
         # update belief
         POMDPs.update(bu, current_belief, a, o, updated_belief)
         current_belief = deepcopy(updated_belief)

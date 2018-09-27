@@ -1,5 +1,13 @@
 import Base.show
-import POMDPs.isterminal
+import POMDPs:
+        isterminal,
+        pdf,
+        observation,
+        generate_s,
+        generate_o,
+        initial_state_distribution,
+        discount
+
 import LPDM.isterminal
 
 Base.show(io::IO, x::Float64) = print(io,"$(@sprintf("%.2f", x))")
@@ -40,13 +48,13 @@ abstract type AbstractLD1 <: POMDP{Float64, Float64, Float64} end
 end
 
 # POMDPs.jl API functions:
-generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = generate_s(p, s, a)
-generate_o(p::AbstractLD1, s::Float64, a::Float64, sp::Float64, rng::AbstractRNG) = generate_o(p, sp, rng)
-observation(p::AbstractLD1, a::Float64, sp::Float64) = observation(p, sp)
-initial_state_distribution(p::AbstractLD1) = p.init_dist
-reward(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = -(p.Q*s^2 + p.R*a^2)
-reward(p::AbstractLD1, s::Float64, a::Float64)              = -(p.Q*s^2 + p.R*a^2)
-discount(p::AbstractLD1) = p.discount
+POMDPs.generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = generate_s(p, s, a)
+POMDPs.generate_o(p::AbstractLD1, s::Float64, a::Float64, sp::Float64, rng::AbstractRNG) = generate_o(p, sp, rng)
+POMDPs.observation(p::AbstractLD1, a::Float64, sp::Float64) = observation(p, sp)
+POMDPs.initial_state_distribution(p::AbstractLD1) = p.init_dist
+POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = -(p.Q*s^2 + p.R*a^2)
+POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64)              = -(p.Q*s^2 + p.R*a^2)
+POMDPs.discount(p::AbstractLD1) = p.discount
 
 POMDPs.isterminal(p::AbstractLD1, s::Float64) = (abs(s) <= p.term_radius)
 # function POMDPs.isterminal(p::AbstractLD1, s::Float64) #DEBUG
@@ -73,7 +81,7 @@ immutable Normal
     std::Float64
 end
 # rand(rng::AbstractRNG, d::Normal) = d.mean + d.std*Float64(randn(rng, 2))
-pdf(d::Normal, s::Float64) = exp(-0.5*sum((s-d.mean).^2)/d.std^2)/(2*pi*d.std^2)
+POMDPs.pdf(d::Normal, o::Float64) = exp(-0.5*sum((o-d.mean).^2)/d.std^2)/(2*pi*d.std^2); println("observing!")
 mean(d::Normal) = d.mean
 mode(d::Normal) = d.mean
 Base.eltype(::Type{Normal}) = Float64
@@ -90,7 +98,9 @@ function generate_s(p::AbstractLD1, s::Float64, a::Float64)
 end
 
 #REAL VERSION
-observation(p::AbstractLD1, sp::Float64) = Distributions.Normal(sp, obs_std(p, sp))
+POMDPs.observation(p::AbstractLD1, sp::Float64) = Distributions.Normal(sp,obs_std(p,sp))
+POMDPs.observation(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = observation(p,sp)
+
 #DEBUG VERSION - dummy distribution
 # observation(p::AbstractLD1, sp::Float64) = Distributions.Normal(0.0,1.0)
 generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG) = rand(rng, observation(p, sp))
