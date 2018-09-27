@@ -81,7 +81,12 @@ immutable Normal
     std::Float64
 end
 # rand(rng::AbstractRNG, d::Normal) = d.mean + d.std*Float64(randn(rng, 2))
-POMDPs.pdf(d::Normal, o::Float64) = exp(-0.5*sum((o-d.mean).^2)/d.std^2)/(2*pi*d.std^2); println("observing!")
+# POMDPs.pdf(d::Normal, o::Float64) = exp(-0.5*sum((o-d.mean).^2)/d.std^2)/(2*pi*d.std^2); println("observing!")
+function POMDPs.pdf(d::Normal, o::Float64) #DEBUG version
+    # error("In my pdf")
+    return exp(-0.5*sum((o-d.mean).^2)/d.std^2)/(2*pi*d.std^2)
+end
+
 mean(d::Normal) = d.mean
 mode(d::Normal) = d.mean
 Base.eltype(::Type{Normal}) = Float64
@@ -98,7 +103,7 @@ function generate_s(p::AbstractLD1, s::Float64, a::Float64)
 end
 
 #REAL VERSION
-POMDPs.observation(p::AbstractLD1, sp::Float64) = Distributions.Normal(sp,obs_std(p,sp))
+POMDPs.observation(p::AbstractLD1, sp::Float64) = Normal(sp,obs_std(p,sp))
 POMDPs.observation(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = observation(p,sp)
 
 #DEBUG VERSION - dummy distribution
