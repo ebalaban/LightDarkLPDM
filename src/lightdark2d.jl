@@ -29,7 +29,7 @@ abstract type AbstractLD2 <: POMDP{Vec2, Vec2, Vec2} end
     discount::Float64
         discount factor
 """
-@with_kw type LightDark2D <: AbstractLD2
+@with_kw mutable struct LightDark2D <: AbstractLD2
     min_noise::Float64      = 0.0
     min_noise_loc::Float64  = 5.0
     Q::Matrix{Float64}      = diagm([0.5, 0.5])
@@ -51,7 +51,7 @@ reward(p::AbstractLD2, s::Vec2, a::Vec2)           = -(dot(s, p.Q*s) + dot(a, p.
 discount(p::AbstractLD2) = p.discount
 
 
-immutable SymmetricNormal2
+struct SymmetricNormal2
     mean::Vec2
     std::Float64
 end

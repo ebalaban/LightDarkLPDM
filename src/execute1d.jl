@@ -1,6 +1,6 @@
 module execute1d
 using LPDM
-using POMDPs, POMDPToolbox, Parameters, StaticArrays, Plots, D3Trees, Distributions#, ParticleFilters
+using POMDPs, Parameters, StaticArrays, D3Trees, Distributions#, ParticleFilters
 
 include("LightDarkPOMDPs.jl")
 using LightDarkPOMDPs
@@ -33,12 +33,12 @@ end
 
 # Just use the initial distribution in the POMDP
 function state_distribution(pomdp::LightDarkPOMDPs.AbstractLD1, config::LPDMConfig, rng::RNGVector)
-    states = Vector{POMDPToolbox.Particle{Float64}}();
+    states = Vector{LPDMParticle{Float64}}();
     weight = 1/(config.n_particles^2) # weight of each individual particle
-    particle = POMDPToolbox.Particle{Float64}(0.0, weight)
+    particle = LPDMParticle{Float64}(0.0, 1, weight)
 
     for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
-        particle = POMDPToolbox.Particle{Float64}(rand(rng, pomdp.init_dist), weight)
+        particle = LPDMParticle{Float64}(rand(rng, pomdp.init_dist), i, weight)
         push!(states, particle)
     end
     println("n states: $(length(states))")
@@ -80,9 +80,11 @@ function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
     LPDM.set!(world_rng, 1)
     # s::LDState                  = LDState(π);    # initial state
     s::LDState                  = LDState(-π);    # initial state
-    rewards::Array{Float64}     = Array{Float64}(0)
+    rewards::Array{Float64}     = Vector{Float64}(undef,0)
     custom_bounds = LDBounds1d{LDAction}()    # bounds object
-    solver = LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}(bounds = custom_bounds,
+    # println("$(methods(LPDMSolver, [LDState, LDAction, LDObs, LDBounds1d, RNGVector]))")
+    println("$(methods(LPDMSolver))")
+    solver = LPDM.LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}(bounds = custom_bounds,
                                                                         # rng = sim_rng,
                                                                         debug = 1,
                                                                         time_per_move = 1.0,  #sec
@@ -92,6 +94,18 @@ function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
                                                                         seed = UInt32(5),
                                                                         # max_trials = 10)
                                                                         max_trials = -1)
+# solver = LPDM.LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}()
+
+# solver = LPDM.LPDMSolver(bounds = custom_bounds,
+#                         # rng = sim_rng,
+#                         debug = 1,
+#                         time_per_move = 1.0,  #sec
+#                         sim_len = -1,
+#                         search_depth = 50,
+#                         n_particles = 100,
+#                         seed = UInt32(5),
+#                         # max_trials = 10)
+#                         max_trials = -1)
 #---------------------------------------------------------------------------------
     # Belief
     bu = LPDMBeliefUpdater(p, n_particles = solver.config.n_particles);  # initialize belief updater

@@ -1,5 +1,5 @@
 using LPDM
-using POMDPToolbox, Parameters, ParticleFilters, StaticArrays, Plots, D3Trees
+using POMDPToolbox, Parameters, ParticleFilters, StaticArrays, D3Trees
 
 include("LightDarkPOMDPs.jl")
 using LightDarkPOMDPs
