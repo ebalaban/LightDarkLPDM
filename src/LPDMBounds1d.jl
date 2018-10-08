@@ -67,13 +67,11 @@ LPDM.best_lb_action(b::LDBounds1d) = isnan(b.best_lb_action_) ? error("best_lb_a
 LPDM.best_ub_action(b::LDBounds1d) = isnan(b.best_ub_action_) ? error("best_ub_action undefined. Call bounds() first") : b.best_ub_action_
 
 function move(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
-    # x1 < 0.7 && println("entering move $x1 -> $x2")
     direction = x2 > x1 ? 1 : -1
-    actions = SparseArrays.findnz(POMDPs.actions(p,true)')[3] # get only positive non-zero actions
-    min_a = minimum(actions)
-    # # compute just with positive case - the two cases are symmetrical
-    # orig = minimum(abs.([x1,x2]))
-    # dest = maximum(abs.([x1,x2]))
+    all_actions = POMDPs.actions(p,true)
+    I = findall(!iszero, all_actions)
+    nz_actions = all_actions[I]
+    min_a = minimum(nz_actions)
 
     r = 0.0
     x = x1
@@ -81,12 +79,11 @@ function move(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)#::(Float
     a_dir = NaN
 
     if abs(x1) <= p.term_radius
-        # x1 < 0.7 && println("TERMINATION REWARD #1 FOR x1=$x1")
         return reward(p,x1,0.0), 0.0
     end
 
     while (abs(x2-x) > min_a) && (abs(x) >= p.term_radius)
-        a = maximum(actions[actions .<= abs(x2-x)]) # maximum action not exceeding Δx
+        a = maximum(nz_actions[nz_actions .<= abs(x2-x)]) # maximum action not exceeding Δx
         a_dir = direction * a
         if isnan(first_a)
             first_a = a_dir # assign first action (directional)
@@ -94,7 +91,6 @@ function move(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)#::(Float
         r += reward(p, x, a_dir) # use current state for computing the reward
         # println("BOUNDS: x=$x, x1=$x1, x2=$x2, actions=$(actions[actions .< abs(x2-x)]), a_dir=$a_dir,  r=$r ")
         x += a_dir # take the step
-        # error("done")
     end
     if abs(x2) <= p.term_radius
         # x1 < 0.7 && println("TERMINATION REWARD #2 FOR x2=$x")
