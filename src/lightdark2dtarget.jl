@@ -1,5 +1,5 @@
 
-@with_kw type LightDark2DTarget <: AbstractLD2
+@with_kw mutable struct LightDark2DTarget <: AbstractLD2
     min_noise::Float64      = 0.0
     min_noise_loc::Float64  = 5.0
     term_radius::Float64    = 0.05

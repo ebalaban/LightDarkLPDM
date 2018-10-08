@@ -15,7 +15,7 @@ Fields:
         at a point this fraction of a standard deviation away from the mean in
         the direction that will increase it.
 """
-immutable LightDark2DKalman <: Updater
+struct LightDark2DKalman <: Updater
     pomdp::LightDark2D
     obs_noise_offset::Float64
 end

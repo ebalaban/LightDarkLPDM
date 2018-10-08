@@ -1,7 +1,8 @@
-julia 0.5
-POMDPs 0.4
-POMDPToolbox
-ParticleFilters
+julia 0.7
+POMDPs 0.7
 StaticArrays
-Plots
 Parameters
+Combinatorics
+LPDM
+Printf
+Random
