@@ -1,6 +1,6 @@
 module execute1d
 using LPDM
-using POMDPs, Parameters, StaticArrays, D3Trees, Distributions#, ParticleFilters
+using POMDPs, Parameters, StaticArrays, D3Trees, Distributions, SparseArrays
 
 include("LightDarkPOMDPs.jl")
 using LightDarkPOMDPs
@@ -83,7 +83,6 @@ function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
     rewards::Array{Float64}     = Vector{Float64}(undef,0)
     custom_bounds = LDBounds1d{LDAction}()    # bounds object
     # println("$(methods(LPDMSolver, [LDState, LDAction, LDObs, LDBounds1d, RNGVector]))")
-    println("$(methods(LPDMSolver))")
     solver = LPDM.LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}(bounds = custom_bounds,
                                                                         # rng = sim_rng,
                                                                         debug = 1,
@@ -133,9 +132,9 @@ function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
     # println("updated belief: $(current_belief)")
     # println("actions: $(POMDPs.actions(p, true))")
 
-    tic() # start the clock
     # println("sim_len: $(solver.config.sim_len)")
-    while !isterminal(p, s) && (solver.config.sim_len == -1 || sim_steps <= solver.config.sim_len)
+    val, run_time, bytes, gctime, memallocs =
+    @timed while !isterminal(p, s) && (solver.config.sim_len == -1 || sim_steps <= solver.config.sim_len)
 
         println("")
         println("=============== Step $sim_steps ================")
@@ -171,7 +170,6 @@ function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
         end
         sim_steps += 1
     end
-    run_time::Float64 = toq() # stop the clock
 
     # Compute discounted reward
     discounted_reward::Float64 = 0.0

@@ -69,7 +69,7 @@ LPDM.best_ub_action(b::LDBounds1d) = isnan(b.best_ub_action_) ? error("best_ub_a
 function move(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
     # x1 < 0.7 && println("entering move $x1 -> $x2")
     direction = x2 > x1 ? 1 : -1
-    actions = Base.findnz(POMDPs.actions(p,true)')[3] # get only positive non-zero actions
+    actions = SparseArrays.findnz(POMDPs.actions(p,true)')[3] # get only positive non-zero actions
     min_a = minimum(actions)
     # # compute just with positive case - the two cases are symmetrical
     # orig = minimum(abs.([x1,x2]))
