@@ -1,4 +1,4 @@
-import Base.show
+import Base.show, Base.rand
 import POMDPs:
         isterminal,
         pdf,
@@ -43,6 +43,7 @@ abstract type AbstractLD1 <: POMDP{Float64, Float64, Float64} end
     R::Float64              = 0.5
     term_radius::Float64    = 1e-5
     init_dist::Any          = Normal(2.0, 0.5)
+    #init_dist::Any          = Normal(-3.0, 0.5)
     discount::Float64       = 1.0
     count::Int              = 0
 end
@@ -80,6 +81,18 @@ struct Normal
     mean::Float64
     std::Float64
 end
+
+Base.rand(p::LightDarkPOMDPs.AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, std(p.init_dist)))
+
+function Base.rand(rng::LPDM.RNGVector,
+                   d::Normal)
+
+    # error("IN HERE!!!")
+    # a random number selected from normal distribution
+    r1 = norminvcdf(d.mean, d.std, rand(rng))
+    return r1
+end
+
 # rand(rng::AbstractRNG, d::Normal) = d.mean + d.std*Float64(randn(rng, 2))
 # POMDPs.pdf(d::Normal, o::Float64) = exp(-0.5*sum((o-d.mean).^2)/d.std^2)/(2*pi*d.std^2); println("observing!")
 function POMDPs.pdf(d::Normal, o::Float64) #DEBUG version
@@ -94,20 +107,22 @@ Base.eltype(::Type{Normal}) = Float64
 # chose this on 2/6/17 because I like the bowtie particle patterns it produces
 # unclear which one was actually used in the paper
 # Masters Thesis by Pas assumes the sqrt version
-obs_std(p::AbstractLD1, x::Float64) = sqrt(0.5*(p.min_noise_loc-x)^2 + p.min_noise)
+# obs_std(p::AbstractLD1, x::Float64) = sqrt(0.5*(p.min_noise_loc-x)^2 + p.min_noise)
+
 # obs_std(p::AbstractLD1, x::Float64) = 0.5*(p.min_noise_loc-x)^2 + p.min_noise
+
+# EB 10/20/18, implementing the version from Platt et al:
+obs_std(p::AbstractLD1, x::Float64) = 0.5*(p.min_noise_loc-x)^2
+
 
 function generate_s(p::AbstractLD1, s::Float64, a::Float64)
     p.count += 1
     return s+a
 end
 
-#REAL VERSION
 POMDPs.observation(p::AbstractLD1, sp::Float64) = Normal(sp,obs_std(p,sp))
 POMDPs.observation(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = observation(p,sp)
 
-#DEBUG VERSION - dummy distribution
-# observation(p::AbstractLD1, sp::Float64) = Distributions.Normal(0.0,1.0)
 generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG) = rand(rng, observation(p, sp))
 # generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG) = sp #DEBUG: trying no noise at all
 
@@ -121,7 +136,7 @@ function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::Abstra
     s = generate_s(p,s,a,rng)
     o = generate_o(p,s,rng)
     r = reward(p,s,a)
-
+    # println("o! $o")
     return s, o, r
 end
 

@@ -31,7 +31,7 @@ mutable struct LightDark1DDespot <: AbstractLD1
         this.bin_edges               = collect(-this.max_x:(2*this.max_x)/this.n_bins:this.max_x)
         this.bin_centers             = [(this.bin_edges[i]+this.bin_edges[i+1])/2 for i=1:this.n_bins]
         this.lindisc                 = LinearDiscretizer(this.bin_edges)
-        this.init_dist               = Distributions.Normal(-2.0, 0.5)
+        this.init_dist               = Normal(3.0, 0.5)
         this.discount                = 1.0
         this.count                   = 0
         this.n_rand                  = 0
@@ -84,20 +84,20 @@ reward(p::LightDark1DDespot, s::Float64, a::Float64) = -(p.Q*s^2 + p.R*a^2)
 reward(p::LightDark1DDespot, s::Float64, a::Float64, sp::Float64) = reward(p,s,a)
 
 # Version with discrete observations
-# function generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG)
-#     o = rand(rng, observation(p, sp))
-#     o_disc = p.bin_centers[encode(p.lindisc,o)]
-#     # println("$o -> $o_disc")
-#     return o_disc
-#     # return obs_index(p,o_disc) # return a single combined obs index
-# end
-
-#DEBUG VERSION
-#generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG) = sp
 function generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG)
-    o = sp
+    o = rand(rng, observation(p, sp))
     o_disc = p.bin_centers[encode(p.lindisc,o)]
     # println("$o -> $o_disc")
     return o_disc
     # return obs_index(p,o_disc) # return a single combined obs index
 end
+
+# #DEBUG VERSION
+# #generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG) = sp
+# function generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG)
+#     o = sp
+#     o_disc = p.bin_centers[encode(p.lindisc,o)]
+#     # println("$o -> $o_disc")
+#     return o_disc
+#     # return obs_index(p,o_disc) # return a single combined obs index
+# end

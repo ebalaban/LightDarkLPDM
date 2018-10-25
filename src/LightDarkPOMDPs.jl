@@ -35,5 +35,5 @@ export
     SymmetricNormal2,
     Vec2,
     obs_std
-
+    rand
 end # module

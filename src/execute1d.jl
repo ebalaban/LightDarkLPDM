@@ -1,18 +1,14 @@
 module execute1d
 using LPDM
 using POMDPs, Parameters, StaticArrays, D3Trees, Distributions, SparseArrays
+using Combinatorics
+using StatsFuns
 
 include("LightDarkPOMDPs.jl")
 using LightDarkPOMDPs
 
 # using Plots
 # import POMDPs: action, generate_o
-
-using Combinatorics
-# using Plots
-
-using StatsFuns
-import LPDM: init_bounds!
 
 # Typealias appropriately
 const LDState  = Float64
@@ -28,8 +24,8 @@ include("LPDMBounds1d.jl")
 # POMDPs.generate_o(p::AbstractLD1, sp::Float64, rng::LPDM.RNGVector) = LightDarkPOMDPs.generate_o(p, sp, rng)
 
 
-function LPDM.init_bounds!(::LDBounds1d, ::LightDarkPOMDPs.AbstractLD1, ::LPDM.LPDMConfig)
-end
+# function LPDM.init_bounds!(::LDBounds1d, ::LightDarkPOMDPs.AbstractLD1, ::LPDM.LPDMConfig)
+# end
 
 # Just use the initial distribution in the POMDP
 function state_distribution(pomdp::LightDarkPOMDPs.AbstractLD1, config::LPDMConfig, rng::RNGVector)
@@ -38,10 +34,12 @@ function state_distribution(pomdp::LightDarkPOMDPs.AbstractLD1, config::LPDMConf
     particle = LPDMParticle{Float64}(0.0, 1, weight)
 
     for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
+        # println("$(typeof(pomdp.init_dist))")
+        # println("$(methods(rand,RNGVector,RNGVector,))")
         particle = LPDMParticle{Float64}(rand(rng, pomdp.init_dist), i, weight)
         push!(states, particle)
     end
-    println("n states: $(length(states))")
+    # println("n states: $(length(states))")
     return states
 end
 
@@ -59,37 +57,25 @@ end
 #     return states
 # end
 
-
-Base.rand(p::LightDarkPOMDPs.AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, std(p.init_dist)))
-
-function Base.rand(rng::LPDM.RNGVector,
-                   d::Normal)
-
-    # a random number selected from normal distribution
-    r1 = norminvcdf(mean(d), std(d), rand(rng))
-    return r1
-end
-
-
-
 function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
 
     p = LightDarkPOMDPs.LightDark1DDespot()
     world_seed  ::UInt32   = convert(UInt32, 42)
     world_rng = RNGVector(1, world_seed)
     LPDM.set!(world_rng, 1)
-    # s::LDState                  = LDState(π);    # initial state
-    s::LDState                  = LDState(-π);    # initial state
+
+    # NOTE: restrict initial state to positive numbers only, for now
+    s::LDState                  = LDState(π);    # initial state
     rewards::Array{Float64}     = Vector{Float64}(undef,0)
     custom_bounds = LDBounds1d{LDAction}()    # bounds object
     # println("$(methods(LPDMSolver, [LDState, LDAction, LDObs, LDBounds1d, RNGVector]))")
-    solver = LPDM.LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}(bounds = custom_bounds,
+    solver = LPDM.LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}(
                                                                         # rng = sim_rng,
                                                                         debug = 1,
                                                                         time_per_move = 1.0,  #sec
-                                                                        sim_len = -1,
+                                                                        sim_len = 1,
                                                                         search_depth = 50,
-                                                                        n_particles = 100,
+                                                                        n_particles = 10,
                                                                         seed = UInt32(5),
                                                                         # max_trials = 10)
                                                                         max_trials = -1)
@@ -154,7 +140,7 @@ function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
         # update belief
         POMDPs.update(bu, current_belief, a, o, updated_belief)
         current_belief = deepcopy(updated_belief)
-        show(current_belief)
+        show(updated_belief)
 
         if LPDM.isterminal(p, current_belief.particles)
             println("Terminal belief. Execution completed.")
