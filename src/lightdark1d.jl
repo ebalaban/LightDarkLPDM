@@ -9,6 +9,7 @@ import POMDPs:
         discount
 
 import LPDM.isterminal
+using StatsFuns
 
 Base.show(io::IO, x::Float64) = print(io,"$(@sprintf("%.2f", x))")
 

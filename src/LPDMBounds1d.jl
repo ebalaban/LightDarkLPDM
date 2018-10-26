@@ -1,13 +1,13 @@
 import LPDM: bounds, best_lb_action, best_ub_action
 # using LightDarkPOMDPs
 
-mutable struct LDBounds1d{A}
+mutable struct LDBounds1d{S,A,O}
     lb_    ::Float64
     ub_    ::Float64
     best_lb_action_::Float64
     best_ub_action_::Float64
 
-    function LDBounds1d{A}() where A
+    function LDBounds1d{S,A,O}(::POMDP{S,A,O}) where {S,A,O}
         this = new()
         this.lb_ = +Inf
         this.ub_ = -Inf

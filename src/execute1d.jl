@@ -67,13 +67,12 @@ function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
     # NOTE: restrict initial state to positive numbers only, for now
     s::LDState                  = LDState(π);    # initial state
     rewards::Array{Float64}     = Vector{Float64}(undef,0)
-    custom_bounds = LDBounds1d{LDAction}()    # bounds object
     # println("$(methods(LPDMSolver, [LDState, LDAction, LDObs, LDBounds1d, RNGVector]))")
-    solver = LPDM.LPDMSolver{LDState, LDAction, LDObs, LDBounds1d, RNGVector}(
+    solver = LPDM.LPDMSolver{LDState, LDAction, LDObs, LDBounds1d{LDState, LDAction, LDObs}, RNGVector}(
                                                                         # rng = sim_rng,
                                                                         debug = 1,
                                                                         time_per_move = 1.0,  #sec
-                                                                        sim_len = 1,
+                                                                        sim_len = -1,
                                                                         search_depth = 50,
                                                                         n_particles = 10,
                                                                         seed = UInt32(5),
