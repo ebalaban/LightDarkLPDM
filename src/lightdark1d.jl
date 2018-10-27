@@ -113,7 +113,7 @@ Base.eltype(::Type{Normal}) = Float64
 # obs_std(p::AbstractLD1, x::Float64) = 0.5*(p.min_noise_loc-x)^2 + p.min_noise
 
 # EB 10/20/18, implementing the version from Platt et al:
-obs_std(p::AbstractLD1, x::Float64) = 0.5*(p.min_noise_loc-x)^2
+obs_std(p::AbstractLD1, x::Float64) = sqrt(0.5*(p.min_noise_loc-x)^2 + p.min_noise)
 
 
 function generate_s(p::AbstractLD1, s::Float64, a::Float64)
