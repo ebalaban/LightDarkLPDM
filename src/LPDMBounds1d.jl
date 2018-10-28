@@ -17,10 +17,10 @@ mutable struct LDBounds1d{S,A,O}
     end
 end
 
-function LPDM.bounds(b::LDBounds1d,
-                     pomdp::LightDarkPOMDPs.AbstractLD1,
-                     particles::Vector{LPDMParticle{LDState}},
-                     config::LPDMConfig)
+function LPDM.bounds(b::LDBounds1d{S,A,O},
+                     pomdp::AbstractLD1,
+                     particles::Vector{LPDMParticle{S}},
+                     config::LPDMConfig) where {S,A,O}
 
     # reset every time bounds are about to be recomputed
     b.lb_ = +Inf
@@ -66,7 +66,7 @@ end
 LPDM.best_lb_action(b::LDBounds1d) = isnan(b.best_lb_action_) ? error("best_lb_action undefined. Call bounds() first") : b.best_lb_action_
 LPDM.best_ub_action(b::LDBounds1d) = isnan(b.best_ub_action_) ? error("best_ub_action undefined. Call bounds() first") : b.best_ub_action_
 
-function move(p::LightDarkPOMDPs.AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
+function move(p::AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
     direction = x2 > x1 ? 1 : -1
     all_actions = POMDPs.actions(p,true)
     I = findall(!iszero, all_actions)
@@ -102,7 +102,7 @@ end
 
 # NOTE: not for direct calling
 # computes the cost of traveling to the low noise region and only then towards target. i.e. a slow approach
-function lower_bound(p::LightDarkPOMDPs.LightDark1DDespot, particle::LPDMParticle{Float64})
+function lower_bound(p::LightDark1DDespot, particle::LPDMParticle{Float64})
 
     if abs(particle.state) < p.term_radius
         return reward(p, particle.state, 0.0), 0.0
@@ -117,7 +117,7 @@ end
 
 # NOTE: not for direct calling
 # computes the reward for the straight-line path to target
-function upper_bound(p::LightDarkPOMDPs.LightDark1DDespot, particle::LPDMParticle{Float64})
+function upper_bound(p::LightDark1DDespot, particle::LPDMParticle{Float64})
     if abs(particle.state) < p.term_radius
         return reward(p, particle.state, 0.0), 0.0
     else

@@ -34,6 +34,10 @@ export
     LightDark2DKalman,
     SymmetricNormal2,
     Vec2,
-    obs_std
-    rand
+    obs_std,
+    rand,
+    state_distribution,
+    LD1State,
+    LD1Action,
+    LD1Obs
 end # module

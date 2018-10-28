@@ -1,5 +1,3 @@
 using Revise
-import LPDM
-import execute1d
+import LPDM, LightDarkPOMDPs, execute1d
 execute1d.execute([25])
-# execute1d.test_move()

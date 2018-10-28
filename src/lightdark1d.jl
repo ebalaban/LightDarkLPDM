@@ -11,6 +11,12 @@ import POMDPs:
 import LPDM.isterminal
 using StatsFuns
 
+# Typealias appropriately
+const LD1State  = Float64
+const LD1Action = Float64
+const LD1Obs    = Float64
+const LD1Belief = LPDMBelief
+
 Base.show(io::IO, x::Float64) = print(io,"$(@sprintf("%.2f", x))")
 
 abstract type AbstractLD1 <: POMDP{Float64, Float64, Float64} end
@@ -53,7 +59,7 @@ end
 POMDPs.generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = generate_s(p, s, a)
 POMDPs.generate_o(p::AbstractLD1, s::Float64, a::Float64, sp::Float64, rng::AbstractRNG) = generate_o(p, sp, rng)
 POMDPs.observation(p::AbstractLD1, a::Float64, sp::Float64) = observation(p, sp)
-POMDPs.initial_state_distribution(p::AbstractLD1) = p.init_dist
+# POMDPs.initial_state_distribution(p::AbstractLD1) = p.init_dist
 POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = -(p.Q*s^2 + p.R*a^2)
 POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64)              = -(p.Q*s^2 + p.R*a^2)
 POMDPs.discount(p::AbstractLD1) = p.discount
@@ -78,12 +84,27 @@ POMDPs.isterminal(p::AbstractLD1, s::Float64) = (abs(s) <= p.term_radius)
 #     return POMDPs.isterminal(pomdp, exp_s/wt_sum)
 # end
 
+# function state_distribution(pomdp::LightDarkPOMDPs.AbstractLD1, config::LPDMConfig, rng::RNGVector)
+#     states = Vector{LPDMParticle{Float64}}();
+#     weight = 1/(config.n_particles^2) # weight of each individual particle
+#     particle = LPDMParticle{Float64}(0.0, 1, weight)
+#
+#     for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
+#         # println("$(typeof(pomdp.init_dist))")
+#         # println("$(methods(rand,RNGVector,RNGVector,))")
+#         particle = LPDMParticle{Float64}(rand(rng, pomdp.init_dist), i, weight)
+#         push!(states, particle)
+#     end
+#     # println("n states: $(length(states))")
+#     return states
+# end
+
 struct Normal
     mean::Float64
     std::Float64
 end
 
-Base.rand(p::LightDarkPOMDPs.AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, std(p.init_dist)))
+Base.rand(p::AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, std(p.init_dist)))
 
 function Base.rand(rng::LPDM.RNGVector,
                    d::Normal)
@@ -131,6 +152,20 @@ generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG) = rand(rng, observatio
 #     println("sp=$sp")
 #     return sp #DEBUG: trying no noise at all
 # end
+
+# Initial distribution corresponds to how the observations would look
+function state_distribution(pomdp::AbstractLD1, s0::LD1State, config::LPDMConfig, rng::RNGVector)
+    states = Vector{LPDMParticle{Float64}}();
+    weight = 1/(config.n_particles^2) # weight of each individual particle
+    particle = LPDMParticle{LD1State}(0.0, 1, weight)
+
+    for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
+        particle = LPDMParticle{Float64}(rand(rng, observation(pomdp,s0)), i, weight)
+        push!(states, particle)
+    end
+    # println("n states: $(length(states))")
+    return states
+end
 
 function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG)
 
