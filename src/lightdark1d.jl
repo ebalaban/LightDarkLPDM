@@ -6,7 +6,8 @@ import POMDPs:
         generate_s,
         generate_o,
         initial_state_distribution,
-        discount
+        discount,
+        reward
 
 import LPDM.isterminal
 using StatsFuns
@@ -60,8 +61,10 @@ POMDPs.generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = ge
 POMDPs.generate_o(p::AbstractLD1, s::Float64, a::Float64, sp::Float64, rng::AbstractRNG) = generate_o(p, sp, rng)
 POMDPs.observation(p::AbstractLD1, a::Float64, sp::Float64) = observation(p, sp)
 # POMDPs.initial_state_distribution(p::AbstractLD1) = p.init_dist
-POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = -(p.Q*s^2 + p.R*a^2)
+
+# POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64)              = -1.0
 POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64)              = -(p.Q*s^2 + p.R*a^2)
+POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = POMDPs.reward(p,s,a)
 POMDPs.discount(p::AbstractLD1) = p.discount
 
 POMDPs.isterminal(p::AbstractLD1, s::Float64) = (abs(s) <= p.term_radius)
