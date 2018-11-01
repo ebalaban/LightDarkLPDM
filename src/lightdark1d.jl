@@ -107,7 +107,7 @@ struct Normal
     std::Float64
 end
 
-Base.rand(p::AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, std(p.init_dist)))
+# Base.rand(p::AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, std(p.init_dist)))
 
 function Base.rand(rng::LPDM.RNGVector,
                    d::Normal)

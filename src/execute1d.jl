@@ -9,7 +9,7 @@ using LightDarkPOMDPs
 
 include("LPDMBounds1d.jl")
 
-function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
+function execute(vis::Vector{Int64}=Int64[])#n_sims::Int64 = 100)
 
     p = LightDark1DDespot()
     world_seed  ::UInt32   = convert(UInt32, 42)
@@ -17,16 +17,17 @@ function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
     LPDM.set!(world_rng, 1)
 
     # NOTE: restrict initial state to positive numbers only, for now
-    s::LD1State                  = LD1State(π);    # initial state
+    # s::LD1State                  = LD1State(π);    # initial state
+    s::LD1State                  = LD1State(1.9);    # initial state
     rewards::Array{Float64}     = Vector{Float64}(undef,0)
     # println("$(supertype(LightDark1DDespot)))")
     solver = LPDM.LPDMSolver{LD1State, LD1Action, LD1Obs, LDBounds1d{LD1State, LD1Action, LD1Obs}, RNGVector}(
                                                                         # rng = sim_rng,
                                                                         debug = 1,
                                                                         time_per_move = 1.0,  #sec
-                                                                        sim_len = -1,
+                                                                        sim_len = 10,
                                                                         search_depth = 50,
-                                                                        n_particles = 100,
+                                                                        n_particles = 10,
                                                                         seed = UInt32(5),
                                                                         # max_trials = 10)
                                                                         max_trials = -1)
@@ -67,13 +68,14 @@ function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
         # update belief
         POMDPs.update(bu, current_belief, a, o, updated_belief)
         current_belief = deepcopy(updated_belief)
-        show(updated_belief)
+        # show(updated_belief) #NOTE: don't show for now
 
-        if LPDM.isterminal(p, current_belief.particles)
-            println("Terminal belief. Execution completed.")
-            show(current_belief)
-            break
-        end
+        #
+        # if LPDM.isterminal(p, current_belief.particles)
+        #     println("Terminal belief. Execution completed.")
+        #     show(current_belief)
+        #     break
+        # end
 
         if sim_steps ∈ vis
             t = LPDM.d3tree(solver)

@@ -1,5 +1,6 @@
 using Discretizers
 import LPDM: default_action
+import POMDPs: rand, actions
 
 mutable struct LightDark1DDespot <: AbstractLD1
 # @with_kw mutable struct LightDark1DDespot <: AbstractLD1
@@ -17,6 +18,7 @@ mutable struct LightDark1DDespot <: AbstractLD1
     discount::Float64
     count::Int
     n_rand::Int
+    resample_std::Float64
 
 
     function LightDark1DDespot()
@@ -34,6 +36,7 @@ mutable struct LightDark1DDespot <: AbstractLD1
         this.discount                = 1.0
         this.count                   = 0
         this.n_rand                  = 0
+        this.resample_std            = 0.5 # st. deviation for particle resampling
         # println(this.bin_edges)
         # println(this.bin_centers)
         return this
@@ -45,7 +48,7 @@ POMDPs.actions(p::LightDark1DDespot, ::Bool) = [5.0, 1.0, 0.1, 0.01];
 # POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), POMDPs.actions(p,true))
 POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), [0.0], POMDPs.actions(p,true))
 LPDM.default_action(p::LightDark1DDespot) = 0.00
-
+POMDPs.rand(p::LightDark1DDespot, s::LD1State, rng::LPDM.RNGVector) = norminvcdf(s, p.resample_std, rand(rng)) # for resampling
 
 # POMDPs.actions(p::LightDark1DDespot, ::Bool) = [0.1, 0.01]
 #POMDPs.actions(p::LightDark1DDespot) = Float64Iter(collect(permutations(vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true)), 2)))
