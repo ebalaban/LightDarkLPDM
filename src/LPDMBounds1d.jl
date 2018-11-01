@@ -39,10 +39,14 @@ function LPDM.bounds(b::LDBounds1d{S,A,O},
     # ub_action = Array{Float64}(0)
 
     for p in particles
-        # push!(ub, upper_bound(pomdp,p)[1])
-        # push!(lb, lower_bound(pomdp,p)[1])
-        tmp_lb, tmp_lb_action = lower_bound(pomdp,p)
-        tmp_ub, tmp_ub_action = upper_bound(pomdp,p)
+        if p.state > pomdp.min_noise_loc # assume min_noise_loc > 0
+            # both will have to do roughly the same thing (+/- discretization differences),
+            # so make them the same
+            tmp_ub, tmp_ub_action = upper_bound(pomdp,p)
+            tmp_lb, tmp_lb_action = tmp_ub, tmp_ub_action
+        else
+            tmp_lb, tmp_lb_action = lower_bound(pomdp,p)
+        end
 
         if tmp_lb < b.lb_
             b.lb_             = tmp_lb
@@ -57,8 +61,9 @@ function LPDM.bounds(b::LDBounds1d{S,A,O},
     # b.lb_ = minimum(lb)
     # b.ub_ = maximum(ub)
     # config.debug >= 2 && println("s=$(particles[1].state), lb=$(b.lb_), ub=$(b.ub_)")
-    if b.ub_ > 100.0 #DEBUG, remove
-        error("BOUNDS: ub=$(b.ub_)")
+    if b.ub_ < b.lb_
+        show(particles); println("")
+        error("BOUNDS: ub=$(b.ub_) < lb=$(b.lb_), lba = $(b.best_lb_action_), uba = $(b.best_ub_action_)")
     end
     return b.lb_, b.ub_
 end

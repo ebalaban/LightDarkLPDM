@@ -26,7 +26,7 @@ function execute(vis::Vector{Int64}=[])#n_sims::Int64 = 100)
                                                                         time_per_move = 1.0,  #sec
                                                                         sim_len = -1,
                                                                         search_depth = 50,
-                                                                        n_particles = 10,
+                                                                        n_particles = 100,
                                                                         seed = UInt32(5),
                                                                         # max_trials = 10)
                                                                         max_trials = -1)

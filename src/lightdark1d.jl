@@ -18,7 +18,7 @@ const LD1Action = Float64
 const LD1Obs    = Float64
 const LD1Belief = LPDMBelief
 
-Base.show(io::IO, x::Float64) = print(io,"$(@sprintf("%.2f", x))")
+Base.show(io::IO, x::Float64) = print(io,"$(@sprintf("%.4f", x))")
 
 abstract type AbstractLD1 <: POMDP{Float64, Float64, Float64} end
 
