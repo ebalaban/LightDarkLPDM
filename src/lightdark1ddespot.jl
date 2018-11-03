@@ -1,5 +1,5 @@
 using Discretizers
-import LPDM: default_action
+import LPDM: default_action, isterminal
 import POMDPs: rand, actions
 
 mutable struct LightDark1DDespot <: AbstractLD1
@@ -50,6 +50,23 @@ POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), [0.0], POM
 LPDM.default_action(p::LightDark1DDespot) = 0.00
 POMDPs.rand(p::LightDark1DDespot, s::LD1State, rng::LPDM.RNGVector) = norminvcdf(s, p.resample_std, rand(rng)) # for resampling
 
+# Replaces the default call
+function LPDM.isterminal(pomdp::LightDark1DDespot, particles::Vector{LPDMParticle{LD1State}})
+    expected_state = 0.0
+    for p in particles
+        expected_state += p.state*p.weight # NOTE: assume weights are normalized
+    end
+    return isterminal(pomdp,expected_state)
+end
+# Version with discrete observations
+function generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG)
+    o = rand(rng, observation(p, sp))
+    o_disc = p.bin_centers[encode(p.lindisc,o)]
+    # println("$o -> $o_disc")
+    return o_disc
+    # return obs_index(p,o_disc) # return a single combined obs index
+end
+
 # POMDPs.actions(p::LightDark1DDespot, ::Bool) = [0.1, 0.01]
 #POMDPs.actions(p::LightDark1DDespot) = Float64Iter(collect(permutations(vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true)), 2)))
 
@@ -85,15 +102,6 @@ POMDPs.rand(p::LightDark1DDespot, s::LD1State, rng::LPDM.RNGVector) = norminvcdf
 # reward(p::LightDark1DDespot, s::Float64, a::Float64) = -1
 #
 # reward(p::LightDark1DDespot, s::Float64, a::Float64, sp::Float64) = reward(p,s,a)
-
-# Version with discrete observations
-function generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG)
-    o = rand(rng, observation(p, sp))
-    o_disc = p.bin_centers[encode(p.lindisc,o)]
-    # println("$o -> $o_disc")
-    return o_disc
-    # return obs_index(p,o_disc) # return a single combined obs index
-end
 
 # #DEBUG VERSION
 # #generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG) = sp

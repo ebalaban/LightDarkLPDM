@@ -25,9 +25,9 @@ function execute(vis::Vector{Int64}=Int64[])#n_sims::Int64 = 100)
                                                                         # rng = sim_rng,
                                                                         debug = 1,
                                                                         time_per_move = 1.0,  #sec
-                                                                        sim_len = 10,
+                                                                        sim_len = -1,
                                                                         search_depth = 50,
-                                                                        n_particles = 10,
+                                                                        n_particles = 20,
                                                                         seed = UInt32(5),
                                                                         # max_trials = 10)
                                                                         max_trials = -1)
@@ -70,12 +70,11 @@ function execute(vis::Vector{Int64}=Int64[])#n_sims::Int64 = 100)
         current_belief = deepcopy(updated_belief)
         # show(updated_belief) #NOTE: don't show for now
 
-        #
-        # if LPDM.isterminal(p, current_belief.particles)
-        #     println("Terminal belief. Execution completed.")
-        #     show(current_belief)
-        #     break
-        # end
+        if LPDM.isterminal(p, current_belief.particles)
+            println("Terminal belief. Execution completed.")
+            show(current_belief)
+            break
+        end
 
         if sim_steps ∈ vis
             t = LPDM.d3tree(solver)
