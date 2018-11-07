@@ -107,7 +107,7 @@ end
 
 # NOTE: not for direct calling
 # computes the cost of traveling to the low noise region and only then towards target. i.e. a slow approach
-function lower_bound(p::LightDark1DDespot, particle::LPDMParticle{Float64})
+function lower_bound(p::AbstractLD1, particle::LPDMParticle{Float64})
 
     if abs(particle.state) < p.term_radius
         return reward(p, particle.state, 0.0), 0.0
@@ -122,7 +122,7 @@ end
 
 # NOTE: not for direct calling
 # computes the reward for the straight-line path to target
-function upper_bound(p::LightDark1DDespot, particle::LPDMParticle{Float64})
+function upper_bound(p::AbstractLD1, particle::LPDMParticle{Float64})
     if abs(particle.state) < p.term_radius
         return reward(p, particle.state, 0.0), 0.0
     else

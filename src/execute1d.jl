@@ -9,9 +9,14 @@ using LightDarkPOMDPs
 
 include("LPDMBounds1d.jl")
 
-function execute(vis::Vector{Int64}=Int64[])#n_sims::Int64 = 100)
+function execute(;vis::Vector{Int64}=Int64[], solver::Symbol=:lpdm)#n_sims::Int64 = 100)
 
-    p = LightDark1DDespot()
+    if solver == :despot
+        p = LightDark1DDespot()
+    elseif solver == :lpdm
+        p = LightDark1DLpdm()
+    end
+
     world_seed  ::UInt32   = convert(UInt32, 42)
     world_rng = RNGVector(1, world_seed)
     LPDM.set!(world_rng, 1)
@@ -30,7 +35,8 @@ function execute(vis::Vector{Int64}=Int64[])#n_sims::Int64 = 100)
                                                                         n_particles = 20,
                                                                         seed = UInt32(5),
                                                                         # max_trials = 10)
-                                                                        max_trials = -1)
+                                                                        max_trials = -1,
+                                                                        mode = solver)
 
 #---------------------------------------------------------------------------------
     # Belief

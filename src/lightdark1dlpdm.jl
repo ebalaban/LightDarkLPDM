@@ -20,7 +20,9 @@ mutable struct LightDark1DLpdm <: AbstractLD1
     n_rand::Int
     resample_std::Float64
     max_actions::Int64
-    action_classes::Vector{Int64}
+    base_action_space::Vector{LD1Action}
+    nominal_action_space::Vector{LD1Action}
+    extended_action_space::Vector{LD1Action}
 
     function LightDark1DLpdm()
         this = new()
@@ -39,7 +41,9 @@ mutable struct LightDark1DLpdm <: AbstractLD1
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
         this.max_actions             = 10
-        this.action_classes          = zeros(Int64,5) #
+        this.base_action_space       = [1.0 0.1 0.01]
+        this.nominal_action_space    = vcat(-base_action_space, [0.0], base_action_space)
+        this.extended_action_space   = vcat(2*nominal_action_space, 3*nominal_action_space)
         return this
     end
 end
@@ -66,13 +70,11 @@ function generate_o(p::LightDark1DLpdm, sp::Float64, rng::AbstractRNG)
     # return obs_index(p,o_disc) # return a single combined obs index
 end
 
+POMDPs.actions(pomdp::LightDark1DLpdm) = pomdp.extended_action_space
 LPDM.max_actions(pomdp::LightDark1DLpdm) = pomdp.max_actions
 
 # Implement a simple hard-coded version for now for debugging
-function LPDM.next_actions(pomdp::LightDark1DLpdm, current_space::Vector{A})::Vector{A}
-    base_space = [1.0 0.1 0.01]
-    nominal_space = vcat(base_space, [0.0], base_space)
-    extended_space = vcat(2*nominal_space, 3*nominal_space)
+function LPDM.next_actions(pomdp::LightDark1DLpdm, current_space::Vector{LD1Action})::Vector{LD1Action}
 
     if isempty(current_actions) # initial request
         return nominal_space
@@ -80,7 +82,4 @@ function LPDM.next_actions(pomdp::LightDark1DLpdm, current_space::Vector{A})::Ve
         n = length(current_space) - length(nominal_space) + 1
         return [extended_space[n]] # return as a 1-element vector
     end
-end
-
-
 end
