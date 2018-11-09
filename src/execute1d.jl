@@ -28,7 +28,7 @@ function execute(;vis::Vector{Int64}=Int64[], solver::Symbol=:lpdm)#n_sims::Int6
     # println("$(supertype(LightDark1DDespot)))")
     solver = LPDM.LPDMSolver{LD1State, LD1Action, LD1Obs, LDBounds1d{LD1State, LD1Action, LD1Obs}, RNGVector}(
                                                                         # rng = sim_rng,
-                                                                        debug = 1,
+                                                                        debug = 4,
                                                                         time_per_move = 1.0,  #sec
                                                                         sim_len = -1,
                                                                         search_depth = 50,

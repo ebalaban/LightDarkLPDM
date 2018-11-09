@@ -41,9 +41,9 @@ mutable struct LightDark1DLpdm <: AbstractLD1
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
         this.max_actions             = 10
-        this.base_action_space       = [1.0 0.1 0.01]
-        this.nominal_action_space    = vcat(-base_action_space, [0.0], base_action_space)
-        this.extended_action_space   = vcat(2*nominal_action_space, 3*nominal_action_space)
+        this.base_action_space       = [1.0, 0.1, 0.01]
+        this.nominal_action_space    = vcat(-this.base_action_space, [0.0], this.base_action_space)
+        this.extended_action_space   = vcat(2*this.nominal_action_space, 3*this.nominal_action_space)
         return this
     end
 end
@@ -70,7 +70,7 @@ function generate_o(p::LightDark1DLpdm, sp::Float64, rng::AbstractRNG)
     # return obs_index(p,o_disc) # return a single combined obs index
 end
 
-POMDPs.actions(pomdp::LightDark1DLpdm) = pomdp.extended_action_space
+POMDPs.actions(pomdp::LightDark1DLpdm) = pomdp.nominal_action_space
 LPDM.max_actions(pomdp::LightDark1DLpdm) = pomdp.max_actions
 
 # Implement a simple hard-coded version for now for debugging

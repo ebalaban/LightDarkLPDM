@@ -33,11 +33,6 @@ function LPDM.bounds(b::LDBounds1d{S,A,O},
     tmp_lb_action = 0.0
     tmp_ub_action = 0.0
 
-    # lb = Array{Float64}(0)
-    # ub = Array{Float64}(0)
-    # lb_action = Array{Float64}(0)
-    # ub_action = Array{Float64}(0)
-
     for p in particles
         if p.state > pomdp.min_noise_loc # assume min_noise_loc > 0
             # both will have to do roughly the same thing (+/- discretization differences),
@@ -58,9 +53,7 @@ function LPDM.bounds(b::LDBounds1d{S,A,O},
         end
     end
 
-    # b.lb_ = minimum(lb)
-    # b.ub_ = maximum(ub)
-    # config.debug >= 2 && println("s=$(particles[1].state), lb=$(b.lb_), ub=$(b.ub_)")
+    # Sanity check
     if b.ub_ < b.lb_
         show(particles); println("")
         error("BOUNDS: ub=$(b.ub_) < lb=$(b.lb_), lba = $(b.best_lb_action_), uba = $(b.best_ub_action_)")
@@ -73,10 +66,11 @@ LPDM.best_ub_action(b::LDBounds1d) = isnan(b.best_ub_action_) ? error("best_ub_a
 
 function move(p::AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
     direction = x2 > x1 ? 1 : -1
-    all_actions = POMDPs.actions(p,true)
-    I = findall(!iszero, all_actions)
-    nz_actions = all_actions[I]
-    min_a = minimum(nz_actions)
+    all_actions = POMDPs.actions(p)
+    # I = findall(!iszero, all_actions)
+    pos_actions = all_actions[all_actions .> 0]
+    # nz_actions = all_actions[I]
+    min_a = minimum(pos_actions)
 
     r = 0.0
     x = x1
@@ -88,13 +82,13 @@ function move(p::AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
     end
 
     while (abs(x2-x) > min_a) && (abs(x) >= p.term_radius)
-        a = maximum(nz_actions[nz_actions .<= abs(x2-x)]) # maximum action not exceeding Δx
+        a = maximum(pos_actions[pos_actions .<= abs(x2-x)]) # maximum action not exceeding Δx
         a_dir = direction * a
         if isnan(first_a)
             first_a = a_dir # assign first action (directional)
         end
         r += reward(p, x, a_dir) # use current state for computing the reward
-        # println("BOUNDS: x=$x, x1=$x1, x2=$x2, actions=$(actions[actions .< abs(x2-x)]), a_dir=$a_dir,  r=$r ")
+        # println("BOUNDS: x=$x, x1=$x1, x2=$x2, min_a = $min_a, all_actions=$all_actions, pos_actions=$pos_actions, av_actions=$(all_actions[all_actions .< abs(x2-x)]), a_dir=$a_dir,  r=$r ")
         x += a_dir # take the step
     end
     if abs(x2) <= p.term_radius
