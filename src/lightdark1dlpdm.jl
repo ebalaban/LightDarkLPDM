@@ -19,6 +19,7 @@ mutable struct LightDark1DLpdm <: AbstractLD1
     count::Int
     n_rand::Int
     resample_std::Float64
+    exploit_visits::Int64
     max_actions::Int64
     base_action_space::Vector{LD1Action}
     nominal_action_space::Vector{LD1Action}
@@ -40,10 +41,11 @@ mutable struct LightDark1DLpdm <: AbstractLD1
         this.count                   = 0
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
-        this.max_actions             = 10
-        this.base_action_space       = [1.0, 0.1, 0.01]
-        this.nominal_action_space    = vcat(-this.base_action_space, [0.0], this.base_action_space)
-        this.extended_action_space   = vcat(2*this.nominal_action_space, 3*this.nominal_action_space)
+        this.max_actions             = 25
+        this.exploit_visits          = 5
+        # this.base_action_space       = [1.0, 0.1, 0.01]
+        this.nominal_action_space    = [1.0, 0.1, 0.01]
+        this.extended_action_space   = vcat(5*this.nominal_action_space, 2.5*this.nominal_action_space)
         return this
     end
 end
@@ -55,9 +57,13 @@ POMDPs.rand(p::LightDark1DLpdm, s::LD1State, rng::LPDM.RNGVector) = norminvcdf(s
 # Replaces the default call
 function LPDM.isterminal(pomdp::LightDark1DLpdm, particles::Vector{LPDMParticle{LD1State}})
     expected_state = 0.0
+    # println("particles in isterminal:")
+    # show(particles)
+    # println("")
     for p in particles
         expected_state += p.state*p.weight # NOTE: assume weights are normalized
     end
+    # println("expected weight: $expected_state")
     return isterminal(pomdp,expected_state)
 end
 
@@ -70,16 +76,16 @@ function generate_o(p::LightDark1DLpdm, sp::Float64, rng::AbstractRNG)
     # return obs_index(p,o_disc) # return a single combined obs index
 end
 
-POMDPs.actions(pomdp::LightDark1DLpdm) = pomdp.nominal_action_space
+POMDPs.actions(pomdp::LightDark1DLpdm) = vcat(-this.extended_action_space, [0], this.extended_action_space)
 LPDM.max_actions(pomdp::LightDark1DLpdm) = pomdp.max_actions
 
 # Implement a simple hard-coded version for now for debugging
-function LPDM.next_actions(pomdp::LightDark1DLpdm, current_space::Vector{LD1Action})::Vector{LD1Action}
+function LPDM.next_actions(pomdp::LightDark1DLpdm, current_action_space::Vector{LD1Action})::Vector{LD1Action}
 
-    if isempty(current_actions) # initial request
-        return nominal_space
+    if isempty(current_action_space) # initial request
+        return vcat(-this.nominal_action_space, [0], this.nominal_action_space)
     else
-        n = length(current_space) - length(nominal_space) + 1
-        return [extended_space[n]] # return as a 1-element vector
+        n = length(current_action_space) - (2*length(pomdp.nominal_action_space) + 1) + 1 # accounting for zero with the first +1
+        return [-pomdp.extended_action_space[n], pomdp.extended_action_space[n]] # return as a 2-element vector
     end
 end
