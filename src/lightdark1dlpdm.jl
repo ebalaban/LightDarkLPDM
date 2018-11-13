@@ -76,16 +76,23 @@ function generate_o(p::LightDark1DLpdm, sp::Float64, rng::AbstractRNG)
     # return obs_index(p,o_disc) # return a single combined obs index
 end
 
-POMDPs.actions(pomdp::LightDark1DLpdm) = vcat(-this.extended_action_space, [0], this.extended_action_space)
+POMDPs.actions(pomdp::LightDark1DLpdm) = vcat(-pomdp.extended_action_space, [0], pomdp.extended_action_space)
 LPDM.max_actions(pomdp::LightDark1DLpdm) = pomdp.max_actions
 
 # Implement a simple hard-coded version for now for debugging
 function LPDM.next_actions(pomdp::LightDark1DLpdm, current_action_space::Vector{LD1Action})::Vector{LD1Action}
-
     if isempty(current_action_space) # initial request
-        return vcat(-this.nominal_action_space, [0], this.nominal_action_space)
-    else
-        n = length(current_action_space) - (2*length(pomdp.nominal_action_space) + 1) + 1 # accounting for zero with the first +1
+        return vcat(-pomdp.nominal_action_space, [0], pomdp.nominal_action_space)
+    end
+
+    # index of the new action in the extended_action_space
+    n = round(Int64, 0.5*(length(current_action_space) - (2*length(pomdp.nominal_action_space) + 1))) + 1
+    if (length(current_action_space) < pomdp.max_actions -1) && (n <= length(pomdp.extended_action_space))
+        # println("current: $current_action_space")
+        # accounting for zero with the first +1; 0.5 because we add in pairs.
+
         return [-pomdp.extended_action_space[n], pomdp.extended_action_space[n]] # return as a 2-element vector
+    else
+        return []
     end
 end
