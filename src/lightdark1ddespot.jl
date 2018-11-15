@@ -19,9 +19,10 @@ mutable struct LightDark1DDespot <: AbstractLD1
     count::Int
     n_rand::Int
     resample_std::Float64
+    action_space_type::Symbol
 
 
-    function LightDark1DDespot()
+    function LightDark1DDespot(action_space_type::Symbol)
         this = new()
         this.min_noise               = 0.0
         this.min_noise_loc           = 5.0
@@ -37,6 +38,9 @@ mutable struct LightDark1DDespot <: AbstractLD1
         this.count                   = 0
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
+        this.nominal_action_space    = [1.0, 0.1, 0.01]
+        this.extended_action_space   = vcat(5*this.nominal_action_space, 2.5*this.nominal_action_space)
+        this.action_space_type       = action_space_type
         # println(this.bin_edges)
         # println(this.bin_centers)
         return this
@@ -44,9 +48,20 @@ mutable struct LightDark1DDespot <: AbstractLD1
 end
 
 # POMDPs.actions(p::LightDark1DDespot, ::Bool) = [1.0, 0.5, 0.1, 0.01];
-POMDPs.actions(p::LightDark1DDespot, ::Bool) = [5.0, 1.0, 0.1, 0.01]
+# POMDPs.actions(p::LightDark1DDespot, ::Bool) = [5.0, 1.0, 0.1, 0.01]
 # POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), POMDPs.actions(p,true))
-POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), [0.0], POMDPs.actions(p,true))
+# POMDPs.actions(p::LightDark1DDespot) = vcat(-POMDPs.actions(p, true), [0.0], POMDPs.actions(p,true))
+
+function POMDPs.actions(p::LightDark1DDespot)
+    if p.action_space_type == :small
+        return vcat(-p.nominal_action_space, [0.0], p.nominal_action_space)
+    elseif p.action_space_type == :large
+        return vcat(-p.extended_action_space, [0.0], p.extended_action_space)
+    else
+        error("Action space $(p.action_space_type) is not valid for POMDP of type $(typeof(p))")
+    end
+end
+
 LPDM.default_action(p::LightDark1DDespot) = 0.00
 POMDPs.rand(p::LightDark1DDespot, s::LD1State, rng::LPDM.RNGVector) = norminvcdf(s, p.resample_std, rand(rng)) # for resampling
 

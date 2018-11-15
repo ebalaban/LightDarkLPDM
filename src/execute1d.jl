@@ -18,12 +18,12 @@ struct LPDMScenario
     s0::LD1State
 end
 
-function batch_execute(;sims::Int64=1)
+function batch_execute(;n::Int64=1)
     test=Array{LPDMTest}(undef,0)
     push!(test, LPDMTest(:despot, :small))
-    push!(test, LPDMTest(:despot, :large))
-    push!(test, LPDMTest(:lpdm, :bv)) # blind value
-    push!(test, LPDMTest(:lpdm, :sa)) # simulated annealing
+    # push!(test, LPDMTest(:despot, :large))
+    # push!(test, LPDMTest(:lpdm, :bv)) # blind value
+    # push!(test, LPDMTest(:lpdm, :sa)) # simulated annealing
 
     scen=Array{LPDMTest}(undef,0)
     push!(scen, LPDMScenario(LD1State(-4.1)))
@@ -37,10 +37,10 @@ function batch_execute(;sims::Int64=1)
         write(f,"mode\taction space\treward(std)\n")
         write(f,"=====================================================\n")
         for t in test
-            reward, std = execute(solver       = t.mode,
-                                  action_space = t.action_space,
-                                  n_sims       = sims,
-                                  s0           = scen[i].s0)
+            reward, std = execute(solv_mode       = t.mode,
+                                  action_space    = t.action_space,
+                                  n_sims          = n,
+                                  s0              = scen[i].s0)
             write(f,"$(t.mode)\t$(t.action_space)\t$reward($std)\n")
         end
         write(f,"=====================================================\n")
@@ -51,6 +51,7 @@ end
 
 function execute(;vis::Vector{Int64}=Int64[],
                 solv_mode::Symbol=:lpdm,
+                action_space::Symbol=:sa,
                 n_sims::Int64=1,
                 s0::LD1State=LD1State(1.9))#n_sims::Int64 = 100)
 
@@ -98,16 +99,16 @@ function execute(;vis::Vector{Int64}=Int64[],
 
         policy::LPDMPolicy = POMDPs.solve(solver, p)
 
-        sim_steps::Int64 = 1
+        step::Int64 = 1
         r::Float64 = 0.0
 
-        println("=============== REPETITION # $sim ================")
+        println("=============== SIMULATION # $sim ================")
 
         val, run_time, bytes, gctime, memallocs =
-        @timed while !isterminal(p, s) && (solver.config.sim_len == -1 || sim_steps <= solver.config.sim_len)
+        @timed while !isterminal(p, s) && (solver.config.sim_len == -1 || step <= solver.config.sim_len)
 
             println("")
-            println("=============== Step $sim_steps ================")
+            println("=============== Step $step ================")
             show(current_belief)
             println("s: $s")
             a = POMDPs.action(policy, current_belief)
@@ -117,7 +118,7 @@ function execute(;vis::Vector{Int64}=Int64[],
             println("s': $s")
             println("o': $o")
             println("r: $r")
-            push!(rewards, r)
+            push!(step_rewards, r)
             println("=======================================")
 
             # error("$(@which(POMDPs.update(bu, current_belief, a, o, updated_belief)))")
@@ -132,16 +133,17 @@ function execute(;vis::Vector{Int64}=Int64[],
                 break
             end
 
-            if sim_steps ∈ vis
+            if step ∈ vis
                 t = LPDM.d3tree(solver)
                 # # show(t)
                 inchrome(t)
                 # blink(t)
             end
-            sim_steps += 1
+            step += 1
         end
 
-
+        sim_steps[sim] = step
+        sim_rewards[sim] = sum(step_rewards)
         # # Compute discounted reward
         # discounted_reward::Float64 = 0.0
         # multiplier::Float64 = 1.0
@@ -151,7 +153,7 @@ function execute(;vis::Vector{Int64}=Int64[],
         # end
         # println("Discounted reward: $discounted_reward")
     end
-    return sim_steps, sum(step_rewards), discounted_reward, run_time
+    return sim_steps, mean(sim_rewards), std(sim_rewards)
     # return t
 end
 
