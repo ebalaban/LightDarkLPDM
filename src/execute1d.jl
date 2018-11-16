@@ -25,7 +25,7 @@ function batch_execute(;n::Int64=1)
     # push!(test, LPDMTest(:lpdm, :bv)) # blind value
     # push!(test, LPDMTest(:lpdm, :sa)) # simulated annealing
 
-    scen=Array{LPDMTest}(undef,0)
+    scen=Array{LPDMScenario}(undef,0)
     push!(scen, LPDMScenario(LD1State(-4.1)))
     push!(scen, LPDMScenario(LD1State(0.9)))
     push!(scen, LPDMScenario(LD1State(4.7)))
@@ -34,14 +34,15 @@ function batch_execute(;n::Int64=1)
     f = open("test_results.txt", "w")
     for i in 1:length(scen)
         write(f,"SCENARIO $i, s0=$(scen[i].s0)\n")
-        write(f,"mode\taction space\treward(std)\n")
+        write(f,"mode\t\taction space\t\treward(std)\n")
         write(f,"=====================================================\n")
         for t in test
-            reward, std = execute(solv_mode       = t.mode,
-                                  action_space    = t.action_space,
-                                  n_sims          = n,
-                                  s0              = scen[i].s0)
-            write(f,"$(t.mode)\t$(t.action_space)\t$reward($std)\n")
+            steps, reward, std =
+                        execute(solv_mode         = t.mode,
+                                action_space_type = t.action_space,
+                                n_sims            = n,
+                                s0                = scen[i].s0)
+            write(f,"$(t.mode)\\t$(t.action_space)\t\t$reward($std)\n")
         end
         write(f,"=====================================================\n")
         write(f,"$n simulations per test\n\n")
@@ -51,14 +52,14 @@ end
 
 function execute(;vis::Vector{Int64}=Int64[],
                 solv_mode::Symbol=:lpdm,
-                action_space::Symbol=:sa,
+                action_space_type::Symbol=:sa,
                 n_sims::Int64=1,
                 s0::LD1State=LD1State(1.9))#n_sims::Int64 = 100)
 
-    if solver == :despot
-        p = LightDark1DDespot()
-    elseif solver == :lpdm
-        p = LightDark1DLpdm()
+    if solv_mode == :despot
+        p = LightDark1DDespot(action_space_type)
+    elseif solv_mode == :lpdm
+        p = LightDark1DLpdm(action_space_type)
     end
 
     sim_rewards = Vector{Float64}(undef,n_sims)
@@ -77,7 +78,7 @@ function execute(;vis::Vector{Int64}=Int64[],
         solver = LPDM.LPDMSolver{LD1State, LD1Action, LD1Obs, LDBounds1d{LD1State, LD1Action, LD1Obs}, RNGVector}(
                                                                             # rng = sim_rng,
                                                                             debug = 1,
-                                                                            time_per_move = 5.0,  #sec
+                                                                            time_per_move = 1.0,  #sec
                                                                             sim_len = -1,
                                                                             search_depth = 50,
                                                                             n_particles = 20,
@@ -90,7 +91,7 @@ function execute(;vis::Vector{Int64}=Int64[],
     #---------------------------------------------------------------------------------
         # Belief
         bu = LPDMBeliefUpdater(p, n_particles = solver.config.n_particles);  # initialize belief updater
-        initial_states = state_distribution(p, s, solver.config, world_rng)     # create initial  distribution
+        initial_states = state_distribution(p, s0, solver.config, world_rng)     # create initial  distribution
         current_belief = LPDM.create_belief(bu)                       # allocate an updated belief object
         LPDM.initialize_belief(bu, initial_states, current_belief)    # initialize belief
         # show(current_belief)
@@ -98,7 +99,7 @@ function execute(;vis::Vector{Int64}=Int64[],
     #---------------------------------------------------------------------------------
 
         policy::LPDMPolicy = POMDPs.solve(solver, p)
-
+        s = s0
         step::Int64 = 1
         r::Float64 = 0.0
 

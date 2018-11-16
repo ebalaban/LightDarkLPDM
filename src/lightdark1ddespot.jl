@@ -20,7 +20,8 @@ mutable struct LightDark1DDespot <: AbstractLD1
     n_rand::Int
     resample_std::Float64
     action_space_type::Symbol
-
+    nominal_action_space::Vector{LD1Action}
+    extended_action_space::Vector{LD1Action}
 
     function LightDark1DDespot(action_space_type::Symbol)
         this = new()
@@ -38,7 +39,7 @@ mutable struct LightDark1DDespot <: AbstractLD1
         this.count                   = 0
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
-        this.nominal_action_space    = [1.0, 0.1, 0.01]
+        this.nominal_action_space    = [5.0, 1.0, 0.1, 0.01]
         this.extended_action_space   = vcat(5*this.nominal_action_space, 2.5*this.nominal_action_space)
         this.action_space_type       = action_space_type
         # println(this.bin_edges)
