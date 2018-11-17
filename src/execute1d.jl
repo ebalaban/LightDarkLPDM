@@ -21,20 +21,20 @@ end
 function batch_execute(;n::Int64=1)
     test=Array{LPDMTest}(undef,0)
     push!(test, LPDMTest(:despot, :small))
-    # push!(test, LPDMTest(:despot, :large))
+    push!(test, LPDMTest(:despot, :large))
     # push!(test, LPDMTest(:lpdm, :bv)) # blind value
     # push!(test, LPDMTest(:lpdm, :sa)) # simulated annealing
 
     scen=Array{LPDMScenario}(undef,0)
     push!(scen, LPDMScenario(LD1State(-4.1)))
-    push!(scen, LPDMScenario(LD1State(0.9)))
-    push!(scen, LPDMScenario(LD1State(4.7)))
-    push!(scen, LPDMScenario(LD1State(2*π)))
+    # push!(scen, LPDMScenario(LD1State(0.9)))
+    # push!(scen, LPDMScenario(LD1State(4.7)))
+    # push!(scen, LPDMScenario(LD1State(2*π)))
 
     f = open("test_results.txt", "w")
     for i in 1:length(scen)
-        write(f,"SCENARIO $i, s0=$(scen[i].s0)\n")
-        write(f,"mode\t\taction space\t\treward(std)\n")
+        write(f,"SCENARIO $i, s0 = $(scen[i].s0)\n\n")
+        write(f,"mode\tact. space\treward(std)\n")
         write(f,"=====================================================\n")
         for t in test
             steps, reward, std =
@@ -42,7 +42,7 @@ function batch_execute(;n::Int64=1)
                                 action_space_type = t.action_space,
                                 n_sims            = n,
                                 s0                = scen[i].s0)
-            write(f,"$(t.mode)\\t$(t.action_space)\t\t$reward($std)\n")
+            write(f,"$(t.mode)\t\t$(t.action_space)\t\t$steps\t\t$reward($std)\n")
         end
         write(f,"=====================================================\n")
         write(f,"$n simulations per test\n\n")
