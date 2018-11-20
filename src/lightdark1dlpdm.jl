@@ -57,13 +57,10 @@ POMDPs.rand(p::LightDark1DLpdm, s::LD1State, rng::LPDM.RNGVector) = norminvcdf(s
 # Replaces the default call
 function LPDM.isterminal(pomdp::LightDark1DLpdm, particles::Vector{LPDMParticle{LD1State}})
     expected_state = 0.0
-    # println("particles in isterminal:")
-    # show(particles)
-    # println("")
+
     for p in particles
         expected_state += p.state*p.weight # NOTE: assume weights are normalized
     end
-    # println("expected weight: $expected_state")
     return isterminal(pomdp,expected_state)
 end
 
@@ -71,9 +68,7 @@ end
 function generate_o(p::LightDark1DLpdm, sp::Float64, rng::AbstractRNG)
     o = rand(rng, observation(p, sp))
     o_disc = p.bin_centers[encode(p.lindisc,o)]
-    # println("$o -> $o_disc")
     return o_disc
-    # return obs_index(p,o_disc) # return a single combined obs index
 end
 
 POMDPs.actions(pomdp::LightDark1DLpdm) = vcat(-pomdp.extended_action_space, [0], pomdp.extended_action_space)

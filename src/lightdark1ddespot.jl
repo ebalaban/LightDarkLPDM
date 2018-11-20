@@ -42,8 +42,6 @@ mutable struct LightDark1DDespot <: AbstractLD1
         this.nominal_action_space    = [5.0, 1.0, 0.1, 0.01]
         this.extended_action_space   = vcat(5*this.nominal_action_space, 2.5*this.nominal_action_space)
         this.action_space_type       = action_space_type
-        # println(this.bin_edges)
-        # println(this.bin_centers)
         return this
     end
 end
@@ -78,7 +76,6 @@ end
 function generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG)
     o = rand(rng, observation(p, sp))
     o_disc = p.bin_centers[encode(p.lindisc,o)]
-    # println("$o -> $o_disc")
     return o_disc
     # return obs_index(p,o_disc) # return a single combined obs index
 end

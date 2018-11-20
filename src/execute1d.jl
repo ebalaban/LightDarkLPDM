@@ -21,7 +21,7 @@ end
 function batch_execute(;n::Int64=1)
     test=Array{LPDMTest}(undef,0)
     push!(test, LPDMTest(:despot, :small))
-    push!(test, LPDMTest(:despot, :large))
+    # push!(test, LPDMTest(:despot, :large))
     # push!(test, LPDMTest(:lpdm, :bv)) # blind value
     # push!(test, LPDMTest(:lpdm, :sa)) # simulated annealing
 
