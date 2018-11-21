@@ -3,6 +3,7 @@ using LPDM
 using POMDPs, Parameters, StaticArrays, D3Trees, Distributions, SparseArrays
 using Combinatorics
 using StatsFuns
+using Printf
 
 include("LightDarkPOMDPs.jl")
 using LightDarkPOMDPs
@@ -18,34 +19,39 @@ struct LPDMScenario
     s0::LD1State
 end
 
-function batch_execute(;n::Int64=1)
+function batch_execute(;n::Int64=1; debug::Int64=1)
     test=Array{LPDMTest}(undef,0)
     push!(test, LPDMTest(:despot, :small))
-    # push!(test, LPDMTest(:despot, :large))
+    push!(test, LPDMTest(:despot, :large))
     # push!(test, LPDMTest(:lpdm, :bv)) # blind value
     # push!(test, LPDMTest(:lpdm, :sa)) # simulated annealing
 
     scen=Array{LPDMScenario}(undef,0)
     push!(scen, LPDMScenario(LD1State(-4.1)))
-    # push!(scen, LPDMScenario(LD1State(0.9)))
+    push!(scen, LPDMScenario(LD1State(0.9)))
     # push!(scen, LPDMScenario(LD1State(4.7)))
     # push!(scen, LPDMScenario(LD1State(2*π)))
 
     f = open("test_results.txt", "w")
     for i in 1:length(scen)
-        write(f,"SCENARIO $i, s0 = $(scen[i].s0)\n\n")
-        write(f,"mode\tact. space\treward(std)\n")
-        write(f,"=====================================================\n")
+        # write(f,"SCENARIO $i, s0 = $(scen[i].s0)\n\n")
+        Printf.@printf(f,"SCENARIO %d, s0 = %f\n", i, scen[i].s0)
+        Printf.@printf(f,"==================================================================\n")
+        # Printf.@printf(f,"mode\t\tact. space\t\tsteps(std)\t\treward(std)\n")
+        Printf.@printf(f,"MODE\t\tACT. SPACE\t\tSTEPS(STD)\t\t\tREWARD(STD)\n")
+        Printf.@printf(f,"==================================================================\n")
         for t in test
-            steps, reward, std =
+            steps, steps_std, reward, reward_std =
                         execute(solv_mode         = t.mode,
                                 action_space_type = t.action_space,
                                 n_sims            = n,
-                                s0                = scen[i].s0)
-            write(f,"$(t.mode)\t\t$(t.action_space)\t\t$steps\t\t$reward($std)\n")
+                                s0                = scen[i].s0
+                                output            = debug)
+            Printf.@printf(f,"%s\t\t%s\t\t\t%.2f(%.2f)\t\t\t%.2f(%.2f)\n",
+                            string(t.mode), string(t.action_space), steps, steps_std, reward, reward_std)
         end
-        write(f,"=====================================================\n")
-        write(f,"$n simulations per test\n\n")
+        Printf.@printf(f,"==================================================================\n")
+        Printf.@printf(f,"%d simulations per test\n\n", n)
     end
     close(f)
 end
@@ -54,7 +60,8 @@ function execute(;vis::Vector{Int64}=Int64[],
                 solv_mode::Symbol=:lpdm,
                 action_space_type::Symbol=:sa,
                 n_sims::Int64=1,
-                s0::LD1State=LD1State(1.9))#n_sims::Int64 = 100)
+                s0::LD1State=LD1State(1.9)
+                output::Int64=1)#n_sims::Int64 = 100)
 
     if solv_mode == :despot
         p = LightDark1DDespot(action_space_type)
@@ -77,7 +84,7 @@ function execute(;vis::Vector{Int64}=Int64[],
         # println("$(supertype(LightDark1DDespot)))")
         solver = LPDM.LPDMSolver{LD1State, LD1Action, LD1Obs, LDBounds1d{LD1State, LD1Action, LD1Obs}, RNGVector}(
                                                                             # rng = sim_rng,
-                                                                            debug = 1,
+                                                                            debug = output,
                                                                             time_per_move = 1.0,  #sec
                                                                             sim_len = -1,
                                                                             search_depth = 50,
@@ -108,11 +115,11 @@ function execute(;vis::Vector{Int64}=Int64[],
         val, run_time, bytes, gctime, memallocs =
         @timed while !isterminal(p, s) && (solver.config.sim_len == -1 || step <= solver.config.sim_len)
 
+            a = POMDPs.action(policy, current_belief)
             println("")
             println("=============== Step $step ================")
             show(current_belief)
             println("s: $s")
-            a = POMDPs.action(policy, current_belief)
             println("a: $a")
 
             s, o, r = POMDPs.generate_sor(p, s, a, world_rng)
@@ -154,7 +161,7 @@ function execute(;vis::Vector{Int64}=Int64[],
         # end
         # println("Discounted reward: $discounted_reward")
     end
-    return sim_steps, mean(sim_rewards), std(sim_rewards)
+    return mean(sim_steps), std(sim_steps), mean(sim_rewards), std(sim_rewards)
     # return t
 end
 
