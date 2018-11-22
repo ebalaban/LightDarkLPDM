@@ -19,7 +19,7 @@ struct LPDMScenario
     s0::LD1State
 end
 
-function batch_execute(;n::Int64=1; debug::Int64=1)
+function batch_execute(;n::Int64=1, debug::Int64=1)
     test=Array{LPDMTest}(undef,0)
     push!(test, LPDMTest(:despot, :small))
     push!(test, LPDMTest(:despot, :large))
@@ -35,17 +35,25 @@ function batch_execute(;n::Int64=1; debug::Int64=1)
     f = open("test_results.txt", "w")
     for i in 1:length(scen)
         # write(f,"SCENARIO $i, s0 = $(scen[i].s0)\n\n")
+        if debug >= 0
+            println("SCENARIO $i, s0 = $(scen[i].s0)")
+            println("------------------------")
+        end
+
         Printf.@printf(f,"SCENARIO %d, s0 = %f\n", i, scen[i].s0)
         Printf.@printf(f,"==================================================================\n")
         # Printf.@printf(f,"mode\t\tact. space\t\tsteps(std)\t\treward(std)\n")
         Printf.@printf(f,"MODE\t\tACT. SPACE\t\tSTEPS(STD)\t\t\tREWARD(STD)\n")
         Printf.@printf(f,"==================================================================\n")
         for t in test
+            if debug >= 0
+                println("mode: $(t.mode), action space: $(t.action_space)")
+            end
             steps, steps_std, reward, reward_std =
                         execute(solv_mode         = t.mode,
                                 action_space_type = t.action_space,
                                 n_sims            = n,
-                                s0                = scen[i].s0
+                                s0                = scen[i].s0,
                                 output            = debug)
             Printf.@printf(f,"%s\t\t%s\t\t\t%.2f(%.2f)\t\t\t%.2f(%.2f)\n",
                             string(t.mode), string(t.action_space), steps, steps_std, reward, reward_std)
@@ -60,7 +68,7 @@ function execute(;vis::Vector{Int64}=Int64[],
                 solv_mode::Symbol=:lpdm,
                 action_space_type::Symbol=:sa,
                 n_sims::Int64=1,
-                s0::LD1State=LD1State(1.9)
+                s0::LD1State=LD1State(1.9),
                 output::Int64=1)#n_sims::Int64 = 100)
 
     if solv_mode == :despot
@@ -110,24 +118,29 @@ function execute(;vis::Vector{Int64}=Int64[],
         step::Int64 = 1
         r::Float64 = 0.0
 
-        println("=============== SIMULATION # $sim ================")
+        # output >= 1 && println("=============== SIMULATION # $sim ================")
+        output >= 0 && println("SIM $sim")
 
         val, run_time, bytes, gctime, memallocs =
         @timed while !isterminal(p, s) && (solver.config.sim_len == -1 || step <= solver.config.sim_len)
 
             a = POMDPs.action(policy, current_belief)
-            println("")
-            println("=============== Step $step ================")
-            show(current_belief)
-            println("s: $s")
-            println("a: $a")
+            if output >= 1
+                println("")
+                println("=============== Step $step ================")
+                show(current_belief)
+                println("s: $s")
+                println("a: $a")
+            end
 
             s, o, r = POMDPs.generate_sor(p, s, a, world_rng)
-            println("s': $s")
-            println("o': $o")
-            println("r: $r")
             push!(step_rewards, r)
-            println("=======================================")
+            if output >= 1
+                println("s': $s")
+                println("o': $o")
+                println("r: $r")
+                println("=======================================")
+            end
 
             # error("$(@which(POMDPs.update(bu, current_belief, a, o, updated_belief)))")
             # update belief
@@ -136,8 +149,10 @@ function execute(;vis::Vector{Int64}=Int64[],
             # show(updated_belief) #NOTE: don't show for now
 
             if LPDM.isterminal(p, current_belief.particles)
-                println("Terminal belief. Execution completed.")
-                show(current_belief)
+                if output >= 1
+                    println("Terminal belief. Execution completed.")
+                    show(current_belief)
+                end
                 break
             end
 
