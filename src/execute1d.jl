@@ -4,6 +4,7 @@ using POMDPs, Parameters, StaticArrays, D3Trees, Distributions, SparseArrays
 using Combinatorics
 using StatsFuns
 using Printf
+using Dates
 
 include("LightDarkPOMDPs.jl")
 using LightDarkPOMDPs
@@ -22,20 +23,22 @@ end
 function batch_execute(;n::Int64=1, debug::Int64=1)
     test=Array{LPDMTest}(undef,0)
     push!(test, LPDMTest(:despot, :small))
-    push!(test, LPDMTest(:despot, :large))
+    # push!(test, LPDMTest(:despot, :large))
     # push!(test, LPDMTest(:lpdm, :bv)) # blind value
     # push!(test, LPDMTest(:lpdm, :sa)) # simulated annealing
 
     scen=Array{LPDMScenario}(undef,0)
-    push!(scen, LPDMScenario(LD1State(-4.1)))
-    push!(scen, LPDMScenario(LD1State(0.9)))
+    push!(scen, LPDMScenario(LD1State(-3.1)))
+    # push!(scen, LPDMScenario(LD1State(-4.1)))
+    # push!(scen, LPDMScenario(LD1State(0.9)))
     # push!(scen, LPDMScenario(LD1State(4.7)))
     # push!(scen, LPDMScenario(LD1State(2*π)))
 
-    f = open("test_results.txt", "w")
+    f = open("test_results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
     for i in 1:length(scen)
         # write(f,"SCENARIO $i, s0 = $(scen[i].s0)\n\n")
         if debug >= 0
+            println("")
             println("SCENARIO $i, s0 = $(scen[i].s0)")
             println("------------------------")
         end
@@ -105,7 +108,9 @@ function execute(;vis::Vector{Int64}=Int64[],
 
     #---------------------------------------------------------------------------------
         # Belief
-        bu = LPDMBeliefUpdater(p, n_particles = solver.config.n_particles);  # initialize belief updater
+        bu = LPDMBeliefUpdater(p,
+                               n_particles = solver.config.n_particles,
+                               seed = UInt32(3*sim+1));  # initialize belief updater
         initial_states = state_distribution(p, s0, solver.config, world_rng)     # create initial  distribution
         current_belief = LPDM.create_belief(bu)                       # allocate an updated belief object
         LPDM.initialize_belief(bu, initial_states, current_belief)    # initialize belief
