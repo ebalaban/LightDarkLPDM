@@ -28,8 +28,7 @@ function batch_execute(;n::Int64=1, debug::Int64=1)
     # push!(test, LPDMTest(:lpdm, :sa)) # simulated annealing
 
     scen=Array{LPDMScenario}(undef,0)
-    push!(scen, LPDMScenario(LD1State(-3.1)))
-    # push!(scen, LPDMScenario(LD1State(-4.1)))
+    push!(scen, LPDMScenario(LD1State(-5.1)))
     # push!(scen, LPDMScenario(LD1State(0.9)))
     # push!(scen, LPDMScenario(LD1State(4.7)))
     # push!(scen, LPDMScenario(LD1State(2*π)))
@@ -46,7 +45,7 @@ function batch_execute(;n::Int64=1, debug::Int64=1)
         Printf.@printf(f,"SCENARIO %d, s0 = %f\n", i, scen[i].s0)
         Printf.@printf(f,"==================================================================\n")
         # Printf.@printf(f,"mode\t\tact. space\t\tsteps(std)\t\treward(std)\n")
-        Printf.@printf(f,"MODE\t\tACT. SPACE\t\tSTEPS(STD)\t\t\tREWARD(STD)\n")
+        Printf.@printf(f,"MODE\t\tACT. SPACE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
         Printf.@printf(f,"==================================================================\n")
         for t in test
             if debug >= 0
@@ -58,7 +57,7 @@ function batch_execute(;n::Int64=1, debug::Int64=1)
                                 n_sims            = n,
                                 s0                = scen[i].s0,
                                 output            = debug)
-            Printf.@printf(f,"%s\t\t%s\t\t\t%.2f(%.2f)\t\t\t%.2f(%.2f)\n",
+            Printf.@printf(f,"%s\t\t%s\t\t\t%.2f(%.2f)\t\t\t%.2f (%.2f)\n",
                             string(t.mode), string(t.action_space), steps, steps_std, reward, reward_std)
         end
         Printf.@printf(f,"==================================================================\n")
@@ -96,14 +95,15 @@ function execute(;vis::Vector{Int64}=Int64[],
         solver = LPDM.LPDMSolver{LD1State, LD1Action, LD1Obs, LDBounds1d{LD1State, LD1Action, LD1Obs}, RNGVector}(
                                                                             # rng = sim_rng,
                                                                             debug = output,
-                                                                            time_per_move = 1.0,  #sec
+                                                                            time_per_move = -1.0,  #sec
+                                                                            # time_per_move = 1.0,  #sec
                                                                             sim_len = -1,
                                                                             search_depth = 50,
                                                                             n_particles = 20,
                                                                             # seed = UInt32(5),
                                                                             seed = UInt32(2*sim+1),
                                                                             # max_trials = 10)
-                                                                            max_trials = -1,
+                                                                            max_trials = 20000,
                                                                             mode = solv_mode)
 
     #---------------------------------------------------------------------------------
@@ -120,20 +120,28 @@ function execute(;vis::Vector{Int64}=Int64[],
 
         policy::LPDMPolicy = POMDPs.solve(solver, p)
         s = s0
-        step::Int64 = 1
+        step::Int64 = 0
         r::Float64 = 0.0
 
         # output >= 1 && println("=============== SIMULATION # $sim ================")
-        output >= 0 && println("SIM $sim")
+        if output >= 0
+            println("")
+            println("*** SIM $sim ***")
+            println("")
+        end
 
         val, run_time, bytes, gctime, memallocs =
         @timed while !isterminal(p, s) && (solver.config.sim_len == -1 || step <= solver.config.sim_len)
+            step += 1
 
-            a = POMDPs.action(policy, current_belief)
             if output >= 1
                 println("")
                 println("=============== Step $step ================")
                 show(current_belief)
+            end
+
+            a = POMDPs.action(policy, current_belief)
+            if output >= 1
                 println("s: $s")
                 println("a: $a")
             end
@@ -167,7 +175,6 @@ function execute(;vis::Vector{Int64}=Int64[],
                 inchrome(t)
                 # blink(t)
             end
-            step += 1
         end
 
         sim_steps[sim] = step
@@ -181,6 +188,7 @@ function execute(;vis::Vector{Int64}=Int64[],
         # end
         # println("Discounted reward: $discounted_reward")
     end
+    # println("SIM_STEPS: $sim_steps, SIM_REWARDS: $sim_rewards")
     return mean(sim_steps), std(sim_steps), mean(sim_rewards), std(sim_rewards)
     # return t
 end
