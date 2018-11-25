@@ -22,18 +22,18 @@ end
 
 function batch_execute(;n::Int64=1, debug::Int64=1)
     test=Array{LPDMTest}(undef,0)
-    push!(test, LPDMTest(:despot, :small))
+    # push!(test, LPDMTest(:despot, :small))
     # push!(test, LPDMTest(:despot, :large))
     # push!(test, LPDMTest(:lpdm, :bv)) # blind value
-    # push!(test, LPDMTest(:lpdm, :sa)) # simulated annealing
+    push!(test, LPDMTest(:lpdm, :sa)) # simulated annealing
 
     scen=Array{LPDMScenario}(undef,0)
-    push!(scen, LPDMScenario(LD1State(-5.1)))
-    # push!(scen, LPDMScenario(LD1State(0.9)))
+    # push!(scen, LPDMScenario(LD1State(-5.1)))
+    push!(scen, LPDMScenario(LD1State(0.9)))
     # push!(scen, LPDMScenario(LD1State(4.7)))
     # push!(scen, LPDMScenario(LD1State(2*π)))
 
-    f = open("test_results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
+    f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
     for i in 1:length(scen)
         # write(f,"SCENARIO $i, s0 = $(scen[i].s0)\n\n")
         if debug >= 0
@@ -95,7 +95,7 @@ function execute(;vis::Vector{Int64}=Int64[],
         solver = LPDM.LPDMSolver{LD1State, LD1Action, LD1Obs, LDBounds1d{LD1State, LD1Action, LD1Obs}, RNGVector}(
                                                                             # rng = sim_rng,
                                                                             debug = output,
-                                                                            time_per_move = -1.0,  #sec
+                                                                            time_per_move = 1.0,  #sec
                                                                             # time_per_move = 1.0,  #sec
                                                                             sim_len = -1,
                                                                             search_depth = 50,
@@ -103,7 +103,7 @@ function execute(;vis::Vector{Int64}=Int64[],
                                                                             # seed = UInt32(5),
                                                                             seed = UInt32(2*sim+1),
                                                                             # max_trials = 10)
-                                                                            max_trials = 20000,
+                                                                            max_trials = -1,
                                                                             mode = solv_mode)
 
     #---------------------------------------------------------------------------------

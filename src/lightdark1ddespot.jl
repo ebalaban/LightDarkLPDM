@@ -40,7 +40,11 @@ mutable struct LightDark1DDespot <: AbstractLD1
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
         this.nominal_action_space    = [1.0, 0.1, 0.01]
-        this.extended_action_space   = vcat(5*this.nominal_action_space, 2.5*this.nominal_action_space)
+        this.extended_action_space   = vcat(1*this.nominal_action_space,
+                                            2*this.nominal_action_space,
+                                            3*this.nominal_action_space,
+                                            4*this.nominal_action_space,
+                                            5*this.nominal_action_space)
         this.action_space_type       = action_space_type
         return this
     end
@@ -53,9 +57,11 @@ end
 
 function POMDPs.actions(p::LightDark1DDespot)
     if p.action_space_type == :small
-        return vcat(-p.nominal_action_space, [0.0], p.nominal_action_space)
+        # return vcat(-p.nominal_action_space, [0.0], p.nominal_action_space)
+        return vcat(-p.nominal_action_space, p.nominal_action_space)
     elseif p.action_space_type == :large
-        return vcat(-p.extended_action_space, [0.0], p.extended_action_space)
+        # return vcat(-p.extended_action_space, [0.0], p.extended_action_space)
+        return vcat(-p.extended_action_space, p.extended_action_space)
     else
         error("Action space $(p.action_space_type) is not valid for POMDP of type $(typeof(p))")
     end
