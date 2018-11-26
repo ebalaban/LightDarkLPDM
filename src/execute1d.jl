@@ -22,16 +22,21 @@ end
 
 function batch_execute(;n::Int64=1, debug::Int64=1)
     test=Array{LPDMTest}(undef,0)
+
+    push!(test, LPDMTest(:lpdm, :sa)) # simulated annealing
     # push!(test, LPDMTest(:despot, :small))
     # push!(test, LPDMTest(:despot, :large))
-    # push!(test, LPDMTest(:lpdm, :bv)) # blind value
-    push!(test, LPDMTest(:lpdm, :sa)) # simulated annealing
+    # push!(test, LPDMTest(:despot_bv, :bv)) # blind value
 
     scen=Array{LPDMScenario}(undef,0)
-    # push!(scen, LPDMScenario(LD1State(-5.1)))
-    push!(scen, LPDMScenario(LD1State(0.9)))
-    # push!(scen, LPDMScenario(LD1State(4.7)))
-    # push!(scen, LPDMScenario(LD1State(2*π)))
+    # push!(scen, LPDMScenario(LD1State(-2*π)))
+    # push!(scen, LPDMScenario(LD1State(π/4)))
+    # push!(scen, LPDMScenario(LD1State(3/2*π)))
+    push!(scen, LPDMScenario(LD1State(2*π)))
+
+    # Dummy execution, just to make sure all the code is compiled and loaded,
+    # to improve uniformity of subsequent executions.
+    execute(solv_mode = :lpdm, action_space_type = :sa, n_sims = 1, s0 = LD1State(π), output = 0)
 
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
     for i in 1:length(scen)
@@ -92,18 +97,35 @@ function execute(;vis::Vector{Int64}=Int64[],
         # s::LD1State                  = LD1State(π);    # initial state
         step_rewards::Array{Float64}     = Vector{Float64}(undef,0)
         # println("$(supertype(LightDark1DDespot)))")
+
+        # NOTE: Original version
+        # solver = LPDM.LPDMSolver{LD1State, LD1Action, LD1Obs, LDBounds1d{LD1State, LD1Action, LD1Obs}, RNGVector}(
+        #                                                                     # rng = sim_rng,
+        #                                                                     debug = output,
+        #                                                                     time_per_move = 1.0,  #sec
+        #                                                                     # time_per_move = 1.0,  #sec
+        #                                                                     sim_len = -1,
+        #                                                                     search_depth = 50,
+        #                                                                     n_particles = 20,
+        #                                                                     # seed = UInt32(5),
+        #                                                                     seed = UInt32(2*sim+1),
+        #                                                                     # max_trials = 10)
+        #                                                                     max_trials = -1,
+        #                                                                     mode = solv_mode)
+
+        # NOTE: Test version
         solver = LPDM.LPDMSolver{LD1State, LD1Action, LD1Obs, LDBounds1d{LD1State, LD1Action, LD1Obs}, RNGVector}(
                                                                             # rng = sim_rng,
                                                                             debug = output,
                                                                             time_per_move = 1.0,  #sec
                                                                             # time_per_move = 1.0,  #sec
-                                                                            sim_len = -1,
+                                                                            sim_len = 2,
                                                                             search_depth = 50,
                                                                             n_particles = 20,
-                                                                            # seed = UInt32(5),
-                                                                            seed = UInt32(2*sim+1),
+                                                                            seed = UInt32(29),
+                                                                            # seed = UInt32(2*sim+1),
                                                                             # max_trials = 10)
-                                                                            max_trials = -1,
+                                                                            max_trials = 100,
                                                                             mode = solv_mode)
 
     #---------------------------------------------------------------------------------
@@ -126,12 +148,12 @@ function execute(;vis::Vector{Int64}=Int64[],
         # output >= 1 && println("=============== SIMULATION # $sim ================")
         if output >= 0
             println("")
-            println("*** SIM $sim ***")
+            println("*** SIM $sim (mode: $solv_mode, action space: $action_space_type)***")
             println("")
         end
 
         val, run_time, bytes, gctime, memallocs =
-        @timed while !isterminal(p, s) && (solver.config.sim_len == -1 || step <= solver.config.sim_len)
+        @timed while !isterminal(p, s) && (solver.config.sim_len == -1 || step < solver.config.sim_len)
             step += 1
 
             if output >= 1
@@ -175,6 +197,7 @@ function execute(;vis::Vector{Int64}=Int64[],
                 inchrome(t)
                 # blink(t)
             end
+            solv_mode == :lpdm && println("root actions: $(solver.root.action_space)")
         end
 
         sim_steps[sim] = step
