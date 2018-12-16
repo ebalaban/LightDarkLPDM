@@ -14,29 +14,31 @@ include("LPDMBounds1d.jl")
 struct LPDMTest
     mode::Symbol
     action_space::Symbol
+    reward_func::Symbol
 end
 
 struct LPDMScenario
     s0::LD1State
 end
 
-function batch_execute(;n::Int64=1, debug::Int64=1)
+# reward function options - :quadratic or :fixed
+function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     test=Array{LPDMTest}(undef,0)
 
-    push!(test, LPDMTest(:lpdm, :sa)) # simulated annealing
-    # push!(test, LPDMTest(:despot, :small))
-    # push!(test, LPDMTest(:despot, :large))
+    push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
+    push!(test, LPDMTest(:despot, :small, reward_func))
+    push!(test, LPDMTest(:despot, :large, reward_func))
     # push!(test, LPDMTest(:despot_bv, :bv)) # blind value
 
     scen=Array{LPDMScenario}(undef,0)
-    # push!(scen, LPDMScenario(LD1State(-2*π)))
-    # push!(scen, LPDMScenario(LD1State(π/4)))
-    # push!(scen, LPDMScenario(LD1State(3/2*π)))
+    push!(scen, LPDMScenario(LD1State(-2*π)))
+    push!(scen, LPDMScenario(LD1State(π/2)))
+    push!(scen, LPDMScenario(LD1State(3/2*π)))
     push!(scen, LPDMScenario(LD1State(2*π)))
 
     # Dummy execution, just to make sure all the code is compiled and loaded,
     # to improve uniformity of subsequent executions.
-    execute(solv_mode = :lpdm, action_space_type = :sa, n_sims = 1, s0 = LD1State(π), output = 0)
+    execute(solv_mode = :lpdm, action_space_type = :adapt, n_sims = 1, s0 = LD1State(π), output = 0)
 
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
     for i in 1:length(scen)
@@ -47,41 +49,45 @@ function batch_execute(;n::Int64=1, debug::Int64=1)
             println("------------------------")
         end
 
-        Printf.@printf(f,"SCENARIO %d, s0 = %f\n", i, scen[i].s0)
+        Printf.@printf(f,"SCENARIO %d, s0 = %f, %s reward function\n", i, scen[i].s0, reward_func)
         Printf.@printf(f,"==================================================================\n")
         # Printf.@printf(f,"mode\t\tact. space\t\tsteps(std)\t\treward(std)\n")
-        Printf.@printf(f,"MODE\t\tACT. SPACE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
+        Printf.@printf(f,"SOLVER\t\tACT. SPACE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
         Printf.@printf(f,"==================================================================\n")
         for t in test
             if debug >= 0
-                println("mode: $(t.mode), action space: $(t.action_space)")
+                println("mode: $(t.mode), action space: $(t.action_space), reward: $(t.reward_func)")
             end
             steps, steps_std, reward, reward_std =
                         execute(solv_mode         = t.mode,
                                 action_space_type = t.action_space,
                                 n_sims            = n,
                                 s0                = scen[i].s0,
-                                output            = debug)
-            Printf.@printf(f,"%s\t\t%s\t\t\t%.2f(%.2f)\t\t\t%.2f (%.2f)\n",
+                                output            = debug,
+                                reward_func       = reward_func)
+
+            Printf.@printf(f,"%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
                             string(t.mode), string(t.action_space), steps, steps_std, reward, reward_std)
         end
         Printf.@printf(f,"==================================================================\n")
-        Printf.@printf(f,"%d simulations per test\n\n", n)
+        Printf.@printf(f,"%d tests per scenario\n\n", n)
     end
     close(f)
 end
 
 function execute(;vis::Vector{Int64}=Int64[],
                 solv_mode::Symbol=:lpdm,
-                action_space_type::Symbol=:sa,
+                action_space_type::Symbol=:adapt,
+                reward_func = :quadratic,
                 n_sims::Int64=1,
+                steps::Int64=-1,
                 s0::LD1State=LD1State(1.9),
                 output::Int64=1)#n_sims::Int64 = 100)
 
     if solv_mode == :despot
-        p = LightDark1DDespot(action_space_type)
+        p = LightDark1DDespot(action_space_type, reward_func = reward_func)
     elseif solv_mode == :lpdm
-        p = LightDark1DLpdm(action_space_type)
+        p = LightDark1DLpdm(action_space_type, reward_func = reward_func)
     end
 
     sim_rewards = Vector{Float64}(undef,n_sims)
@@ -117,15 +123,15 @@ function execute(;vis::Vector{Int64}=Int64[],
         solver = LPDM.LPDMSolver{LD1State, LD1Action, LD1Obs, LDBounds1d{LD1State, LD1Action, LD1Obs}, RNGVector}(
                                                                             # rng = sim_rng,
                                                                             debug = output,
-                                                                            time_per_move = 1.0,  #sec
+                                                                            time_per_move = -1.0,  #sec
                                                                             # time_per_move = 1.0,  #sec
-                                                                            sim_len = 2,
+                                                                            sim_len = steps,
                                                                             search_depth = 50,
                                                                             n_particles = 20,
-                                                                            seed = UInt32(29),
-                                                                            # seed = UInt32(2*sim+1),
+                                                                            # seed = UInt32(2),
+                                                                            seed = UInt32(2*sim+1),
                                                                             # max_trials = 10)
-                                                                            max_trials = 100,
+                                                                            max_trials = 1000,
                                                                             mode = solv_mode)
 
     #---------------------------------------------------------------------------------
@@ -148,7 +154,7 @@ function execute(;vis::Vector{Int64}=Int64[],
         # output >= 1 && println("=============== SIMULATION # $sim ================")
         if output >= 0
             println("")
-            println("*** SIM $sim (mode: $solv_mode, action space: $action_space_type)***")
+            println("*** SIM $sim (mode: $solv_mode, action space: $action_space_type, s0: $s0)***")
             println("")
         end
 
@@ -192,12 +198,17 @@ function execute(;vis::Vector{Int64}=Int64[],
             end
 
             if step ∈ vis
-                t = LPDM.d3tree(solver)
+                t = LPDM.d3tree(solver,
+                                detect_repeat=false,
+                                title="Step $step",
+                                init_expand=10)
                 # # show(t)
                 inchrome(t)
                 # blink(t)
             end
-            solv_mode == :lpdm && println("root actions: $(solver.root.action_space)")
+            if output >= 1
+                solv_mode == :lpdm && println("root actions: $(solver.root.action_space)")
+            end
         end
 
         sim_steps[sim] = step

@@ -63,7 +63,10 @@ POMDPs.observation(p::AbstractLD1, a::Float64, sp::Float64) = observation(p, sp)
 # POMDPs.initial_state_distribution(p::AbstractLD1) = p.init_dist
 
 # POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64)              = -1.0
-POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64)              = -(p.Q*s^2 + p.R*a^2)
+
+POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64) =
+                        (p.reward_func == :quadratic) ? -(p.Q*s^2 + p.R*a^2) : -1
+
 POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = POMDPs.reward(p,s,a)
 POMDPs.discount(p::AbstractLD1) = p.discount
 

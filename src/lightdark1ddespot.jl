@@ -22,8 +22,9 @@ mutable struct LightDark1DDespot <: AbstractLD1
     action_space_type::Symbol
     nominal_action_space::Vector{LD1Action}
     extended_action_space::Vector{LD1Action}
+    reward_func::Symbol
 
-    function LightDark1DDespot(action_space_type::Symbol)
+    function LightDark1DDespot(action_space_type::Symbol; reward_func = :quadratic)
         this = new()
         this.min_noise               = 0.0
         this.min_noise_loc           = 5.0
@@ -46,6 +47,7 @@ mutable struct LightDark1DDespot <: AbstractLD1
                                             4*this.nominal_action_space,
                                             5*this.nominal_action_space)
         this.action_space_type       = action_space_type
+        this.reward_func                  = reward_func
         return this
     end
 end
@@ -68,6 +70,7 @@ function POMDPs.actions(p::LightDark1DDespot)
 end
 
 LPDM.default_action(p::LightDark1DDespot) = 0.00
+LPDM.default_action(p::LightDark1DDespot, ::Vector{LPDMParticle{LD1State}}) = LPDM.default_action(p)
 POMDPs.rand(p::LightDark1DDespot, s::LD1State, rng::LPDM.RNGVector) = norminvcdf(s, p.resample_std, rand(rng)) # for resampling
 
 # Replaces the default call
