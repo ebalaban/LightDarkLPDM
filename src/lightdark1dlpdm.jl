@@ -87,6 +87,7 @@ end
 POMDPs.actions(pomdp::LightDark1DLpdm) = vcat(-pomdp.extended_action_space, pomdp.extended_action_space)
 LPDM.max_actions(pomdp::LightDark1DLpdm) = pomdp.max_actions
 
+# For "simulated annealing"
 function LPDM.next_actions(pomdp::LightDark1DLpdm,
                            current_action_space::Vector{LD1Action},
                            a_star::LD1Action,
@@ -122,10 +123,38 @@ function LPDM.next_actions(pomdp::LightDark1DLpdm,
         end
 
         # println("a_star: $a_star, T: $T, radius: $radius, a: $a")
-        return [a] # New action, returned as a one element vector. Value is scaled by T.
+        return [a] # New action, returned as a one element vector.
     else
         return []
     end
+end
+
+# version for Blind Value
+function LPDM.next_actions(pomdp::LightDark1DLpdm,
+                           current_action_space::Vector{LD1Action},
+                           Q::Vector{Float64},
+                           rng::RNGVector)::Vector{LD1Action}
+
+    if length(current_action_space) < LPDM.max_actions(pomdp)
+        M = 20
+
+        Apool = rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[1]), M)
+        σ_known = std(Q)
+        σ_pool = std(abs(Apool)) # in our case distance to 0 (center of the domain) is just the abs. value of an action
+        ρ = σ_known/σ_pool
+        bv_vector = [bv(a,ρ,current_action_space,Q) for a in Apool]
+
+        return [Apool[argmax(bv_value)]] # New action, returned as a one element vector.
+    else
+        return []
+    end
+end
+
+
+# Blind Value function
+function bv(a::LD1Action, ρ::Float64, Aexpl::Vector{LD1Action}, Q::Vector{Float64})::LD1Action
+    scores = [ρ*abs(a-Aexpl[i])+Q[i] for i in 1:length(Aexpl)]
+    return Aexplr[argmin(scores)]
 end
 
 # NOTE: OLD VERSION. implements "fast" simulated annealing
