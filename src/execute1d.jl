@@ -25,10 +25,10 @@ end
 function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     test=Array{LPDMTest}(undef,0)
 
-    push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
-    push!(test, LPDMTest(:despot, :small, reward_func))
-    push!(test, LPDMTest(:despot, :large, reward_func))
-    # push!(test, LPDMTest(:despot_bv, :bv)) # blind value
+    # push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
+    # push!(test, LPDMTest(:despot, :small, reward_func))
+    # push!(test, LPDMTest(:despot, :large, reward_func))
+    push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
 
     scen=Array{LPDMScenario}(undef,0)
     push!(scen, LPDMScenario(LD1State(-2*π)))
@@ -86,7 +86,7 @@ function execute(;vis::Vector{Int64}=Int64[],
 
     if solv_mode == :despot
         p = LightDark1DDespot(action_space_type, reward_func = reward_func)
-    elseif solv_mode == :lpdm
+    elseif (solv_mode == :lpdm || solv_mode == :lpdm_bv)
         p = LightDark1DLpdm(action_space_type, reward_func = reward_func)
     end
 

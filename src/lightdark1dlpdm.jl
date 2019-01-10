@@ -133,18 +133,27 @@ end
 function LPDM.next_actions(pomdp::LightDark1DLpdm,
                            current_action_space::Vector{LD1Action},
                            Q::Vector{Float64},
+                           n_visits::Int64,
                            rng::RNGVector)::Vector{LD1Action}
 
-    if length(current_action_space) < LPDM.max_actions(pomdp)
-        M = 20
+     initial_space = vcat(-pomdp.nominal_action_space, pomdp.nominal_action_space)
+     # initial_space = [0.0]
 
-        Apool = rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[1]), M)
+       # simulated annealing temperature
+     if isempty(current_action_space) # initial request
+           return initial_space
+     end
+
+    if (n_visits > 25) && (length(current_action_space) < LPDM.max_actions(pomdp))
+        M = 200
+        # TODO: Create a formal sampler for RNGVector when there is time
+        Apool = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i in 1:M]
         σ_known = std(Q)
-        σ_pool = std(abs(Apool)) # in our case distance to 0 (center of the domain) is just the abs. value of an action
+        σ_pool = std(Apool) # in our case distance to 0 (center of the domain) is just the abs. value of an action
         ρ = σ_known/σ_pool
         bv_vector = [bv(a,ρ,current_action_space,Q) for a in Apool]
 
-        return [Apool[argmax(bv_value)]] # New action, returned as a one element vector.
+        return [Apool[argmax(bv_vector)]] # New action, returned as a one element vector.
     else
         return []
     end
@@ -154,7 +163,7 @@ end
 # Blind Value function
 function bv(a::LD1Action, ρ::Float64, Aexpl::Vector{LD1Action}, Q::Vector{Float64})::LD1Action
     scores = [ρ*abs(a-Aexpl[i])+Q[i] for i in 1:length(Aexpl)]
-    return Aexplr[argmin(scores)]
+    return Aexpl[argmin(scores)]
 end
 
 # NOTE: OLD VERSION. implements "fast" simulated annealing
@@ -191,20 +200,20 @@ end
 #     end
 # end
 
-# Hard-coded version for now for debugging
-function LPDM.next_actions(pomdp::LightDark1DLpdm, current_action_space::Vector{LD1Action})::Vector{LD1Action}
-    if isempty(current_action_space) # initial request
-        return vcat(-pomdp.nominal_action_space, [0], pomdp.nominal_action_space)
-    end
-
-    # index of the new action in the extended_action_space
-    n = round(Int64, 0.5*(length(current_action_space) - (2*length(pomdp.nominal_action_space) + 1))) + 1
-    if (length(current_action_space) < pomdp.max_actions -1) && (n <= length(pomdp.extended_action_space))
-        # println("current: $current_action_space")
-        # accounting for zero with the first +1; 0.5 because we add in pairs.
-
-        return [-pomdp.extended_action_space[n], pomdp.extended_action_space[n]] # return as a 2-element vector
-    else
-        return []
-    end
-end
+# # Hard-coded version for now for debugging
+# function LPDM.next_actions(pomdp::LightDark1DLpdm, current_action_space::Vector{LD1Action})::Vector{LD1Action}
+#     if isempty(current_action_space) # initial request
+#         return vcat(-pomdp.nominal_action_space, [0], pomdp.nominal_action_space)
+#     end
+#
+#     # index of the new action in the extended_action_space
+#     n = round(Int64, 0.5*(length(current_action_space) - (2*length(pomdp.nominal_action_space) + 1))) + 1
+#     if (length(current_action_space) < pomdp.max_actions -1) && (n <= length(pomdp.extended_action_space))
+#         # println("current: $current_action_space")
+#         # accounting for zero with the first +1; 0.5 because we add in pairs.
+#
+#         return [-pomdp.extended_action_space[n], pomdp.extended_action_space[n]] # return as a 2-element vector
+#     else
+#         return []
+#     end
+# end
