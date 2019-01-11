@@ -181,6 +181,3 @@ function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::Abstra
     # println("o! $o")
     return s, o, r
 end
-
-### Shouldn't need this:
-# generate_o(p::AbstractLD1, sp::Float64, rng::LPDM.RNGVector) = generate_o(p, sp, rng)

@@ -1,5 +1,4 @@
 import LPDM: bounds, best_lb_action, best_ub_action
-# using LightDarkPOMDPs
 
 mutable struct LDBounds1d{S,A,O}
     lb_    ::Float64
@@ -123,32 +122,3 @@ function upper_bound(p::AbstractLD1, particle::LPDMParticle{Float64})
         return move(p, particle.state, 0.0)
     end
 end
-# upper_bound(p::LightDarkPOMDPs.LightDark1DDespot, particle::LPDM.LPDMParticle{Float64}) = upper_bound(p, POMDPToolbox.Particle{Float64}(particle.state, particle.weight))
-
-
-# NOTE: Not needed
-# function take_action(x::Float64, terminal::Float64, actions::Array{Float64,1})
-#     r::Int8 = 0;
-#     x = abs(x);
-#     first_a = -1.0
-#     if x > terminal && terminal > minimum(actions)
-#         for a in actions
-#             if first_a < 0
-#                 first_a = a
-#             end
-#             if x > a && x > terminal
-#                 steps = floor(x/a)
-#                 x -= steps*a;
-#                 r += steps
-#             end
-#         end
-#     elseif terminal < minimum(actions)
-#         warn("""
-#             The set of available actions will never allow x to arrive within the target radius
-#                     x = $x
-#                     terminal radius = $terminal
-#                     actions = $actions
-#             """)
-#     end
-#     return r, x, first_a
-# end

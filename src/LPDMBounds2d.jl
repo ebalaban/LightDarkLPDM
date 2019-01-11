@@ -1,20 +1,22 @@
-import LPDM: bounds
+import LPDM: bounds, best_lb_action, best_ub_action
 
-mutable struct LDBounds{A}
+mutable struct LPDMBounds2d{S,A,O}
     lb    ::Float64
     ub    ::Float64
-    best_action::A
+    best_lb_action_::Vec2
+    best_ub_action_::Vec2
 
-    function LDBounds{A}() where A
+    function LDBounds2d{S,A,O}(::POMDP{S,A,O}) where {S,A,O}
         this = new()
-        this.lb = +Inf
-        this.ub = -Inf
-        this.best_action = SVector{2,Float64}(0.0, 0.0) #TODO: let's try doing nothing as default
+        this.lb_ = +Inf
+        this.ub_ = -Inf
+        this.best_lb_action_ = Vec2(NaN,NaN)
+        this.best_ub_action_ = Vec2(NaN,NaN)
         return this
     end
 end
 
-function LPDM.bounds(b::LDBounds,
+function LPDM.bounds(b::LDBounds2d{S,A,O},
                      pomdp::AbstractLD2,
                      particles::Vector{LPDMParticle{LDState}},
                      config::LPDMConfig)
