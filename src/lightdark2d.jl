@@ -96,6 +96,20 @@ POMDPs.observation(p::AbstractLD1, s::Vec2, a::Vec2, sp::Vec2) = observation(p,s
 
 generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG) = rand(rng, observation(p, sp))
 
+# Initial distribution corresponds to how the observations would look
+#TODO: possibly move to LightDarkPOMDPs
+function state_distribution(pomdp::AbstractLD2, s0::LD2State, config::LPDMConfig, rng::RNGVector)
+    states = Vector{LPDMParticle{Float64}}();
+    weight = 1/(config.n_particles^2) # weight of each individual particle
+    particle = LPDMParticle{LD2State}(LD2State(0.0,0.0), 1, weight)
+
+    for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
+        particle = LPDMParticle{LD2State}(rand(rng, observation(pomdp,s0)), i, weight)
+        push!(states, particle)
+    end
+    return states
+end
+
 function POMDPs.generate_sor(p::AbstractLD2, s::Vec2, a::Vec2, rng::AbstractRNG)
 
     s = generate_s(p,s,a,rng)
