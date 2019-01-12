@@ -71,39 +71,6 @@ POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = POMDPs.rewa
 POMDPs.discount(p::AbstractLD1) = p.discount
 
 POMDPs.isterminal(p::AbstractLD1, s::Float64) = (abs(s) <= p.term_radius)
-# function POMDPs.isterminal(p::AbstractLD1, s::Float64) #DEBUG
-#     println("_______ISTERMINAL(s=$s)=$(abs(s) <= p.term_radius)_______")
-#     return abs(s) <= p.term_radius
-# end
-
-# Compute the expected state and determine whether it is terminal
-# function LPDM.isterminal(pomdp::AbstractLD1, particles::Vector{LPDMParticle{Float64}})
-#     wt_sum = 0.0
-#     exp_s  = 0.0 # expected state
-#     for p in particles
-#         exp_s += p.state*p.weight
-#         wt_sum += p.weight
-#     end
-#     # println("ISTERMINAL($(POMDPs.isterminal(pomdp, exp_s/wt_sum))): E(s)=$(exp_s/wt_sum). Particles:")
-#     # show(particles); println("")
-#     # println("THIS BLOODY ISTERMINAL: $(@which(POMDPs.isterminal(pomdp, exp_s/wt_sum)))")
-#     return POMDPs.isterminal(pomdp, exp_s/wt_sum)
-# end
-
-# function state_distribution(pomdp::LightDarkPOMDPs.AbstractLD1, config::LPDMConfig, rng::RNGVector)
-#     states = Vector{LPDMParticle{Float64}}();
-#     weight = 1/(config.n_particles^2) # weight of each individual particle
-#     particle = LPDMParticle{Float64}(0.0, 1, weight)
-#
-#     for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
-#         # println("$(typeof(pomdp.init_dist))")
-#         # println("$(methods(rand,RNGVector,RNGVector,))")
-#         particle = LPDMParticle{Float64}(rand(rng, pomdp.init_dist), i, weight)
-#         push!(states, particle)
-#     end
-#     # println("n states: $(length(states))")
-#     return states
-# end
 
 struct Normal
     mean::Float64

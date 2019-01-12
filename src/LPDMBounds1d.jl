@@ -36,6 +36,7 @@ function LPDM.bounds(b::LDBounds1d{S,A,O},
         if p.state > pomdp.min_noise_loc # assume min_noise_loc > 0
             # both will have to do roughly the same thing (+/- discretization differences),
             # so make them the same
+            #TODO: review for lb > ub
             tmp_ub, tmp_ub_action = upper_bound(pomdp,p)
             tmp_lb, tmp_lb_action = tmp_ub, tmp_ub_action
         else

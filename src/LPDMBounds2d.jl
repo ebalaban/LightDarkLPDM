@@ -1,13 +1,13 @@
 import LPDM: bounds, best_lb_action, best_ub_action
 
-mutable struct LPDMBounds2d{S,A,O}
+mutable struct LDBounds2d{S,A,O}
     lb    ::Float64
     ub    ::Float64
     best_lb_action_::Vec2
     best_ub_action_::Vec2
 
     function LDBounds2d{S,A,O}(::POMDP{S,A,O}) where {S,A,O}
-        this = new()
+        this = new{S,A,O}()
         this.lb_ = +Inf
         this.ub_ = -Inf
         this.best_lb_action_ = Vec2(NaN,NaN)
@@ -18,8 +18,8 @@ end
 
 function LPDM.bounds(b::LDBounds2d{S,A,O},
                      pomdp::AbstractLD2,
-                     particles::Vector{LPDMParticle{LDState}},
-                     config::LPDMConfig)
+                     particles::Vector{LPDMParticle{S}},
+                     config::LPDMConfig) where {S,A,O}
 
     ub = Array{Int8}(0);
     lb = Array{Int8}(0);
@@ -35,7 +35,8 @@ function LPDM.bounds(b::LDBounds2d{S,A,O},
     return b.lb, b.ub
 end
 
-function lowerBound(p::LightDark2DDespot, particle::POMDPToolbox.Particle{Vec2})
+#TODO: these functions make sense for step-wise rewards, but not as much for quadratic rewards. May need to redo.
+function lowerBound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
 # computes the cost of traveling to the low noise region and only then towards target. i.e. a slow approach
    #       s__________
    #                  |
@@ -58,7 +59,7 @@ end
 lowerBound(p::LightDark2DDespot, particle::LPDM.LPDMParticle{Vec2}) = lowerBound(p, POMDPToolbox.Particle{Vec2}(particle.state, particle.weight))
 
 
-function upperBound(p::LightDark2DDespot, particle::POMDPToolbox.Particle{Vec2})
+function upperBound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
     # computes the reward for the straight-line path to target
     s = particle.state
     actions = POMDPs.actions(p, true);

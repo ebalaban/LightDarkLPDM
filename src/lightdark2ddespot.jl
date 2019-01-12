@@ -14,14 +14,18 @@ mutable struct LightDark2DDespot <: AbstractLD2
     discount::Float64
     count::Int
     n_rand::Int
+    resample_std::Float64
+    action_space_type::Symbol
+    nominal_action_space::Vector{Float64}
+    extended_action_space::Vector{Float64}
+    reward_func::Symbol
 
-
-    function LightDark2DDespot()
+    function LightDark2DDespot(action_space_type::Symbol; reward_func = :quadratic)
         this = new()
         this.min_noise               = 0.0
         this.min_noise_loc           = 5.0
         this.term_radius             = 0.05
-        this.n_bins                  = n_bins # per linear dimension
+        this.n_bins                  = 100 # per linear dimension
         this.max_xy                  = 10     # assume symmetry in x and y for simplicity
         this.bin_edges               = collect(-this.max_xy:(2*this.max_xy)/this.n_bins:this.max_xy)
         this.bin_centers             = [(this.bin_edges[i]+this.bin_edges[i+1])/2 for i=1:this.n_bins]
@@ -30,12 +34,31 @@ mutable struct LightDark2DDespot <: AbstractLD2
         this.discount                = 1.0
         this.count                   = 0
         this.n_rand                  = 0
-        println(this.bin_edges)
-        println(this.bin_centers)
+        this.resample_std            = 0.5 # st. deviation for particle resampling
+        this.nominal_action_space    = [1.0, 0.1, 0.01]
+        this.extended_action_space   = vcat(1*this.nominal_action_space,
+                                            2*this.nominal_action_space,
+                                            3*this.nominal_action_space,
+                                            4*this.nominal_action_space,
+                                            5*this.nominal_action_space)
+        this.action_space_type       = action_space_type
+        this.reward_func                  = reward_func
         return this
     end
 end
-POMDPs.actions(p::LightDark2DDespot, ::Bool) = [1.0, 0.5, 0.1, 0.01, 0.0];
+
+function POMDPs.actions(p::LightDark2DDespot)
+    if p.action_space_type == :small
+        # return vcat(-p.nominal_action_space, [0.0], p.nominal_action_space)
+        return vcat(-p.nominal_action_space, p.nominal_action_space)
+    elseif p.action_space_type == :large
+        # return vcat(-p.extended_action_space, [0.0], p.extended_action_space)
+        return vcat(-p.extended_action_space, p.extended_action_space)
+    else
+        error("Action space $(p.action_space_type) is not valid for POMDP of type $(typeof(p))")
+    end
+end
+
 # POMDPs.actions(p::LightDark2DDespot, ::Bool) = [0.1, 0.01]
 POMDPs.actions(p::LightDark2DDespot) = Vec2Iter(collect(permutations(vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true)), 2)))
 

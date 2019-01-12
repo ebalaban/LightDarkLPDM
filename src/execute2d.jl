@@ -26,19 +26,19 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     test=Array{LPDMTest}(undef,0)
 
     # push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
-    # push!(test, LPDMTest(:despot, :small, reward_func))
+    push!(test, LPDMTest(:despot, :small, reward_func))
     # push!(test, LPDMTest(:despot, :large, reward_func))
-    push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
+    # push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
 
     scen=Array{LPDMScenario}(undef,0)
-    push!(scen, LPDMScenario(LD2State(-2*π)))
-    push!(scen, LPDMScenario(LD2State(π/2)))
-    push!(scen, LPDMScenario(LD2State(3/2*π)))
-    push!(scen, LPDMScenario(LD2State(2*π)))
+    # push!(scen, LPDMScenario(LD2State(-2*π)))
+    # push!(scen, LPDMScenario(LD2State(π/2)))
+    push!(scen, LPDMScenario(LD2State(3/2*π, 2*π)))
+    # push!(scen, LPDMScenario(LD2State(2*π)))
 
     # Dummy execution, just to make sure all the code is compiled and loaded,
     # to improve uniformity of subsequent executions.
-    execute(solv_mode = :lpdm, action_space_type = :adapt, n_sims = 1, s0 = LD2State(π), output = 0)
+    execute(solv_mode = :despot, action_space_type = :small, n_sims = 1, s0 = LD2State(π, π), output = 0)
 
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
     for i in 1:length(scen)

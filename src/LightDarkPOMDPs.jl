@@ -17,8 +17,8 @@ using LPDM
 
 include("lightdark1d.jl")
 include("lightdark2d.jl")
-include("lightdark2dtarget.jl")
-include("lightdark2dfilter.jl")
+# include("lightdark2dtarget.jl")
+# include("lightdark2dfilter.jl")
 include("lightdark1ddespot.jl")
 include("lightdark1dlpdm.jl")
 include("lightdark2ddespot.jl")
@@ -41,5 +41,8 @@ export
     state_distribution,
     LD1State,
     LD1Action,
-    LD1Obs
+    LD1Obs,
+    LD2State,
+    LD2Action,
+    LD2Obs
 end # module
