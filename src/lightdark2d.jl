@@ -8,9 +8,11 @@ import POMDPs:
         initial_state_distribution,
         discount,
         reward
-
+using Random
+import Random: rand
 import LPDM.isterminal
 using StatsFuns
+using LinearAlgebra
 
 const Vec2 = SVector{2,Float64}
 Vec2() = Vec2(0.0,0.0)
@@ -62,7 +64,7 @@ end
 POMDPs.generate_s(p::AbstractLD2, s::Vec2, a::Vec2, rng::AbstractRNG) = generate_s(p, s, a)
 POMDPs.generate_o(p::AbstractLD2, s::Vec2, a::Vec2, sp::Vec2, rng::AbstractRNG) = generate_o(p, sp, rng)
 POMDPs.observation(p::AbstractLD2, a::Vec2, sp::Vec2) = observation(p, sp)
-POMDPs.isterminal(p::AbstractLD2, s::Vec2) = norm(s) <= p.term_radius
+POMDPs.isterminal(p::AbstractLD2, s::Vec2) = LinearAlgebra.norm(s) <= p.term_radius
 POMDPs.initial_state_distribution(p::AbstractLD2) = p.init_dist
 POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2) =
                 (p.reward_func == :quadratic) ?  -(dot(s, p.Q*s) + dot(a, p.R*a)) : -1
@@ -70,12 +72,12 @@ POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2, sp::Vec2) = POMDPs.reward(p, s, 
 
 POMDPs.discount(p::AbstractLD2) = p.discount
 
-
 struct SymmetricNormal2
     mean::Vec2
     std::Float64
 end
-# rand(rng::AbstractRNG, d::SymmetricNormal2) = d.mean + d.std*Vec2(randn(rng, 2))
+
+Random.rand(rng::AbstractRNG, d::Random.SamplerTrivial{SymmetricNormal2}) = d[].mean + d[].std*Vec2(rand(rng),rand(rng))
 POMDPs.pdf(d::SymmetricNormal2, s::Vec2) = exp(-0.5*sum((s-d.mean).^2)/d.std^2)/(2*pi*d.std^2)
 mean(d::SymmetricNormal2) = d.mean
 mode(d::SymmetricNormal2) = d.mean
@@ -99,7 +101,7 @@ generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG) = rand(rng, observation(p
 # Initial distribution corresponds to how the observations would look
 #TODO: possibly move to LightDarkPOMDPs
 function state_distribution(pomdp::AbstractLD2, s0::LD2State, config::LPDMConfig, rng::RNGVector)
-    states = Vector{LPDMParticle{Float64}}();
+    states = Vector{LPDMParticle{LD2State}}();
     weight = 1/(config.n_particles^2) # weight of each individual particle
     particle = LPDMParticle{LD2State}(LD2State(0.0,0.0), 1, weight)
 
