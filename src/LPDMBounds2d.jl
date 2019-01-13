@@ -1,8 +1,8 @@
 import LPDM: bounds, best_lb_action, best_ub_action
 
 mutable struct LDBounds2d{S,A,O}
-    lb    ::Float64
-    ub    ::Float64
+    lb_    ::Float64
+    ub_    ::Float64
     best_lb_action_::Vec2
     best_ub_action_::Vec2
 
@@ -21,19 +21,22 @@ function LPDM.bounds(b::LDBounds2d{S,A,O},
                      particles::Vector{LPDMParticle{S}},
                      config::LPDMConfig) where {S,A,O}
 
-    ub = Array{Int8}(0);
-    lb = Array{Int8}(0);
+    ub = Array{Int64}(undef, length(particles))
+    lb = Array{Int64}(undef, length(particles))
 
-    for s in particles
-        push!(ub, upperBound(pomdp, s))
-        push!(lb, lowerBound(pomdp, s))
+    for i in 1:length(particles)
+        ub[i] = upperBound(pomdp, particles[i])
+        lb[i] = lowerBound(pomdp, particles[i])
     end
 
-    b.lb = minimum(lb)
-    b.ub = maximum(ub)
+    b.lb_ = minimum(lb)
+    b.ub_ = maximum(ub)
 
-    return b.lb, b.ub
+    return b.lb_, b.ub_
 end
+
+LPDM.best_lb_action(b::LDBounds2d) = isnan(b.best_lb_action_) ? error("best_lb_action undefined. Call bounds() first.") : b.best_lb_action_
+LPDM.best_ub_action(b::LDBounds2d) = isnan(b.best_ub_action_) ? error("best_ub_action undefined. Call bounds() first.") : b.best_ub_action_
 
 #TODO: these functions make sense for step-wise rewards, but not as much for quadratic rewards. May need to redo.
 function lowerBound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
@@ -56,7 +59,7 @@ function lowerBound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
 
     return -(r1 + r2 + r3)
 end
-lowerBound(p::LightDark2DDespot, particle::LPDM.LPDMParticle{Vec2}) = lowerBound(p, POMDPToolbox.Particle{Vec2}(particle.state, particle.weight))
+# lowerBound(p::LightDark2DDespot, particle::LPDM.LPDMParticle{Vec2}) = lowerBound(p, POMDPToolbox.Particle{Vec2}(particle.state, particle.weight))
 
 
 function upperBound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
@@ -73,7 +76,7 @@ function upperBound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
     r = rx > ry ? rx : ry                                  ## pick the larger of the two
     return -r
 end
-upperBound(p::LightDark2DDespot, particle::LPDM.LPDMParticle{Vec2}) = upperBound(p, POMDPToolbox.Particle{Vec2}(particle.state, particle.weight))
+# upperBound(p::LightDark2DDespot, particle::LPDM.LPDMParticle{Vec2}) = upperBound(p, LPDM.LPDMParticle{Vec2}(particle.state, particle.weight))
 
 
 # function take_action(x::Float64, terminal::Float64, actions::Array{Float64,1})
