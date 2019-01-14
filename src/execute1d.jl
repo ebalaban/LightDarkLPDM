@@ -26,15 +26,15 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     test=Array{LPDMTest}(undef,0)
 
     # push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
-    # push!(test, LPDMTest(:despot, :small, reward_func))
-    # push!(test, LPDMTest(:despot, :large, reward_func))
+    push!(test, LPDMTest(:despot, :small, reward_func))
+    push!(test, LPDMTest(:despot, :large, reward_func))
     push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
 
     scen=Array{LPDMScenario}(undef,0)
-    push!(scen, LPDMScenario(LD1State(-2*π)))
-    push!(scen, LPDMScenario(LD1State(π/2)))
+    # push!(scen, LPDMScenario(LD1State(-2*π)))
+    # push!(scen, LPDMScenario(LD1State(π/2)))
     push!(scen, LPDMScenario(LD1State(3/2*π)))
-    push!(scen, LPDMScenario(LD1State(2*π)))
+    # push!(scen, LPDMScenario(LD1State(2*π)))
 
     # Dummy execution, just to make sure all the code is compiled and loaded,
     # to improve uniformity of subsequent executions.

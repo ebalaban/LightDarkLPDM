@@ -33,11 +33,11 @@ function LPDM.bounds(b::LDBounds1d{S,A,O},
     tmp_ub_action = 0.0
 
     for p in particles
-        if p.state > pomdp.min_noise_loc # assume min_noise_loc > 0
+        tmp_ub, tmp_ub_action = upper_bound(pomdp,p)
+        if p.state >= pomdp.min_noise_loc # assume min_noise_loc > 0
             # both will have to do roughly the same thing (+/- discretization differences),
             # so make them the same
             #TODO: review for lb > ub
-            tmp_ub, tmp_ub_action = upper_bound(pomdp,p)
             tmp_lb, tmp_lb_action = tmp_ub, tmp_ub_action
         else
             tmp_lb, tmp_lb_action = lower_bound(pomdp,p)
@@ -46,6 +46,7 @@ function LPDM.bounds(b::LDBounds1d{S,A,O},
         if tmp_lb < b.lb_
             b.lb_             = tmp_lb
             b.best_lb_action_ = tmp_lb_action
+            abs(tmp_lb + 30.0) < 0.1 && println("s: $(p.state), b.lb_=$(b.lb_), tmp_lb_action = $(tmp_lb_action), b.lba_ = $(b.best_lb_action_)")
         end
         if tmp_ub > b.ub_
             b.ub_             = tmp_ub
@@ -94,6 +95,7 @@ function move(p::AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
     if abs(x2) <= p.term_radius
         # x1 < 0.7 && println("TERMINATION REWARD #2 FOR x2=$x")
         r += reward(p,x2,0.0) #termination reward
+        first_a = 0.0
     end
     # x1 < 0.7 && println("exiting move $x1 -> $x2")
     return r, first_a #action sign depends on the direction
