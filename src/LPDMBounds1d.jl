@@ -27,10 +27,10 @@ function LPDM.bounds(b::LDBounds1d{S,A,O},
     b.best_lb_action_ = NaN
     b.best_ub_action_ = NaN
 
-    tmp_lb = 0.0
-    tmp_ub = 0.0
-    tmp_lb_action = 0.0
-    tmp_ub_action = 0.0
+    tmp_lb = NaN
+    tmp_ub = NaN
+    tmp_lb_action = NaN
+    tmp_ub_action = NaN
 
     for p in particles
         tmp_ub, tmp_ub_action = upper_bound(pomdp,p)
@@ -46,7 +46,10 @@ function LPDM.bounds(b::LDBounds1d{S,A,O},
         if tmp_lb < b.lb_
             b.lb_             = tmp_lb
             b.best_lb_action_ = tmp_lb_action
-            abs(tmp_lb + 30.0) < 0.1 && println("s: $(p.state), b.lb_=$(b.lb_), tmp_lb_action = $(tmp_lb_action), b.lba_ = $(b.best_lb_action_)")
+            # if abs(tmp_lb + 30.0) < 0.1 # DEBUG: remove
+            #     println("particles: $particles")
+            #     println("s: $(p.state), b.lb_=$(b.lb_), tmp_lb_action = $(tmp_lb_action), b.lba_ = $(b.best_lb_action_)")
+            # end
         end
         if tmp_ub > b.ub_
             b.ub_             = tmp_ub
@@ -56,8 +59,9 @@ function LPDM.bounds(b::LDBounds1d{S,A,O},
 
     # Sanity check
     if b.ub_ < b.lb_
-        show(particles); println("")
-        error("BOUNDS: ub=$(b.ub_) < lb=$(b.lb_), lba = $(b.best_lb_action_), uba = $(b.best_ub_action_)")
+        # show(particles); println("")
+        # error("BOUNDS: ub=$(b.ub_) < lb=$(b.lb_), lba = $(b.best_lb_action_), uba = $(b.best_ub_action_), tmp_lb = $(tmp_lb), tmp_ub = $(tmp_ub), tmp_lb_action = $(tmp_lb_action), tmp_ub_action = $(tmp_ub_action)")
+        error("BOUNDS: ub=$(b.ub_) < lb=$(b.lb_)")
     end
     return b.lb_, b.ub_
 end
@@ -82,6 +86,10 @@ function move(p::AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
         return reward(p,x1,0.0), 0.0
     end
 
+    if abs(x2-x1) < min_a #too close to take any action
+        return reward(p,x1,0.0), 0.0
+    end
+
     while (abs(x2-x) > min_a) && (abs(x) >= p.term_radius)
         a = maximum(pos_actions[pos_actions .<= abs(x2-x)]) # maximum action not exceeding Δx
         a_dir = direction * a
@@ -98,6 +106,9 @@ function move(p::AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
         first_a = 0.0
     end
     # x1 < 0.7 && println("exiting move $x1 -> $x2")
+    # if isnan(first_a) #DEBUG: remove
+    #     error("move: first_a = $first_a, x1=$x1, x2=$x2")
+    # end
     return r, first_a #action sign depends on the direction
 end
 
