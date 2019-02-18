@@ -35,24 +35,24 @@ end
 #     return b.lb_, b.ub_
 # end
 
-function LPDM.bounds(b::LDBounds1d{S,A,O},
-                     pomdp::AbstractLD1,
+function LPDM.bounds(b::LDBounds2d{S,A,O},
+                     pomdp::AbstractLD2,
                      particles::Vector{LPDMParticle{S}},
                      config::LPDMConfig) where {S,A,O}
 
     # reset every time bounds are about to be recomputed
     b.lb_ = +Inf
     b.ub_ = -Inf
-    b.best_lb_action_ = NaN
-    b.best_ub_action_ = NaN
+    b.best_lb_action_ = Vec2(NaN,NaN)
+    b.best_ub_action_ = Vec2(NaN,NaN)
 
     tmp_lb = 0.0
     tmp_ub = 0.0
-    tmp_lb_action = 0.0
-    tmp_ub_action = 0.0
+    tmp_lb_action = Vec2(0.0,0.0)
+    tmp_ub_action = Vec2(0.0,0.0)
 
     for p in particles
-        if p.state > pomdp.min_noise_loc # assume min_noise_loc > 0
+        if p.state[1] > pomdp.min_noise_loc # assume min_noise_loc > 0
             # both will have to do roughly the same thing (+/- discretization differences),
             # so make them the same
             #TODO: review for lb > ub
@@ -88,43 +88,124 @@ LPDM.best_ub_action(b::LDBounds2d) = isnan(b.best_ub_action_) ? error("best_ub_a
 
 
 #TODO: these functions make sense for step-wise rewards, but not as much for quadratic rewards. May need to redo.
-function lowerBound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
+
 # computes the cost of traveling to the low noise region and only then towards target. i.e. a slow approach
    #       s__________
    #                  |
    #                  |
-   #           x______|
+   #           (0,0) _|
+
+function lower_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
 
     s = particle.state
-    actions = POMDPs.actions(p, true);
-    r::Int8 = 0.0;
-    remx::Float64 = 0.0;
-    remy::Float64 = 0.0;
 
-    r1,remx,first_ax = take_action(p.min_noise_loc-s[1], p.term_radius, actions)        # calculate cost for moving x to low noise region
-    r2,remy,first_ay = take_action(s[2], p.term_radius, actions)                         # calculate cost for moving y to target coordinate
-    r3,remx,temp_a = take_action(p.min_noise_loc-remx, p.term_radius, actions)         # calculate cost for moving x to target coordinate from where it reached in the low noise region
+    r1, a1_x = move(p, s, Vec2(p.min_noise_loc,s[2]), 1)
+    r2, a1_y = move(p, Vec2(p.min_noise_loc,s[2]), Vec2(p.min_noise_loc,0.0), 2)
+    r3, a2_x = move(p, Vec2(p.min_noise_loc,0.0), Vec2(0.0,0.0), 1)
 
-    return -(r1 + r2 + r3), vec2(first_ax,first_ay)
+    return r1 + r2 + r3, Vec2(a1_x,a1_y)
 end
 # lowerBound(p::LightDark2DDespot, particle::LPDM.LPDMParticle{Vec2}) = lowerBound(p, POMDPToolbox.Particle{Vec2}(particle.state, particle.weight))
+#
+# function lower_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
+#
+#     s = particle.state
+#     actions = POMDPs.actions(p, true);
+#     r::Int8 = 0.0;
+#     remx::Float64 = 0.0;
+#     remy::Float64 = 0.0;
+#
+#     r1,remx,first_ax = take_action(p.min_noise_loc-s[1], p.term_radius, actions)        # calculate cost for moving x to low noise region
+#     r2,remy,first_ay = take_action(s[2], p.term_radius, actions)                         # calculate cost for moving y to target coordinate
+#     r3,remx,temp_a = take_action(p.min_noise_loc-remx, p.term_radius, actions)         # calculate cost for moving x to target coordinate from where it reached in the low noise region
+#
+#     return -(r1 + r2 + r3), Vec2(first_ax,first_ay)
+# end
 
-
-function upperBound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
-    # computes the reward for the straight-line path to target
+# computes the reward for the straight-line path to target
+function upper_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
     s = particle.state
-    actions = POMDPs.actions(p, true);
-    rx::Int8 = 0
-    ry::Int8 = 0
-    remx::Float64 = 0
-    remy::Float64 = 0
-    rx,remx,first_ax = take_action(s[1], p.term_radius, actions)        ##  for x: cost to move x in a straight line to within target region
-    ry,remy,first_ay = take_action(s[2], p.term_radius, actions)        ##  same for y
+
+    r1, a1_x = move(p, s, Vec2(0.0), 1)
+    r2, a1_y = move(p, s, Vec2(0.0), 2)
 
     r = rx > ry ? rx : ry                                  ## pick the larger of the two
-    return -r, vec2(first_ax,first_ay)
+    return r, Vec2(first_ax,first_ay)
 end
+
+# function upper_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
+#     # computes the reward for the straight-line path to target
+#     s = particle.state
+#     actions = POMDPs.actions(p, true);
+#     rx::Int8 = 0
+#     ry::Int8 = 0
+#     remx::Float64 = 0
+#     remy::Float64 = 0
+#     rx,remx,first_ax = take_action(s[1], p.term_radius, actions)        ##  for x: cost to move x in a straight line to within target region
+#     ry,remy,first_ay = take_action(s[2], p.term_radius, actions)        ##  same for y
+#
+#     r = rx > ry ? rx : ry                                  ## pick the larger of the two
+#     return -r, vec2(first_ax,first_ay)
+# end
 # upperBound(p::LightDark2DDespot, particle::LPDM.LPDMParticle{Vec2}) = upperBound(p, LPDM.LPDMParticle{Vec2}(particle.state, particle.weight))
+
+ #w1 and w2 are start and end waypoints, coord is 1 or 2 for x and y, respectively
+function move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64=1)
+    direction = w2[c] > w1[c] ? 1 : -1
+    all_actions = POMDPs.actions(p)
+    # I = findall(!iszero, all_actions)
+    pos_actions = all_actions[all_actions .> 0]
+    # nz_actions = all_actions[I]
+    min_a = minimum(pos_actions)
+
+    r = 0.0
+    w = [w1[1],w1[2]]
+    first_a = NaN
+    a_dir = NaN
+
+    if (abs(w1[1]) <= p.term_radius) && (abs(w1[2]) <= p.term_radius)
+        return reward(p,w1,Vec2(0.0,0.0)), 0.0
+    end
+
+    if abs(w2[c]-w1[c]) < min_a #too close to take any action
+        return reward(p,w1,0.0), 0.0
+    end
+
+    while (abs(w2[c]-w[c]) > min_a) && (abs(w[c]) >= p.term_radius)
+        a = maximum(pos_actions[pos_actions .<= abs(w2[c]-w[c])]) # maximum action not exceeding Δx
+        a_dir = direction * a
+        if isnan(first_a)
+            first_a = a_dir # assign first action (directional)
+        end
+        r += reward(p, Vec2(w[1],w[2]), Vec2(a_dir,0.0)) # use current state for computing the reward; (0.0,a_dir) and (a_dir,0.0) are equivalent for reward purposes
+        # println("BOUNDS: x=$x, x1=$x1, x2=$x2, min_a = $min_a, all_actions=$all_actions, pos_actions=$pos_actions, av_actions=$(all_actions[all_actions .< abs(x2-x)]), a_dir=$a_dir,  r=$r ")
+        w[c] += a_dir # take the step
+    end
+    if (abs(w2[1]) <= p.term_radius) && (abs(w2[2]) <= p.term_radius)
+        # x1 < 0.7 && println("TERMINATION REWARD #2 FOR x2=$x")
+        r += reward(p,w2,Vec2(0.0,0.0)) #termination reward
+        first_a = 0.0
+    end
+    # x1 < 0.7 && println("exiting move $x1 -> $x2")
+    # if isnan(first_a) #DEBUG: remove
+    #     error("move: first_a = $first_a, x1=$x1, x2=$x2")
+    # end
+    return r, first_a #action sign depends on the direction
+end
+
+# NOTE: not for direct calling
+# computes the cost of traveling to the low noise region and only then towards target. i.e. a slow approach
+function lower_bound(p::AbstractLD1, particle::LPDMParticle{Float64})
+
+    if abs(particle.state) < p.term_radius
+        return reward(p, particle.state, 0.0), 0.0
+    else
+        r1,a1 = move(p, particle.state, p.min_noise_loc)         # estimate cost of moving x to low noise x
+        # estimate cost of moving x to the target from the low noise region (will terminate earlier)
+        r2,a2 = move(p, p.min_noise_loc, 0.0)
+    end
+    return r1+r2, a1
+end
 
 
 # function take_action(x::Float64, terminal::Float64, actions::Array{Float64,1})
