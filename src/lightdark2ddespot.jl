@@ -1,4 +1,5 @@
 using Discretizers
+import LPDM: default_action
 
 # @with_kw mutable struct LightDark2DDespot <: AbstractLD2
 mutable struct LightDark2DDespot <: AbstractLD2
@@ -35,7 +36,8 @@ mutable struct LightDark2DDespot <: AbstractLD2
         this.count                   = 0
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
-        this.nominal_action_space    = [1.0, 0.1, 0.01]
+        # this.nominal_action_space    = [1.0, 0.1, 0.01]
+        this.nominal_action_space    = [1.0, 0.1]
         this.extended_action_space   = vcat(1*this.nominal_action_space,
                                             2*this.nominal_action_space,
                                             3*this.nominal_action_space,
@@ -61,6 +63,9 @@ end
 
 # POMDPs.actions(p::LightDark2DDespot, ::Bool) = [0.1, 0.01]
 POMDPs.actions(p::LightDark2DDespot) = Vec2Iter(collect(permutations(vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true)), 2)))
+LPDM.default_action(p::LightDark2DDespot) = Vec2(0.0,0.0)
+LPDM.default_action(p::LightDark2DDespot, ::Vector{LPDMParticle{Vec2}}) = LPDM.default_action(p)
+
 
 reward(p::LightDark2DDespot, s::Vec2) = -1.0
 reward(p::LightDark2DDespot, s::Vec2, a::Vec2) = reward(p, s)

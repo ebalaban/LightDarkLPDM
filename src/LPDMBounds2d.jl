@@ -126,11 +126,11 @@ end
 function upper_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
     s = particle.state
 
-    r1, a1_x = move(p, s, Vec2(0.0), 1)
-    r2, a1_y = move(p, s, Vec2(0.0), 2)
+    rx, a1_x = move(p, s, Vec2(0.0,s[2]), 1)
+    ry, a1_y = move(p, Vec2(0.0,s[2]), Vec2(0.0,0.0), 2)
 
     r = rx > ry ? rx : ry                                  ## pick the larger of the two
-    return r, Vec2(first_ax,first_ay)
+    return r, Vec2(a1_x,a1_y)
 end
 
 # function upper_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
@@ -152,7 +152,7 @@ end
  #w1 and w2 are start and end waypoints, coord is 1 or 2 for x and y, respectively
 function move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64=1)
     direction = w2[c] > w1[c] ? 1 : -1
-    all_actions = POMDPs.actions(p)
+    all_actions = POMDPs.actions(p, true)
     # I = findall(!iszero, all_actions)
     pos_actions = all_actions[all_actions .> 0]
     # nz_actions = all_actions[I]
@@ -168,7 +168,7 @@ function move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64=1)
     end
 
     if abs(w2[c]-w1[c]) < min_a #too close to take any action
-        return reward(p,w1,0.0), 0.0
+        return reward(p,w1,Vec2(0.0,0.0)), 0.0
     end
 
     while (abs(w2[c]-w[c]) > min_a) && (abs(w[c]) >= p.term_radius)
@@ -178,7 +178,7 @@ function move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64=1)
             first_a = a_dir # assign first action (directional)
         end
         r += reward(p, Vec2(w[1],w[2]), Vec2(a_dir,0.0)) # use current state for computing the reward; (0.0,a_dir) and (a_dir,0.0) are equivalent for reward purposes
-        # println("BOUNDS: x=$x, x1=$x1, x2=$x2, min_a = $min_a, all_actions=$all_actions, pos_actions=$pos_actions, av_actions=$(all_actions[all_actions .< abs(x2-x)]), a_dir=$a_dir,  r=$r ")
+        # println("BOUNDS: w=$w, w1=$w1, w2=$w2, min_a = $min_a, all_actions=$all_actions, pos_actions=$pos_actions, av_actions=$(all_actions[all_actions .< abs(w2[c]-w[c])]), a_dir=$a_dir,  r=$r ")
         w[c] += a_dir # take the step
     end
     if (abs(w2[1]) <= p.term_radius) && (abs(w2[2]) <= p.term_radius)
