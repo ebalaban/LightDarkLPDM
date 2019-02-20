@@ -16,6 +16,7 @@ using LinearAlgebra
 
 const Vec2 = SVector{2,Float64}
 Vec2() = Vec2(0.0,0.0)
+Vec2Iter(S::Array{Array{Float64,1},1}) = [Vec2(s) for s in S]
 
 # Typealias appropriately
 const LD2State  = Vec2

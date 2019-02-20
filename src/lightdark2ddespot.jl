@@ -47,7 +47,7 @@ mutable struct LightDark2DDespot <: AbstractLD2
     end
 end
 
-function POMDPs.actions(p::LightDark2DDespot)
+function POMDPs.actions(p::LightDark2DDespot, ::Bool)
     if p.action_space_type == :small
         # return vcat(-p.nominal_action_space, [0.0], p.nominal_action_space)
         return vcat(-p.nominal_action_space, p.nominal_action_space)
