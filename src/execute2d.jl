@@ -50,7 +50,7 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
             println("------------------------")
         end
 
-        Printf.@printf(f,"SCENARIO %d, s0 = %f, %s reward function\n", i, scen[i].s0, reward_func)
+        Printf.@printf(f,"SCENARIO %d, s0 = (%f,%f), %s reward function\n", i, scen[i].s0[1], scen[i].s0[2], reward_func)
         Printf.@printf(f,"==================================================================\n")
         # Printf.@printf(f,"mode\t\tact. space\t\tsteps(std)\t\treward(std)\n")
         Printf.@printf(f,"SOLVER\t\tACT. SPACE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
@@ -125,9 +125,10 @@ function execute(;vis::Vector{Int64}=Int64[],
                                                                             debug = output,
                                                                             time_per_move = -1.0,  #sec
                                                                             # time_per_move = 1.0,  #sec
-                                                                            sim_len = steps,
+                                                                            # sim_len = steps,
+                                                                            sim_len = 50,
                                                                             search_depth = 10,
-                                                                            n_particles = 3,
+                                                                            n_particles = 10,
                                                                             # seed = UInt32(2),
                                                                             seed = UInt32(2*sim+1),
                                                                             # max_trials = 1000)
@@ -140,6 +141,7 @@ function execute(;vis::Vector{Int64}=Int64[],
                                n_particles = solver.config.n_particles,
                                seed = UInt32(3*sim+1));  # initialize belief updater
         initial_states = state_distribution(p, s0, solver.config, world_rng)     # create initial  distribution
+        show(initial_states)
         current_belief = LPDM.create_belief(bu)                       # allocate an updated belief object
         LPDM.initialize_belief(bu, initial_states, current_belief)    # initialize belief
         # show(current_belief)

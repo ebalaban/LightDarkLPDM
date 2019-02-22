@@ -7,7 +7,8 @@ import POMDPs:
         generate_o,
         initial_state_distribution,
         discount,
-        reward
+        reward,
+        rand
 using Random
 import Random: rand
 import LPDM.isterminal
@@ -78,11 +79,12 @@ struct SymmetricNormal2
     std::Float64
 end
 
-Random.rand(rng::AbstractRNG, d::Random.SamplerTrivial{SymmetricNormal2}) = d[].mean + d[].std*Vec2(rand(rng),rand(rng))
+Random.rand(rng::AbstractRNG, d::Random.SamplerTrivial{SymmetricNormal2}) = d[].mean + d[].std*Vec2(rand(rng)-0.5,rand(rng)-0.5)
 POMDPs.pdf(d::SymmetricNormal2, s::Vec2) = exp(-0.5*sum((s-d.mean).^2)/d.std^2)/(2*pi*d.std^2)
 mean(d::SymmetricNormal2) = d.mean
 mode(d::SymmetricNormal2) = d.mean
 Base.eltype(::Type{SymmetricNormal2}) = Vec2
+POMDPs.rand(p::AbstractLD2, s::LD2State, rng::LPDM.RNGVector) = rand(rng, SymmetricNormal2(s,p.resample_std)) # for resampling
 
 # chose this on 2/6/17 because I like the bowtie particle patterns it produces
 # unclear which one was actually used in the paper

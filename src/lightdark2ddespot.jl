@@ -66,7 +66,6 @@ POMDPs.actions(p::LightDark2DDespot) = Vec2Iter(collect(permutations(vcat(POMDPs
 LPDM.default_action(p::LightDark2DDespot) = Vec2(0.0,0.0)
 LPDM.default_action(p::LightDark2DDespot, ::Vector{LPDMParticle{Vec2}}) = LPDM.default_action(p)
 
-
 reward(p::LightDark2DDespot, s::Vec2) = -1.0
 reward(p::LightDark2DDespot, s::Vec2, a::Vec2) = reward(p, s)
 reward(p::LightDark2DDespot, s::Vec2, a::Vec2, sp::Vec2) = reward(p, s)
