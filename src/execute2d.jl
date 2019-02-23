@@ -126,13 +126,13 @@ function execute(;vis::Vector{Int64}=Int64[],
                                                                             time_per_move = -1.0,  #sec
                                                                             # time_per_move = 1.0,  #sec
                                                                             # sim_len = steps,
-                                                                            sim_len = 50,
+                                                                            sim_len = 20,
                                                                             search_depth = 10,
                                                                             n_particles = 10,
                                                                             # seed = UInt32(2),
                                                                             seed = UInt32(2*sim+1),
                                                                             # max_trials = 1000)
-                                                                            max_trials = 10,
+                                                                            max_trials = 50,
                                                                             mode = solv_mode)
 
     #---------------------------------------------------------------------------------

@@ -52,11 +52,11 @@ function LPDM.bounds(b::LDBounds2d{S,A,O},
     tmp_ub_action = Vec2(0.0,0.0)
 
     for p in particles
+        tmp_ub, tmp_ub_action = upper_bound(pomdp,p)
         if p.state[1] > pomdp.min_noise_loc # assume min_noise_loc > 0
             # both will have to do roughly the same thing (+/- discretization differences),
             # so make them the same
             #TODO: review for lb > ub
-            tmp_ub, tmp_ub_action = upper_bound(pomdp,p)
             tmp_lb, tmp_lb_action = tmp_ub, tmp_ub_action
         else
             tmp_lb, tmp_lb_action = lower_bound(pomdp,p)
@@ -129,7 +129,9 @@ function upper_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
     rx, a1_x = move(p, s, Vec2(0.0,s[2]), 1)
     ry, a1_y = move(p, Vec2(0.0,s[2]), Vec2(0.0,0.0), 2)
 
-    r = rx > ry ? rx : ry                                  ## pick the larger of the two
+    println("s=$s, rx=$rx, ry=$ry, a1_x=$a1_x, a1_y=$a1_y")
+    error("done, for now")
+    r = rx < ry ? rx : ry                                  ## pick the smaller (worst) of the two
     return r, Vec2(a1_x,a1_y)
 end
 
@@ -150,7 +152,7 @@ end
 # upperBound(p::LightDark2DDespot, particle::LPDM.LPDMParticle{Vec2}) = upperBound(p, LPDM.LPDMParticle{Vec2}(particle.state, particle.weight))
 
  #w1 and w2 are start and end waypoints, coord is 1 or 2 for x and y, respectively
-function move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64=1)
+function move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64)
     direction = w2[c] > w1[c] ? 1 : -1
     all_actions = POMDPs.actions(p, true)
     # I = findall(!iszero, all_actions)
