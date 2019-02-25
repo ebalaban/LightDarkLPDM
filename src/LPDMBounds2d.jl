@@ -129,8 +129,8 @@ function upper_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
     rx, a1_x = move(p, s, Vec2(0.0,s[2]), 1)
     ry, a1_y = move(p, Vec2(0.0,s[2]), Vec2(0.0,0.0), 2)
 
-    println("s=$s, rx=$rx, ry=$ry, a1_x=$a1_x, a1_y=$a1_y")
-    error("done, for now")
+    # println("s=$s, rx=$rx, ry=$ry, a1_x=$a1_x, a1_y=$a1_y")
+    # error("done, for now")
     r = rx < ry ? rx : ry                                  ## pick the smaller (worst) of the two
     return r, Vec2(a1_x,a1_y)
 end
@@ -183,11 +183,13 @@ function move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64)
         # println("BOUNDS: w=$w, w1=$w1, w2=$w2, min_a = $min_a, all_actions=$all_actions, pos_actions=$pos_actions, av_actions=$(all_actions[all_actions .< abs(w2[c]-w[c])]), a_dir=$a_dir,  r=$r ")
         w[c] += a_dir # take the step
     end
+
     if (abs(w2[1]) <= p.term_radius) && (abs(w2[2]) <= p.term_radius)
         # x1 < 0.7 && println("TERMINATION REWARD #2 FOR x2=$x")
         r += reward(p,w2,Vec2(0.0,0.0)) #termination reward
-        first_a = 0.0
+        # first_a = 0.0
     end
+
     # x1 < 0.7 && println("exiting move $x1 -> $x2")
     # if isnan(first_a) #DEBUG: remove
     #     error("move: first_a = $first_a, x1=$x1, x2=$x2")
