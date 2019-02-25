@@ -6,6 +6,8 @@ mutable struct LightDark2DDespot <: AbstractLD2
     min_noise::Float64
     min_noise_loc::Float64
     term_radius::Float64
+    Q::Matrix{Float64}
+    R::Matrix{Float64}
     n_bins::Int         # per linear dimension
     max_xy::Float64     # assume symmetry in x and y for simplicity
     bin_edges::Vector{Float64}
@@ -26,6 +28,8 @@ mutable struct LightDark2DDespot <: AbstractLD2
         this.min_noise               = 0.0
         this.min_noise_loc           = 5.0
         this.term_radius             = 0.05
+        this.Q                       = diagm(0=>[0.5, 0.5])
+        this.R                       = diagm(0=>[0.5, 0.5])
         this.n_bins                  = 100 # per linear dimension
         this.max_xy                  = 10     # assume symmetry in x and y for simplicity
         this.bin_edges               = collect(-this.max_xy:(2*this.max_xy)/this.n_bins:this.max_xy)
@@ -37,7 +41,7 @@ mutable struct LightDark2DDespot <: AbstractLD2
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
         # this.nominal_action_space    = [1.0, 0.1, 0.01]
-        this.nominal_action_space    = [1.0, 0.1]
+        this.nominal_action_space    = [1.0, 0.1, 0.01]
         this.extended_action_space   = vcat(1*this.nominal_action_space,
                                             2*this.nominal_action_space,
                                             3*this.nominal_action_space,
@@ -66,9 +70,9 @@ POMDPs.actions(p::LightDark2DDespot) = Vec2Iter(collect(permutations(vcat(POMDPs
 LPDM.default_action(p::LightDark2DDespot) = Vec2(0.0,0.0)
 LPDM.default_action(p::LightDark2DDespot, ::Vector{LPDMParticle{Vec2}}) = LPDM.default_action(p)
 
-reward(p::LightDark2DDespot, s::Vec2) = -1.0
-reward(p::LightDark2DDespot, s::Vec2, a::Vec2) = reward(p, s)
-reward(p::LightDark2DDespot, s::Vec2, a::Vec2, sp::Vec2) = reward(p, s)
+# reward(p::LightDark2DDespot, s::Vec2) = -1.0
+# reward(p::LightDark2DDespot, s::Vec2, a::Vec2) = reward(p, s)
+# reward(p::LightDark2DDespot, s::Vec2, a::Vec2, sp::Vec2) = reward(p, s)
 
 # Version with discrete observations
 function generate_o(p::LightDark2DDespot, sp::Vec2, rng::AbstractRNG)

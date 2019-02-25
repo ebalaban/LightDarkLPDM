@@ -16,24 +16,6 @@ mutable struct LDBounds2d{S,A,O}
     end
 end
 
-# function LPDM.bounds(b::LDBounds2d{S,A,O},
-#                      pomdp::AbstractLD2,
-#                      particles::Vector{LPDMParticle{S}},
-#                      config::LPDMConfig) where {S,A,O}
-#
-#     ub = Array{Int64}(undef, length(particles))
-#     lb = Array{Int64}(undef, length(particles))
-#
-#     for i in 1:length(particles)
-#         ub[i] = upperBound(pomdp, particles[i])
-#         lb[i] = lowerBound(pomdp, particles[i])
-#     end
-#
-#     b.lb_ = minimum(lb)
-#     b.ub_ = maximum(ub)
-#
-#     return b.lb_, b.ub_
-# end
 
 function LPDM.bounds(b::LDBounds2d{S,A,O},
                      pomdp::AbstractLD2,
@@ -135,22 +117,6 @@ function upper_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
     return r, Vec2(a1_x,a1_y)
 end
 
-# function upper_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
-#     # computes the reward for the straight-line path to target
-#     s = particle.state
-#     actions = POMDPs.actions(p, true);
-#     rx::Int8 = 0
-#     ry::Int8 = 0
-#     remx::Float64 = 0
-#     remy::Float64 = 0
-#     rx,remx,first_ax = take_action(s[1], p.term_radius, actions)        ##  for x: cost to move x in a straight line to within target region
-#     ry,remy,first_ay = take_action(s[2], p.term_radius, actions)        ##  same for y
-#
-#     r = rx > ry ? rx : ry                                  ## pick the larger of the two
-#     return -r, vec2(first_ax,first_ay)
-# end
-# upperBound(p::LightDark2DDespot, particle::LPDM.LPDMParticle{Vec2}) = upperBound(p, LPDM.LPDMParticle{Vec2}(particle.state, particle.weight))
-
  #w1 and w2 are start and end waypoints, coord is 1 or 2 for x and y, respectively
 function move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64)
     direction = w2[c] > w1[c] ? 1 : -1
@@ -173,7 +139,7 @@ function move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64)
         return reward(p,w1,Vec2(0.0,0.0)), 0.0
     end
 
-    while (abs(w2[c]-w[c]) > min_a) && (abs(w[c]) >= p.term_radius)
+    while (abs(w2[c]-w[c]) > min_a) && (abs(w[c]) > p.term_radius)
         a = maximum(pos_actions[pos_actions .<= abs(w2[c]-w[c])]) # maximum action not exceeding Δx
         a_dir = direction * a
         if isnan(first_a)

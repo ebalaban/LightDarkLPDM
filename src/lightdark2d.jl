@@ -54,8 +54,8 @@ abstract type AbstractLD2 <: POMDP{LD2State, LD2Action, LD2Obs} end
 @with_kw mutable struct LightDark2D <: AbstractLD2
     min_noise::Float64      = 0.0
     min_noise_loc::Float64  = 5.0
-    Q::Matrix{Float64}      = diagm([0.5, 0.5])
-    R::Matrix{Float64}      = diagm([0.5, 0.5])
+    Q::Matrix{Float64}      = diagm(0=>[0.5, 0.5])
+    R::Matrix{Float64}      = diagm(0=>[0.5, 0.5])
     term_radius::Float64    = 1e-5
     init_dist::Any          = SymmetricNormal2([2.0, 2.0], 0.5)
     discount::Float64       = 1.0
