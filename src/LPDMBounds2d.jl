@@ -131,7 +131,11 @@ function move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64)
     first_a = NaN
     a_dir = NaN
 
-    if (abs(w1[1]) <= p.term_radius) && (abs(w1[2]) <= p.term_radius)
+    # if (abs(w1[1]) <= p.term_radius) && (abs(w1[2]) <= p.term_radius)
+    #     return reward(p,w1,Vec2(0.0,0.0)), 0.0
+    # end
+
+    if (abs(w1[c]) <= p.term_radius)
         return reward(p,w1,Vec2(0.0,0.0)), 0.0
     end
 
@@ -157,9 +161,9 @@ function move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64)
     end
 
     # x1 < 0.7 && println("exiting move $x1 -> $x2")
-    # if isnan(first_a) #DEBUG: remove
-    #     error("move: first_a = $first_a, x1=$x1, x2=$x2")
-    # end
+    if isnan(first_a) #DEBUG: remove
+        error("move: first_a = $first_a, w1=$w1, w2=$w2")
+    end
     return r, first_a #action sign depends on the direction
 end
 

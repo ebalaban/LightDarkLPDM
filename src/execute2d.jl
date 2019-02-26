@@ -141,7 +141,6 @@ function execute(;vis::Vector{Int64}=Int64[],
                                n_particles = solver.config.n_particles,
                                seed = UInt32(3*sim+1));  # initialize belief updater
         initial_states = state_distribution(p, s0, solver.config, world_rng)     # create initial  distribution
-        show(initial_states)
         current_belief = LPDM.create_belief(bu)                       # allocate an updated belief object
         LPDM.initialize_belief(bu, initial_states, current_belief)    # initialize belief
         # show(current_belief)
