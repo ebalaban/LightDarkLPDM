@@ -39,7 +39,7 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     # Dummy execution, just to make sure all the code is compiled and loaded,
     # to improve uniformity of subsequent executions.
     # execute(solv_mode = :despot, action_space_type = :small, n_sims = 1, s0 = LD2State(π,π), output = 0)
-    execute(solv_mode = :despot, action_space_type = :small, n_sims = 1, s0 = LD2State(π,π), output = debug)
+    # execute(solv_mode = :despot, action_space_type = :small, n_sims = 1, s0 = LD2State(3.70,7.34), output = debug)
 
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
     for i in 1:length(scen)
@@ -127,7 +127,7 @@ function execute(;vis::Vector{Int64}=Int64[],
                                                                             # time_per_move = 1.0,  #sec
                                                                             # sim_len = steps,
                                                                             sim_len = -1,
-                                                                            search_depth = 20,
+                                                                            search_depth = 30,
                                                                             n_particles = 10,
                                                                             # seed = UInt32(2),
                                                                             seed = UInt32(2*sim+1),
@@ -135,6 +135,11 @@ function execute(;vis::Vector{Int64}=Int64[],
                                                                             max_trials = 100,
                                                                             mode = solv_mode)
 
+        # #DEBUG: remove ###############################
+        # b = LDBounds2d{LD2State, LD2Action, LD2Obs}(p)
+        # LPDM.bounds(b,p,[LPDMParticle{Vec2}(Vec2(3.6971,7.3388),1,1.0)],solver.config)
+        # error("stop for now")
+        # ##############################################
     #---------------------------------------------------------------------------------
         # Belief
         bu = LPDMBeliefUpdater(p,

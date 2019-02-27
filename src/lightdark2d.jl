@@ -25,7 +25,8 @@ const LD2Action = Vec2
 const LD2Obs    = Vec2
 const LD2Belief = LPDMBelief
 
-Base.show(io::IO, x::Vec2) = print(io,"[$(@sprintf("%.2f", x[1])),$(@sprintf("%.2f",x[2]))]")
+# Base.show(io::IO, x::Vec2) = print(io,"[$(@sprintf("%.2f", x[1])),$(@sprintf("%.2f",x[2]))]")
+Base.show(io::IO, x::Vec2) = print(io,"[$(@sprintf("%.4f", x[1])),$(@sprintf("%.4f",x[2]))]")
 
 abstract type AbstractLD2 <: POMDP{LD2State, LD2Action, LD2Obs} end
 

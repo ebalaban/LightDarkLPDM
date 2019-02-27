@@ -81,9 +81,9 @@ function lower_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
 
     s = particle.state
 
-    r1, a1_x = move(p, s, Vec2(p.min_noise_loc,s[2]), 1)
-    r2, a1_y = move(p, Vec2(p.min_noise_loc,s[2]), Vec2(p.min_noise_loc,0.0), 2)
-    r3, a2_x = move(p, Vec2(p.min_noise_loc,0.0), Vec2(0.0,0.0), 1)
+    r1, a1_x = coarse_move(p, s, Vec2(p.min_noise_loc,s[2]), 1)
+    r2, a1_y = coarse_move(p, Vec2(p.min_noise_loc,s[2]), Vec2(p.min_noise_loc,0.0), 2)
+    r3, a2_x = coarse_move(p, Vec2(p.min_noise_loc,0.0), Vec2(0.0,0.0), 1)
 
     return r1 + r2 + r3, Vec2(a1_x,a1_y)
 end
@@ -108,13 +108,43 @@ end
 function upper_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
     s = particle.state
 
-    rx, a1_x = move(p, s, Vec2(0.0,s[2]), 1)
-    ry, a1_y = move(p, Vec2(0.0,s[2]), Vec2(0.0,0.0), 2)
+    rx, a1_x = coarse_move(p, s, Vec2(0.0,s[2]), 1)
+    ry, a1_y = coarse_move(p, Vec2(0.0,s[2]), Vec2(0.0,0.0), 2)
 
     # println("s=$s, rx=$rx, ry=$ry, a1_x=$a1_x, a1_y=$a1_y")
     # error("done, for now")
     r = rx < ry ? rx : ry                                  ## pick the smaller (worst) of the two
     return r, Vec2(a1_x,a1_y)
+end
+
+
+#w1 and w2 are start and end waypoints, coord is 1 or 2 for x and y, respectively
+# NOTE: this function computes a rough estimate to avoid discretization issues
+function coarse_move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64)
+    direction = w2[c] > w1[c] ? 1 : -1
+    all_actions = POMDPs.actions(p, true)
+    pos_actions = all_actions[all_actions .> 0]
+
+    r = 0.0
+    w = [w1[1],w1[2]]
+    a = NaN
+    a_dir = NaN
+
+    a = maximum(pos_actions[pos_actions .< abs(w2[c]-w[c])+p.term_radius]) # maximum action not exceeding Δx + p.term_radius
+    # n_moves = round(Int64,(abs(w2[c]-w[c])+p.term_radius)/a
+    n_moves = ceil(Int64,(abs(w2[c]-w[c])+p.term_radius)/a)
+    a_dir = direction * a
+
+    for i in 1:n_moves
+        r += reward(p, Vec2(w[1],w[2]), Vec2(a_dir,0.0)) # use current state for computing the reward; (0.0,a_dir) and (a_dir,0.0) are equivalent for reward purposes
+        w[c] += a_dir # take the step
+    end
+
+    if (abs(w2[1]) <= p.term_radius) && (abs(w2[2]) <= p.term_radius)
+        r += reward(p,w2,Vec2(0.0,0.0)) #termination reward
+    end
+    # println("move: w1=$w1, w2=$w2, n_moves = $n_moves, a_dir = $a_dir, r=$r")
+    return r, a_dir #action sign depends on the direction
 end
 
  #w1 and w2 are start and end waypoints, coord is 1 or 2 for x and y, respectively
@@ -139,19 +169,20 @@ function move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64)
         return reward(p,w1,Vec2(0.0,0.0)), 0.0
     end
 
-    if abs(w2[c]-w1[c]) < min_a #too close to take any action
+    if abs(w2[c]-w1[c])+p.term_radius < min_a #too close to take any action
         return reward(p,w1,Vec2(0.0,0.0)), 0.0
     end
 
-    while (abs(w2[c]-w[c]) > min_a) && (abs(w[c]) > p.term_radius)
-        a = maximum(pos_actions[pos_actions .<= abs(w2[c]-w[c])]) # maximum action not exceeding Δx
+    while (abs(w2[c]-w[c])+p.term_radius > min_a) && (abs(w2[c]-w[c]) > p.term_radius)
+        a = maximum(pos_actions[pos_actions .< abs(w2[c]-w[c])+p.term_radius]) # maximum action not exceeding Δx + p.term_radius
         a_dir = direction * a
         if isnan(first_a)
             first_a = a_dir # assign first action (directional)
         end
         r += reward(p, Vec2(w[1],w[2]), Vec2(a_dir,0.0)) # use current state for computing the reward; (0.0,a_dir) and (a_dir,0.0) are equivalent for reward purposes
-        # println("BOUNDS: w=$w, w1=$w1, w2=$w2, min_a = $min_a, all_actions=$all_actions, pos_actions=$pos_actions, av_actions=$(all_actions[all_actions .< abs(w2[c]-w[c])]), a_dir=$a_dir,  r=$r ")
+        # println("BOUNDS: w=$w, w1=$w1, w2=$w2, min_a = $min_a, all_actions=$all_actions, pos_actions=$pos_actions, av_actions=$(all_actions[all_actions .< abs(w2[c]-w[c]) + p.term_radius]), a_dir=$a_dir,  r=$r ")
         w[c] += a_dir # take the step
+        println("    w=($(w[1]),$(w[2])), a_dir=$a_dir, r = $r")
     end
 
     if (abs(w2[1]) <= p.term_radius) && (abs(w2[2]) <= p.term_radius)
@@ -161,9 +192,11 @@ function move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64)
     end
 
     # x1 < 0.7 && println("exiting move $x1 -> $x2")
-    if isnan(first_a) #DEBUG: remove
-        error("move: first_a = $first_a, w1=$w1, w2=$w2")
-    end
+    # if isnan(first_a) #DEBUG: remove
+    #     error("move: first_a = $first_a, w1=$w1, w2=$w2")
+    # end
+    println("move: w1=$w1, w2=$w2, first_a = $first_a, r=$r")
+    # error("done, for now")
     return r, first_a #action sign depends on the direction
 end
 
