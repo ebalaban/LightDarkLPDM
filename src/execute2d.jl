@@ -77,12 +77,12 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
 end
 
 function execute(;vis::Vector{Int64}=Int64[],
-                solv_mode::Symbol=:lpdm,
-                action_space_type::Symbol=:adapt,
+                solv_mode::Symbol=:despot,
+                action_space_type::Symbol=:small,
                 reward_func = :quadratic,
                 n_sims::Int64=1,
                 steps::Int64=-1,
-                s0::LD2State=LD2State(1.9),
+                s0::LD2State=LD2State(3/2*π, 2*π),
                 output::Int64=1)#n_sims::Int64 = 100)
 
     if solv_mode == :despot
@@ -123,21 +123,25 @@ function execute(;vis::Vector{Int64}=Int64[],
         solver = LPDM.LPDMSolver{LD2State, LD2Action, LD2Obs, LDBounds2d{LD2State, LD2Action, LD2Obs}, RNGVector}(
                                                                             # rng = sim_rng,
                                                                             debug = output,
-                                                                            time_per_move = -1.0,  #sec
+                                                                            time_per_move = 5.0,  #sec
                                                                             # time_per_move = 1.0,  #sec
-                                                                            # sim_len = steps,
-                                                                            sim_len = -1,
+                                                                            sim_len = steps,
+                                                                            #sim_len = 20,
                                                                             search_depth = 30,
                                                                             n_particles = 10,
                                                                             # seed = UInt32(2),
                                                                             seed = UInt32(2*sim+1),
                                                                             # max_trials = 1000)
-                                                                            max_trials = 100,
+                                                                            max_trials = -1,
                                                                             mode = solv_mode)
 
         # #DEBUG: remove ###############################
-        # b = LDBounds2d{LD2State, LD2Action, LD2Obs}(p)
-        # LPDM.bounds(b,p,[LPDMParticle{Vec2}(Vec2(3.6971,7.3388),1,1.0)],solver.config)
+        # states=[Vec2(3.6971,7.3388), Vec2(3.5,-1.2), Vec2(7.1,7.3), Vec2(5.35,0.0)]
+        # for st in states
+        #     b = LDBounds2d{LD2State, LD2Action, LD2Obs}(p)
+        #     lb, ub = LPDM.bounds(b,p,[LPDMParticle{Vec2}(st,1,1.0)],solver.config)
+        #     println("s=$st, lb = $lb, ub = $ub, lba=$(best_lb_action(b)), uba=$(best_ub_action(b))")
+        # end
         # error("stop for now")
         # ##############################################
     #---------------------------------------------------------------------------------

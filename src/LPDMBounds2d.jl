@@ -35,14 +35,17 @@ function LPDM.bounds(b::LDBounds2d{S,A,O},
 
     for p in particles
         tmp_ub, tmp_ub_action = upper_bound(pomdp,p)
-        if p.state[1] > pomdp.min_noise_loc # assume min_noise_loc > 0
-            # both will have to do roughly the same thing (+/- discretization differences),
-            # so make them the same
-            #TODO: review for lb > ub
-            tmp_lb, tmp_lb_action = tmp_ub, tmp_ub_action
-        else
-            tmp_lb, tmp_lb_action = lower_bound(pomdp,p)
-        end
+        tmp_lb, tmp_lb_action = lower_bound(pomdp,p) #NOTE: Option 1
+
+        #NOTE: Option 2
+        # if p.state[1] > pomdp.min_noise_loc # assume min_noise_loc > 0
+        #     # both will have to do roughly the same thing (+/- discretization differences),
+        #     # so make them the same
+        #     #TODO: review for lb > ub
+        #     tmp_lb, tmp_lb_action = tmp_ub, tmp_ub_action
+        # else
+        #     tmp_lb, tmp_lb_action = lower_bound(pomdp,p)
+        # end
 
         if tmp_lb < b.lb_
             b.lb_             = tmp_lb
@@ -77,32 +80,29 @@ LPDM.best_ub_action(b::LDBounds2d) = isnan(b.best_ub_action_) ? error("best_ub_a
    #                  |
    #           (0,0) _|
 
+# function lower_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
+#
+#     s = particle.state
+#
+#     r1, a1_x = coarse_move(p, s, Vec2(p.min_noise_loc,s[2]), 1)
+#     r2, a1_y = coarse_move(p, Vec2(p.min_noise_loc,s[2]), Vec2(p.min_noise_loc,0.0), 2)
+#     r3, a2_x = coarse_move(p, Vec2(p.min_noise_loc,0.0), Vec2(0.0,0.0), 1)
+#
+#     return r1 + r2 + r3, Vec2(a1_x,a1_y)
+# end
+
 function lower_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
 
     s = particle.state
 
-    r1, a1_x = coarse_move(p, s, Vec2(p.min_noise_loc,s[2]), 1)
-    r2, a1_y = coarse_move(p, Vec2(p.min_noise_loc,s[2]), Vec2(p.min_noise_loc,0.0), 2)
-    r3, a2_x = coarse_move(p, Vec2(p.min_noise_loc,0.0), Vec2(0.0,0.0), 1)
+    r_right, a_right = coarse_move(p, s, Vec2(p.min_noise_loc,s[2]), 1)
+    r_down,  a_down  = coarse_move(p, Vec2(p.min_noise_loc,s[2]), Vec2(p.min_noise_loc,0.0), 2)
+    r_left,  a_left  = coarse_move(p, Vec2(p.min_noise_loc,0.0), Vec2(0.0,0.0), 1)
 
-    return r1 + r2 + r3, Vec2(a1_x,a1_y)
+    r_diag = r_left < r_down ? r_left : r_down
+
+    return r_right + r_diag, Vec2(a_right,0.0) #move strictly horizontally
 end
-# lowerBound(p::LightDark2DDespot, particle::LPDM.LPDMParticle{Vec2}) = lowerBound(p, POMDPToolbox.Particle{Vec2}(particle.state, particle.weight))
-#
-# function lower_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
-#
-#     s = particle.state
-#     actions = POMDPs.actions(p, true);
-#     r::Int8 = 0.0;
-#     remx::Float64 = 0.0;
-#     remy::Float64 = 0.0;
-#
-#     r1,remx,first_ax = take_action(p.min_noise_loc-s[1], p.term_radius, actions)        # calculate cost for moving x to low noise region
-#     r2,remy,first_ay = take_action(s[2], p.term_radius, actions)                         # calculate cost for moving y to target coordinate
-#     r3,remx,temp_a = take_action(p.min_noise_loc-remx, p.term_radius, actions)         # calculate cost for moving x to target coordinate from where it reached in the low noise region
-#
-#     return -(r1 + r2 + r3), Vec2(first_ax,first_ay)
-# end
 
 # computes the reward for the straight-line path to target
 function upper_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
@@ -130,9 +130,9 @@ function coarse_move(p::AbstractLD2, w1::Vec2, w2::Vec2, c::Int64)
     a = NaN
     a_dir = NaN
 
-    a = maximum(pos_actions[pos_actions .< abs(w2[c]-w[c])+p.term_radius]) # maximum action not exceeding Δx + p.term_radius
+    a = maximum(pos_actions[pos_actions .< abs(w2[c]-w1[c])+p.term_radius]) # maximum action not exceeding Δx + p.term_radius
     # n_moves = round(Int64,(abs(w2[c]-w[c])+p.term_radius)/a
-    n_moves = ceil(Int64,(abs(w2[c]-w[c])+p.term_radius)/a)
+    n_moves = ceil(Int64,(abs(w2[c]-w1[c])+p.term_radius)/a)
     a_dir = direction * a
 
     for i in 1:n_moves
