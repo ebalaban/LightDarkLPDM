@@ -28,6 +28,7 @@ mutable struct LightDark2DDespot <: AbstractLD2
         this.min_noise               = 0.0
         this.min_noise_loc           = 5.0
         this.term_radius             = 0.05
+        # this.term_radius             = 0.1
         this.Q                       = diagm(0=>[0.5, 0.5])
         this.R                       = diagm(0=>[0.5, 0.5])
         this.n_bins                  = 100 # per linear dimension

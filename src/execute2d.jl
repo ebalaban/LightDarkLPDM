@@ -82,7 +82,7 @@ function execute(;vis::Vector{Int64}=Int64[],
                 reward_func = :quadratic,
                 n_sims::Int64=1,
                 steps::Int64=-1,
-                s0::LD2State=LD2State(3/2*π, 2*π),
+                s0::LD2State=LD2State(0.5*π, 2*π),
                 output::Int64=1)#n_sims::Int64 = 100)
 
     if solv_mode == :despot
@@ -123,20 +123,21 @@ function execute(;vis::Vector{Int64}=Int64[],
         solver = LPDM.LPDMSolver{LD2State, LD2Action, LD2Obs, LDBounds2d{LD2State, LD2Action, LD2Obs}, RNGVector}(
                                                                             # rng = sim_rng,
                                                                             debug = output,
-                                                                            time_per_move = 5.0,  #sec
+                                                                            time_per_move = -1.0,  #sec
                                                                             # time_per_move = 1.0,  #sec
                                                                             sim_len = steps,
                                                                             #sim_len = 20,
                                                                             search_depth = 30,
-                                                                            n_particles = 10,
+                                                                            n_particles = 50,
                                                                             # seed = UInt32(2),
                                                                             seed = UInt32(2*sim+1),
                                                                             # max_trials = 1000)
-                                                                            max_trials = -1,
+                                                                            max_trials = 500,
                                                                             mode = solv_mode)
 
         # #DEBUG: remove ###############################
-        # states=[Vec2(3.6971,7.3388), Vec2(3.5,-1.2), Vec2(7.1,7.3), Vec2(5.35,0.0)]
+        # # states=[Vec2(3.6971,7.3388), Vec2(3.5,-1.2), Vec2(7.1,7.3), Vec2(5.35,0.0)]
+        # states=[Vec2(3.14,3.14)]
         # for st in states
         #     b = LDBounds2d{LD2State, LD2Action, LD2Obs}(p)
         #     lb, ub = LPDM.bounds(b,p,[LPDMParticle{Vec2}(st,1,1.0)],solver.config)

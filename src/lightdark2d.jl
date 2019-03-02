@@ -57,7 +57,7 @@ abstract type AbstractLD2 <: POMDP{LD2State, LD2Action, LD2Obs} end
     min_noise_loc::Float64  = 5.0
     Q::Matrix{Float64}      = diagm(0=>[0.5, 0.5])
     R::Matrix{Float64}      = diagm(0=>[0.5, 0.5])
-    term_radius::Float64    = 1e-5
+    term_radius::Float64    = 0.05
     init_dist::Any          = SymmetricNormal2([2.0, 2.0], 0.5)
     discount::Float64       = 1.0
     count::Int              = 0
@@ -67,10 +67,26 @@ end
 POMDPs.generate_s(p::AbstractLD2, s::Vec2, a::Vec2, rng::AbstractRNG) = generate_s(p, s, a)
 POMDPs.generate_o(p::AbstractLD2, s::Vec2, a::Vec2, sp::Vec2, rng::AbstractRNG) = generate_o(p, sp, rng)
 POMDPs.observation(p::AbstractLD2, a::Vec2, sp::Vec2) = observation(p, sp)
-POMDPs.isterminal(p::AbstractLD2, s::Vec2) = LinearAlgebra.norm(s) <= p.term_radius
+# POMDPs.isterminal(p::AbstractLD2, s::Vec2) = LinearAlgebra.norm(s) <= p.term_radius
+function POMDPs.isterminal(p::AbstractLD2, s::Vec2) #DEBUG
+    #NOTE: yes, this is not strictly accurate, but makes things easier
+    if abs(s[1]) < p.term_radius && abs(s[2]) < p.term_radius
+        return true
+    else
+        return false
+    end
+end
+
 POMDPs.initial_state_distribution(p::AbstractLD2) = p.init_dist
-POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2) =
-                (p.reward_func == :quadratic) ?  -(dot(s, p.Q*s) + dot(a, p.R*a)) : -1
+function POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2)
+    if isterminal(p,s)
+        r = 0.0
+    else
+        r = (p.reward_func == :quadratic) ?  -(dot(s, p.Q*s) + dot(a, p.R*a)) : -1
+    end
+    return r
+end
+
 POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2, sp::Vec2) = POMDPs.reward(p, s, a)
 
 POMDPs.discount(p::AbstractLD2) = p.discount
