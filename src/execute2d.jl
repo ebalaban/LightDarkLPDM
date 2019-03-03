@@ -41,7 +41,23 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     # execute(solv_mode = :despot, action_space_type = :small, n_sims = 1, s0 = LD2State(π,π), output = 0)
     # execute(solv_mode = :despot, action_space_type = :small, n_sims = 1, s0 = LD2State(3.70,7.34), output = debug)
 
+    # General solver parameters
+    steps::Int64                = -1
+    time_per_move::Int64        = -1.0
+    search_depth::Int64         = 30
+    n_particles::Int64          = 50
+    max_trials::Int64           = 500
+
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
+
+    Printf.@printf(f,"GENERAL SOLVER PARAMETERS\n")
+    Printf.@printf(f,"\treward function:\t\t\t%s\n", reward_func)
+    Printf.@printf(f,"\tsteps:\t\t\t%d\n", steps)
+    Printf.@printf(f,"\ttime per move:\t\t\t%f\n", time_per_move)
+    Printf.@printf(f,"\tsearch depth:\t\t\t%d\n", search_depth)
+    Printf.@printf(f,"\tN particles:\t\t\t%d\n", n_particles)
+    Printf.@printf(f,"\tmax trials:\t\t\t%d\n\n", max_trials)
+
     for i in 1:length(scen)
         # write(f,"SCENARIO $i, s0 = $(scen[i].s0)\n\n")
         if debug >= 0
@@ -50,7 +66,7 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
             println("------------------------")
         end
 
-        Printf.@printf(f,"SCENARIO %d, s0 = (%f,%f), %s reward function\n", i, scen[i].s0[1], scen[i].s0[2], reward_func)
+        Printf.@printf(f,"SCENARIO %d, s0 = (%f,%f)\n", i, scen[i].s0[1], scen[i].s0[2])
         Printf.@printf(f,"==================================================================\n")
         # Printf.@printf(f,"mode\t\tact. space\t\tsteps(std)\t\treward(std)\n")
         Printf.@printf(f,"SOLVER\t\tACT. SPACE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
@@ -61,8 +77,13 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
             end
             steps, steps_std, reward, reward_std =
                         execute(solv_mode         = t.mode,
-                                action_space_type = t.action_space,
-                                n_sims            = n,
+                                # action_space_type = t.action_space,
+                                # n_sims            = n,
+                                # steps             = steps,
+                                # time_per_move     = time_per_move,
+                                # search_depth      = search_depth,
+                                # n_particles       = n_particles,
+                                # max_trials        = max_trials,
                                 s0                = scen[i].s0,
                                 output            = debug,
                                 reward_func       = reward_func)
@@ -76,14 +97,19 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     close(f)
 end
 
-function execute(;vis::Vector{Int64}=Int64[],
-                solv_mode::Symbol=:despot,
-                action_space_type::Symbol=:small,
-                reward_func = :quadratic,
-                n_sims::Int64=1,
-                steps::Int64=-1,
-                s0::LD2State=LD2State(0.5*π, 2*π),
-                output::Int64=1)#n_sims::Int64 = 100)
+function execute(;vis::Vector{Int64}        = Int64[],
+                solv_mode::Symbol           = :despot,
+                action_space_type::Symbol   = :small,
+                reward_func::Symbol         = :quadratic,
+                n_sims::Int64               = 1,
+                steps::Int64                = -1,
+                time_per_move::Int64        = -1.0,
+                search_depth::Int64         = 30,
+                n_particles::Int64          = 50,
+                max_trials::Int64           = 500,
+                s0::LD2State                = LD2State(0.5*π, 2*π),
+                output::Int64               = 1
+                )
 
     if solv_mode == :despot
         p = LightDark2DDespot(action_space_type, reward_func = reward_func)
@@ -123,16 +149,16 @@ function execute(;vis::Vector{Int64}=Int64[],
         solver = LPDM.LPDMSolver{LD2State, LD2Action, LD2Obs, LDBounds2d{LD2State, LD2Action, LD2Obs}, RNGVector}(
                                                                             # rng = sim_rng,
                                                                             debug = output,
-                                                                            time_per_move = -1.0,  #sec
+                                                                            time_per_move = time_per_move,  #sec
                                                                             # time_per_move = 1.0,  #sec
                                                                             sim_len = steps,
                                                                             #sim_len = 20,
-                                                                            search_depth = 30,
-                                                                            n_particles = 50,
+                                                                            search_depth = search_depth,
+                                                                            n_particles = n_particles,
                                                                             # seed = UInt32(2),
                                                                             seed = UInt32(2*sim+1),
                                                                             # max_trials = 1000)
-                                                                            max_trials = 500,
+                                                                            max_trials = max_trials,
                                                                             mode = solv_mode)
 
         # #DEBUG: remove ###############################
