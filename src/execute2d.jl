@@ -43,7 +43,7 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
 
     # General solver parameters
     steps::Int64                = -1
-    time_per_move::Int64        = -1.0
+    time_per_move::Float64      = -1.0
     search_depth::Int64         = 30
     n_particles::Int64          = 50
     max_trials::Int64           = 500
@@ -75,21 +75,21 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
             if debug >= 0
                 println("mode: $(t.mode), action space: $(t.action_space), reward: $(t.reward_func)")
             end
-            steps, steps_std, reward, reward_std =
+            steps_avg, steps_std, reward_avg, reward_std =
                         execute(solv_mode         = t.mode,
-                                # action_space_type = t.action_space,
-                                # n_sims            = n,
-                                # steps             = steps,
-                                # time_per_move     = time_per_move,
-                                # search_depth      = search_depth,
-                                # n_particles       = n_particles,
-                                # max_trials        = max_trials,
+                                action_space_type = t.action_space,
+                                n_sims            = n,
+                                steps             = steps,
+                                time_per_move     = time_per_move,
+                                search_depth      = search_depth,
+                                n_particles       = n_particles,
+                                max_trials        = max_trials,
                                 s0                = scen[i].s0,
                                 output            = debug,
                                 reward_func       = reward_func)
 
             Printf.@printf(f,"%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
-                            string(t.mode), string(t.action_space), steps, steps_std, reward, reward_std)
+                            string(t.mode), string(t.action_space), steps_avg, steps_std, reward_avg, reward_std)
         end
         Printf.@printf(f,"==================================================================\n")
         Printf.@printf(f,"%d tests per scenario\n\n", n)
@@ -103,7 +103,7 @@ function execute(;vis::Vector{Int64}        = Int64[],
                 reward_func::Symbol         = :quadratic,
                 n_sims::Int64               = 1,
                 steps::Int64                = -1,
-                time_per_move::Int64        = -1.0,
+                time_per_move::Float64      = -1.0,
                 search_depth::Int64         = 30,
                 n_particles::Int64          = 50,
                 max_trials::Int64           = 500,
