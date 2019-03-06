@@ -44,9 +44,9 @@ mutable struct LightDark2DDespot <: AbstractLD2
         # this.nominal_action_space    = [1.0, 0.1, 0.01]
         this.nominal_action_space    = [1.0, 0.1, 0.01]
         this.extended_action_space   = vcat(1*this.nominal_action_space,
-                                            2*this.nominal_action_space,
-                                            3*this.nominal_action_space,
-                                            4*this.nominal_action_space,
+                                            # 2*this.nominal_action_space,
+                                            # 3*this.nominal_action_space,
+                                            # 4*this.nominal_action_space,
                                             5*this.nominal_action_space)
         this.action_space_type       = action_space_type
         this.reward_func                  = reward_func
@@ -54,20 +54,43 @@ mutable struct LightDark2DDespot <: AbstractLD2
     end
 end
 
+function permute(moves::Vector{Float64})::Vector{Vec2{Float}}
+    actions = Vector(Vec2{Float})
+    for i in length(moves)
+        for j in length(moves)
+            push(actions,Vect2(moves[i],moves[j]))
+        end
+    end
+    return actions
+end
+
+# function POMDPs.actions(p::LightDark2DDespot, ::Bool)
+#     if p.action_space_type == :small
+#         # return vcat(-p.nominal_action_space, [0.0], p.nominal_action_space)
+#         return vcat(-p.nominal_action_space, p.nominal_action_space)
+#     elseif p.action_space_type == :large
+#         # return vcat(-p.extended_action_space, [0.0], p.extended_action_space)
+#         return vcat(-p.extended_action_space, p.extended_action_space)
+#     else
+#         error("Action space $(p.action_space_type) is not valid for POMDP of type $(typeof(p))")
+#     end
+# end
+
 function POMDPs.actions(p::LightDark2DDespot, ::Bool)
     if p.action_space_type == :small
         # return vcat(-p.nominal_action_space, [0.0], p.nominal_action_space)
-        return vcat(-p.nominal_action_space, p.nominal_action_space)
+        return p.nominal_action_space
     elseif p.action_space_type == :large
         # return vcat(-p.extended_action_space, [0.0], p.extended_action_space)
-        return vcat(-p.extended_action_space, p.extended_action_space)
+        return p.extended_action_space
     else
         error("Action space $(p.action_space_type) is not valid for POMDP of type $(typeof(p))")
     end
 end
 
 # POMDPs.actions(p::LightDark2DDespot, ::Bool) = [0.1, 0.01]
-POMDPs.actions(p::LightDark2DDespot) = Vec2Iter(collect(permutations(vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true)), 2)))
+# POMDPs.actions(p::LightDark2DDespot) = Vec2Iter(collect(permutations(vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true)), 2)))
+POMDPs.actions(p::LightDark2DDespot) = Vec2Iter(collect(permutations(vcat(POMDPs.actions(p, true), 0.0, -POMDPs.actions(p,true)), 2)))
 LPDM.default_action(p::LightDark2DDespot) = Vec2(0.0,0.0)
 LPDM.default_action(p::LightDark2DDespot, ::Vector{LPDMParticle{Vec2}}) = LPDM.default_action(p)
 
