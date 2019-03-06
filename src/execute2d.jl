@@ -33,7 +33,7 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     scen=Array{LPDMScenario}(undef,0)
     # push!(scen, LPDMScenario(LD2State(-2*π)))
     # push!(scen, LPDMScenario(LD2State(π/2)))
-    push!(scen, LPDMScenario(LD2State(3/2*π, 2*π)))
+    push!(scen, LPDMScenario(LD2State(π, -π)))
     # push!(scen, LPDMScenario(LD2State(2*π)))
 
     # Dummy execution, just to make sure all the code is compiled and loaded,
@@ -177,6 +177,7 @@ function execute(;vis::Vector{Int64}        = Int64[],
                                n_particles = solver.config.n_particles,
                                seed = UInt32(3*sim+1));  # initialize belief updater
         initial_states = state_distribution(p, s0, solver.config, world_rng)     # create initial  distribution
+        # println(initial_states)
         current_belief = LPDM.create_belief(bu)                       # allocate an updated belief object
         LPDM.initialize_belief(bu, initial_states, current_belief)    # initialize belief
         # show(current_belief)
@@ -249,7 +250,7 @@ function execute(;vis::Vector{Int64}        = Int64[],
 
         sim_steps[sim] = step
         sim_rewards[sim] = sum(step_rewards)
-
+        output >= 0 && println("steps=$(sim_steps[sim]), reward=$(sim_rewards[sim])")
     end
 
     return mean(sim_steps), std(sim_steps), mean(sim_rewards), std(sim_rewards)
