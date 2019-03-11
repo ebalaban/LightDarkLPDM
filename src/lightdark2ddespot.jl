@@ -19,8 +19,10 @@ mutable struct LightDark2DDespot <: AbstractLD2
     n_rand::Int
     resample_std::Float64
     action_space_type::Symbol
-    nominal_action_space::Vector{Float64}
-    extended_action_space::Vector{Float64}
+    nominal_moves::Vector{Float64}
+    extended_moves::Vector{Float64}
+    nominal_action_space::Vector{Vec2}
+    extended_action_space::Vector{Vec2}
     reward_func::Symbol
 
     function LightDark2DDespot(action_space_type::Symbol; reward_func = :quadratic)
@@ -42,23 +44,26 @@ mutable struct LightDark2DDespot <: AbstractLD2
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
         # this.nominal_action_space    = [1.0, 0.1, 0.01]
-        this.nominal_action_space    = [1.0, 0.1, 0.01]
-        this.extended_action_space   = vcat(1*this.nominal_action_space,
-                                            # 2*this.nominal_action_space,
-                                            # 3*this.nominal_action_space,
-                                            # 4*this.nominal_action_space,
-                                            5*this.nominal_action_space)
+        this.nominal_moves    = [1.0, 0.1, 0.01]
+        this.extended_moves   = vcat(1*this.nominal_moves,
+                                    # 2*this.nominal_action_space,
+                                    # 3*this.nominal_action_space,
+                                    # 4*this.nominal_action_space,
+                                     5*this.nominal_moves)
+        this.nominal_action_space  = permute(this.nominal_moves)
+        this.extended_action_space = permute(this.extended_moves)
         this.action_space_type       = action_space_type
         this.reward_func                  = reward_func
         return this
     end
 end
 
-function permute(moves::Vector{Float64})::Vector{Vec2{Float}}
-    actions = Vector(Vec2{Float})
-    for i in length(moves)
-        for j in length(moves)
-            push(actions,Vect2(moves[i],moves[j]))
+function permute(moves::Vector{Float64})::Vector{Vec2}
+    actions = Vector{Vec2}(undef,0)
+    all_moves = vcat(-moves, [0.0], moves)
+    for i in 1:length(all_moves)
+        for j in 1:length(all_moves)
+            push!(actions,Vec2(all_moves[i], all_moves[j]))
         end
     end
     return actions
@@ -79,18 +84,22 @@ end
 function POMDPs.actions(p::LightDark2DDespot, ::Bool)
     if p.action_space_type == :small
         # return vcat(-p.nominal_action_space, [0.0], p.nominal_action_space)
-        return p.nominal_action_space
+        return p.nominal_moves
     elseif p.action_space_type == :large
         # return vcat(-p.extended_action_space, [0.0], p.extended_action_space)
-        return p.extended_action_space
+        return p.extended_moves
     else
         error("Action space $(p.action_space_type) is not valid for POMDP of type $(typeof(p))")
     end
 end
 
+
+
 # POMDPs.actions(p::LightDark2DDespot, ::Bool) = [0.1, 0.01]
 # POMDPs.actions(p::LightDark2DDespot) = Vec2Iter(collect(permutations(vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true)), 2)))
-POMDPs.actions(p::LightDark2DDespot) = Vec2Iter(collect(permutations(vcat(POMDPs.actions(p, true), 0.0, -POMDPs.actions(p,true)), 2)))
+# POMDPs.actions(p::LightDark2DDespot) = Vec2Iter(collect(permutations(vcat(POMDPs.actions(p, true), 0.0, -POMDPs.actions(p,true)), 2)))
+POMDPs.actions(p::LightDark2DDespot) = p.action_space_type == :small ? p.nominal_action_space : p.extended_action_space
+
 LPDM.default_action(p::LightDark2DDespot) = Vec2(0.0,0.0)
 LPDM.default_action(p::LightDark2DDespot, ::Vector{LPDMParticle{Vec2}}) = LPDM.default_action(p)
 

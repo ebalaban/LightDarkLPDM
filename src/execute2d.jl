@@ -26,8 +26,8 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     test=Array{LPDMTest}(undef,0)
 
     # push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
-    # push!(test, LPDMTest(:despot, :small, reward_func))
-    push!(test, LPDMTest(:despot, :large, reward_func))
+    push!(test, LPDMTest(:despot, :small, reward_func))
+    # push!(test, LPDMTest(:despot, :large, reward_func))
     # push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
 
     scen=Array{LPDMScenario}(undef,0)
@@ -182,8 +182,8 @@ function execute(;vis::Vector{Int64}        = Int64[],
         LPDM.initialize_belief(bu, initial_states, current_belief)    # initialize belief
         # show(current_belief)
         updated_belief = LPDM.create_belief(bu)
-        println("$(length(actions(p))) actions: $(actions(p))")
-        error("")
+        # println("$(length(actions(p))) actions: $(actions(p))")
+        # error("")
     #---------------------------------------------------------------------------------
 
         policy::LPDMPolicy = POMDPs.solve(solver, p)
