@@ -6,11 +6,11 @@ mutable struct LightDark2DLpdm <: AbstractLD2
 # @with_kw mutable struct LightDark2DLpdm <: AbstractLD2
     min_noise::Float64
     min_noise_loc::Float64
-    Q::Float64
-    R::Float64
+    Q::Matrix{Float64}
+    R::Matrix{Float64}
     term_radius::Float64
     n_bins::Int         # per linear dimension
-    max_x::Float64     # assume symmetry in x and y for simplicity
+    max_xy::Float64     # assume symmetry in x and y for simplicity
     bin_edges::Vector{Float64}
     bin_centers::Vector{Float64}
     lindisc::LinearDiscretizer
@@ -23,58 +23,44 @@ mutable struct LightDark2DLpdm <: AbstractLD2
     max_actions::Int64
     action_limits::Tuple{Float64,Float64}
     action_space_type::Symbol
+    nominal_moves::Vector{Float64}
+    extended_moves::Vector{Float64}
     base_action_space::Vector{LD2Action}
     nominal_action_space::Vector{LD2Action}
-    extended_action_space::Vector{LD2Action}
     reward_func::Symbol
 
     function LightDark2DLpdm(action_space_type::Symbol; reward_func = :quadratic)
         this = new()
         this.min_noise               = 0.0
         this.min_noise_loc           = 5.0
-        this.Q                       = 0.5
-        this.R                       = 0.5
+        this.Q                       = diagm(0=>[0.5, 0.5])
+        this.R                       = diagm(0=>[0.5, 0.5])
         this.term_radius             = 0.05
         this.n_bins                  = 100 # per linear dimension
-        this.max_x                   = 10     # assume symmetry in x and y for simplicity
-        this.bin_edges               = collect(-this.max_x:(2*this.max_x)/this.n_bins:this.max_x)
+        this.max_xy                  = 10     # assume symmetry in x and y for simplicity
+        this.bin_edges               = collect(-this.max_x:(2*this.max_xy)/this.n_bins:this.max_xy)
         this.bin_centers             = [(this.bin_edges[i]+this.bin_edges[i+1])/2 for i=1:this.n_bins]
         this.lindisc                 = LinearDiscretizer(this.bin_edges)
         this.discount                = 1.0
         this.count                   = 0
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
-        this.max_actions             = 30
+        this.max_actions             = 100
         this.action_limits           = (-5.0,5.0)
         this.action_space_type       = action_space_type
         this.exploit_visits          = 50
         # this.base_action_space       = [1.0, 0.1, 0.01]
-        this.nominal_action_space    = [1.0, 0.1, 0.01]
-        this.extended_action_space   = vcat(1*this.nominal_action_space,
-                                            2*this.nominal_action_space,
-                                            3*this.nominal_action_space,
-                                            4*this.nominal_action_space,
-                                            5*this.nominal_action_space)
-        this.reward_func                  = reward_func
+        this.nominal_moves      = [1.0, 0.1, 0.01]
+        this.extended_moves     = vcat(1*this.nominal_moves,
+                                       5*this.nominal_moves)
+        this.nominal_action_space  = permute(this.nominal_moves)
+        this.extended_action_space = permute(this.extended_moves)
+        this.reward_func        = reward_func
         return this
     end
 end
 
-# POMDPs.actions(p::LightDark2DLpdm) = vcat(-POMDPs.actions(p, true), [0.0], POMDPs.actions(p,true))
-LPDM.default_action(p::LightDark2DLpdm) = 0.00
-LPDM.default_action(p::LightDark2DLpdm, ::Vector{LPDMParticle{LD2State}}) = LPDM.default_action(p)
-
 POMDPs.rand(p::LightDark2DLpdm, s::LD2State, rng::LPDM.RNGVector) = norminvcdf(s, p.resample_std, rand(rng)) # for resampling
-
-# Replaces the default call
-function LPDM.isterminal(pomdp::LightDark2DLpdm, particles::Vector{LPDMParticle{LD2State}})
-    expected_state = 0.0
-
-    for p in particles
-        expected_state += p.state*p.weight # NOTE: assume weights are normalized
-    end
-    return isterminal(pomdp,expected_state)
-end
 
 # Version with discrete observations
 function generate_o(p::LightDark2DLpdm, sp::Float64, rng::AbstractRNG)
@@ -94,12 +80,12 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
                            n_visits::Int64,
                            rng::RNGVector)::Vector{LD2Action}
 
-    initial_space = vcat(-pomdp.nominal_action_space, pomdp.nominal_action_space)
+    # initial_space = vcat(-pomdp.nominal_action_space, pomdp.nominal_action_space)
 
     # simulated annealing temperature
     if isempty(current_action_space) # initial request
         # return vcat(-pomdp.nominal_action_space, [0], pomdp.nominal_action_space)
-        return initial_space
+        return pomdp.nominal_action_space
     end
 
     l_initial = length(initial_space)
@@ -117,13 +103,15 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
         in_set = true
         a = NaN
         while in_set
-            a = (rand(rng, Uniform(a_star - radius, a_star + radius)))
-            a = clamp(a, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
+            a_x = (rand(rng, Uniform(a_star[1] - radius, a_star[1] + radius)))
+            a_y = (rand(rng, Uniform(a_star[2] - radius, a_star[2] + radius)))
+            a_x = clamp(a_x, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
+            a_y = clamp(a_y, pomdp.action_limits[1], pomdp.action_limits[2])
             in_set = a ∈ current_action_space
         end
 
         # println("a_star: $a_star, T: $T, radius: $radius, a: $a")
-        return [a] # New action, returned as a one element vector.
+        return [Vec2(a_x,a_y)] # New action, returned as a one element vector.
     else
         return []
     end
@@ -136,12 +124,12 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
                            n_visits::Int64,
                            rng::RNGVector)::Vector{LD2Action}
 
-     initial_space = vcat(-pomdp.nominal_action_space, pomdp.nominal_action_space)
+     # initial_space = vcat(-pomdp.nominal_action_space, pomdp.nominal_action_space)
      # initial_space = [0.0]
 
        # simulated annealing temperature
      if isempty(current_action_space) # initial request
-           return initial_space
+           return pomdp.nominal_action_space
      end
 
     if (n_visits > 25) && (length(current_action_space) < LPDM.max_actions(pomdp))

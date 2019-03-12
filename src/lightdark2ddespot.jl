@@ -21,8 +21,8 @@ mutable struct LightDark2DDespot <: AbstractLD2
     action_space_type::Symbol
     nominal_moves::Vector{Float64}
     extended_moves::Vector{Float64}
-    nominal_action_space::Vector{Vec2}
-    extended_action_space::Vector{Vec2}
+    nominal_action_space::Vector{LD2Action}
+    extended_action_space::Vector{LD2Action}
     reward_func::Symbol
 
     function LightDark2DDespot(action_space_type::Symbol; reward_func = :quadratic)
@@ -58,29 +58,6 @@ mutable struct LightDark2DDespot <: AbstractLD2
     end
 end
 
-function permute(moves::Vector{Float64})::Vector{Vec2}
-    actions = Vector{Vec2}(undef,0)
-    all_moves = vcat(-moves, [0.0], moves)
-    for i in 1:length(all_moves)
-        for j in 1:length(all_moves)
-            push!(actions,Vec2(all_moves[i], all_moves[j]))
-        end
-    end
-    return actions
-end
-
-# function POMDPs.actions(p::LightDark2DDespot, ::Bool)
-#     if p.action_space_type == :small
-#         # return vcat(-p.nominal_action_space, [0.0], p.nominal_action_space)
-#         return vcat(-p.nominal_action_space, p.nominal_action_space)
-#     elseif p.action_space_type == :large
-#         # return vcat(-p.extended_action_space, [0.0], p.extended_action_space)
-#         return vcat(-p.extended_action_space, p.extended_action_space)
-#     else
-#         error("Action space $(p.action_space_type) is not valid for POMDP of type $(typeof(p))")
-#     end
-# end
-
 function POMDPs.actions(p::LightDark2DDespot, ::Bool)
     if p.action_space_type == :small
         # return vcat(-p.nominal_action_space, [0.0], p.nominal_action_space)
@@ -93,19 +70,7 @@ function POMDPs.actions(p::LightDark2DDespot, ::Bool)
     end
 end
 
-
-
-# POMDPs.actions(p::LightDark2DDespot, ::Bool) = [0.1, 0.01]
-# POMDPs.actions(p::LightDark2DDespot) = Vec2Iter(collect(permutations(vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true)), 2)))
-# POMDPs.actions(p::LightDark2DDespot) = Vec2Iter(collect(permutations(vcat(POMDPs.actions(p, true), 0.0, -POMDPs.actions(p,true)), 2)))
 POMDPs.actions(p::LightDark2DDespot) = p.action_space_type == :small ? p.nominal_action_space : p.extended_action_space
-
-LPDM.default_action(p::LightDark2DDespot) = Vec2(0.0,0.0)
-LPDM.default_action(p::LightDark2DDespot, ::Vector{LPDMParticle{Vec2}}) = LPDM.default_action(p)
-
-# reward(p::LightDark2DDespot, s::Vec2) = -1.0
-# reward(p::LightDark2DDespot, s::Vec2, a::Vec2) = reward(p, s)
-# reward(p::LightDark2DDespot, s::Vec2, a::Vec2, sp::Vec2) = reward(p, s)
 
 # Version with discrete observations
 function generate_o(p::LightDark2DDespot, sp::Vec2, rng::AbstractRNG)

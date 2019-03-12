@@ -77,6 +77,16 @@ function POMDPs.isterminal(p::AbstractLD2, s::Vec2) #DEBUG
     end
 end
 
+# Replaces the default call
+function LPDM.isterminal(pomdp::AbstractLD2, particles::Vector{LPDMParticle{LD2State}})
+    expected_state = 0.0
+
+    for p in particles
+        expected_state += p.state*p.weight # NOTE: assume weights are normalized
+    end
+    return isterminal(pomdp,expected_state)
+end
+
 POMDPs.initial_state_distribution(p::AbstractLD2) = p.init_dist
 function POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2)
     if isterminal(p,s)
@@ -88,12 +98,26 @@ function POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2)
 end
 
 POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2, sp::Vec2) = POMDPs.reward(p, s, a)
-
 POMDPs.discount(p::AbstractLD2) = p.discount
+
+LPDM.default_action(p::AbstractLD2) = Vec2(0.0,0.0)
+LPDM.default_action(p::AbstractLD2, ::Vector{LPDMParticle{Vec2}}) = LPDM.default_action(p)
 
 struct SymmetricNormal2
     mean::Vec2
     std::Float64
+end
+
+# Compose action spaces via permutations of available moves
+function permute(moves::Vector{Float64})::Vector{LD2Action}
+    actions = Vector{Vec2}(undef,0)
+    all_moves = vcat(-moves, [0.0], moves)
+    for i in 1:length(all_moves)
+        for j in 1:length(all_moves)
+            push!(actions,Vec2(all_moves[i], all_moves[j]))
+        end
+    end
+    return actions
 end
 
 Random.rand(rng::AbstractRNG, d::Random.SamplerTrivial{SymmetricNormal2}) = d[].mean + d[].std*Vec2(rand(rng)-0.5,rand(rng)-0.5)
