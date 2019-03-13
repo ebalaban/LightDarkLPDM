@@ -27,8 +27,8 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
 
     # push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
     # push!(test, LPDMTest(:despot, :small, reward_func))
-    push!(test, LPDMTest(:despot, :large, reward_func))
-    # push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
+    # push!(test, LPDMTest(:despot, :large, reward_func))
+    push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
 
     scen=Array{LPDMScenario}(undef,0)
     # push!(scen, LPDMScenario(LD2State(-2*π)))

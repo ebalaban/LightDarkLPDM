@@ -22,6 +22,7 @@ include("lightdark2d.jl")
 include("lightdark1ddespot.jl")
 include("lightdark1dlpdm.jl")
 include("lightdark2ddespot.jl")
+include("lightdark2dlpdm.jl")
 
 # include("lightdark2dvis.jl")
 export
@@ -33,6 +34,7 @@ export
     LightDark1DDespot,
     LightDark1DLpdm,
     LightDark2DDespot,
+    LightDark2DLpdm,
     LightDark2DKalman,
     SymmetricNormal2,
     Vec2,

@@ -83,7 +83,7 @@ LPDM.best_ub_action(b::LDBounds2d) = isnan(b.best_ub_action_) ? error("best_ub_a
    #                  |
    #           (0,0) _|
 
-# function lower_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
+# function lower_bound(p::AbstractLD2, particle::LPDMParticle{Vec2})
 #
 #     s = particle.state
 #
@@ -94,7 +94,7 @@ LPDM.best_ub_action(b::LDBounds2d) = isnan(b.best_ub_action_) ? error("best_ub_a
 #     return r1 + r2 + r3, Vec2(a1_x,a1_y)
 # end
 
-# function lower_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
+# function lower_bound(p::AbstractLD2, particle::LPDMParticle{Vec2})
 #
 #     s = particle.state
 #
@@ -107,7 +107,7 @@ LPDM.best_ub_action(b::LDBounds2d) = isnan(b.best_ub_action_) ? error("best_ub_a
 #     return r_right + r_diag, Vec2(a_right,0.0) #move strictly horizontally
 # end
 
-function lower_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
+function lower_bound(p::AbstractLD2, particle::LPDMParticle{Vec2})
 # println("LB===========================")
     s = particle.state
 
@@ -141,7 +141,7 @@ function lower_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
 end
 
 
-# function upper_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
+# function upper_bound(p::AbstractLD2, particle::LPDMParticle{Vec2})
 #     s = particle.state
 #
 #     rx, a1_x = coarse_move(p, s, Vec2(0.0,s[2]), 1)
@@ -154,7 +154,7 @@ end
 # end
 
 # computes the reward for the straight-line path to target
-function upper_bound(p::LightDark2DDespot, particle::LPDMParticle{Vec2})
+function upper_bound(p::AbstractLD2, particle::LPDMParticle{Vec2})
 # println("UB===========================")
     s = particle.state
 

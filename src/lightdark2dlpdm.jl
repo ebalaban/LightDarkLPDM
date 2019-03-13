@@ -27,6 +27,7 @@ mutable struct LightDark2DLpdm <: AbstractLD2
     extended_moves::Vector{Float64}
     base_action_space::Vector{LD2Action}
     nominal_action_space::Vector{LD2Action}
+    extended_action_space::Vector{LD2Action}
     reward_func::Symbol
 
     function LightDark2DLpdm(action_space_type::Symbol; reward_func = :quadratic)
@@ -38,7 +39,7 @@ mutable struct LightDark2DLpdm <: AbstractLD2
         this.term_radius             = 0.05
         this.n_bins                  = 100 # per linear dimension
         this.max_xy                  = 10     # assume symmetry in x and y for simplicity
-        this.bin_edges               = collect(-this.max_x:(2*this.max_xy)/this.n_bins:this.max_xy)
+        this.bin_edges               = collect(-this.max_xy:(2*this.max_xy)/this.n_bins:this.max_xy)
         this.bin_centers             = [(this.bin_edges[i]+this.bin_edges[i+1])/2 for i=1:this.n_bins]
         this.lindisc                 = LinearDiscretizer(this.bin_edges)
         this.discount                = 1.0
@@ -60,8 +61,6 @@ mutable struct LightDark2DLpdm <: AbstractLD2
     end
 end
 
-POMDPs.rand(p::LightDark2DLpdm, s::LD2State, rng::LPDM.RNGVector) = norminvcdf(s, p.resample_std, rand(rng)) # for resampling
-
 # Version with discrete observations
 function generate_o(p::LightDark2DLpdm, sp::Float64, rng::AbstractRNG)
     o = rand(rng, observation(p, sp))
@@ -70,7 +69,8 @@ function generate_o(p::LightDark2DLpdm, sp::Float64, rng::AbstractRNG)
 end
 
 # For bounds calculations
-POMDPs.actions(pomdp::LightDark2DLpdm) = vcat(-pomdp.extended_action_space, pomdp.extended_action_space)
+POMDPs.actions(p::LightDark2DLpdm, ::Bool) = p.extended_moves
+
 LPDM.max_actions(pomdp::LightDark2DLpdm) = pomdp.max_actions
 
 # For "simulated annealing"
@@ -80,15 +80,13 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
                            n_visits::Int64,
                            rng::RNGVector)::Vector{LD2Action}
 
-    # initial_space = vcat(-pomdp.nominal_action_space, pomdp.nominal_action_space)
-
     # simulated annealing temperature
     if isempty(current_action_space) # initial request
         # return vcat(-pomdp.nominal_action_space, [0], pomdp.nominal_action_space)
         return pomdp.nominal_action_space
     end
 
-    l_initial = length(initial_space)
+    l_initial = length(pomdp.nominal_action_space)
 
     # don't count initial "seed" actions in computing T
     T = 1 - (length(current_action_space) - l_initial)/(LPDM.max_actions(pomdp) - l_initial)
@@ -101,13 +99,14 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
         radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * T
 
         in_set = true
-        a = NaN
+        a_x = NaN
+        a_y = NaN
         while in_set
             a_x = (rand(rng, Uniform(a_star[1] - radius, a_star[1] + radius)))
             a_y = (rand(rng, Uniform(a_star[2] - radius, a_star[2] + radius)))
             a_x = clamp(a_x, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
             a_y = clamp(a_y, pomdp.action_limits[1], pomdp.action_limits[2])
-            in_set = a ∈ current_action_space
+            in_set = Vec2(a_x,a_y) ∈ current_action_space
         end
 
         # println("a_star: $a_star, T: $T, radius: $radius, a: $a")
@@ -135,11 +134,14 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
     if (n_visits > 25) && (length(current_action_space) < LPDM.max_actions(pomdp))
         M = 100
         # TODO: Create a formal sampler for RNGVector when there is time
-        Apool = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i in 1:M]
+        Apool_x = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]
+        Apool_y = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]
+        Apool = [LD2Action(Apool_x[i],Apool_y[i]) for i in 1:M]
+
         σ_known = std(Q)
-        σ_pool = std(Apool) # in our case distance to 0 (center of the domain) is just the abs. value of an action
+        σ_pool = std2d(hcat(Apool_x, Apool_y),[0.0,0.0]) # in our case distance to 0 (center of the domain) is just the abs. value of an action
         ρ = σ_known/σ_pool
-        bv_vector = [bv(a,ρ,current_action_space,Q) for a in Apool]
+        bv_vector = [bv(a,ρ,current_action_space,Q) for a ∈ Apool]
 
         return [Apool[argmax(bv_vector)]] # New action, returned as a one element vector.
     else
@@ -147,10 +149,21 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
     end
 end
 
+# TODO: Find a standard function for this and replace
+function std2d(points2d::Array{Float64}, mean::Vector{Float64})
+    norm_sum = 0.0 # L2 norm sum
+    # println(points2d)
+    N=size(points2d)[1]
+    for i in 1:N
+        norm_sum += norm(mean-points2d[i,:])
+    end
+    return norm_sum/sqrt(N-1)
+end
 
 # Blind Value function
 function bv(a::LD2Action, ρ::Float64, Aexpl::Vector{LD2Action}, Q::Vector{Float64})::LD2Action
-    scores = [ρ*abs(a-Aexpl[i])+Q[i] for i in 1:length(Aexpl)]
+    # scores = [ρ*abs(a-Aexpl[i])+Q[i] for i in 1:length(Aexpl)]
+    scores = [ρ*norm(a-Aexpl[i])+Q[i] for i in 1:length(Aexpl)]
     return Aexpl[argmin(scores)]
 end
 
