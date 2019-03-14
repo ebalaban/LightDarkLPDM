@@ -25,10 +25,10 @@ end
 function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     test=Array{LPDMTest}(undef,0)
 
-    # push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
+    push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
     # push!(test, LPDMTest(:despot, :small, reward_func))
     # push!(test, LPDMTest(:despot, :large, reward_func))
-    push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
+    # push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
 
     scen=Array{LPDMScenario}(undef,0)
     # push!(scen, LPDMScenario(LD2State(-2*π)))
@@ -46,7 +46,7 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     time_per_move::Float64      = -1.0
     search_depth::Int64         = 30
     n_particles::Int64          = 50
-    max_trials::Int64           = 500
+    max_trials::Int64           = 50000
 
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
 
@@ -106,8 +106,9 @@ function execute(;vis::Vector{Int64}        = Int64[],
                 time_per_move::Float64      = -1.0,
                 search_depth::Int64         = 30,
                 n_particles::Int64          = 50,
-                max_trials::Int64           = 500,
-                s0::LD2State                = LD2State(0.5*π, 2*π),
+                max_trials::Int64           = 50000,
+                # s0::LD2State                = LD2State(0.5*π, 2*π),
+                s0::LD2State                = LD2State(π, -π),
                 output::Int64               = 1
                 )
 

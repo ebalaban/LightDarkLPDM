@@ -42,14 +42,14 @@ mutable struct LightDark2DLpdm <: AbstractLD2
         this.bin_edges               = collect(-this.max_xy:(2*this.max_xy)/this.n_bins:this.max_xy)
         this.bin_centers             = [(this.bin_edges[i]+this.bin_edges[i+1])/2 for i=1:this.n_bins]
         this.lindisc                 = LinearDiscretizer(this.bin_edges)
-        this.discount                = 1.0
+        this.discount                = 0.9
         this.count                   = 0
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
         this.max_actions             = 100
         this.action_limits           = (-5.0,5.0)
         this.action_space_type       = action_space_type
-        this.exploit_visits          = 50
+        this.exploit_visits          = 25
         # this.base_action_space       = [1.0, 0.1, 0.01]
         this.nominal_moves      = [1.0, 0.1, 0.01]
         this.extended_moves     = vcat(1*this.nominal_moves,

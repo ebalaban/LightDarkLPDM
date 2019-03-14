@@ -88,6 +88,21 @@ function LPDM.isterminal(pomdp::AbstractLD2, particles::Vector{LPDMParticle{LD2S
 end
 
 POMDPs.initial_state_distribution(p::AbstractLD2) = p.init_dist
+# function POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2)
+#     if a == Vec2(0.0,0.0)
+#         if isterminal(p,s)
+#             r = 0.0
+#         else
+#             r = -1000.0 # penalize doing nothing
+#         end
+#     elseif isterminal(p,s)
+#         r = 0.0
+#     else
+#         r = (p.reward_func == :quadratic) ?  -(dot(s, p.Q*s) + dot(a, p.R*a)) : -1
+#     end
+#     return r
+# end
+
 function POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2)
     if isterminal(p,s)
         r = 0.0
@@ -114,7 +129,9 @@ function permute(moves::Vector{Float64})::Vector{LD2Action}
     all_moves = vcat(-moves, [0.0], moves)
     for i in 1:length(all_moves)
         for j in 1:length(all_moves)
-            push!(actions,Vec2(all_moves[i], all_moves[j]))
+            if all_moves[i] != 0.0 || all_moves[j] != 0.0 # don't include 'idle'
+                push!(actions,Vec2(all_moves[i], all_moves[j]))
+            end
         end
     end
     return actions
