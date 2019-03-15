@@ -46,7 +46,7 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     time_per_move::Float64      = -1.0
     search_depth::Int64         = 30
     n_particles::Int64          = 50
-    max_trials::Int64           = 50000
+    max_trials::Int64           = 1000
 
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
 
@@ -106,7 +106,7 @@ function execute(;vis::Vector{Int64}        = Int64[],
                 time_per_move::Float64      = -1.0,
                 search_depth::Int64         = 30,
                 n_particles::Int64          = 50,
-                max_trials::Int64           = 50000,
+                max_trials::Int64           = 500,
                 # s0::LD2State                = LD2State(0.5*π, 2*π),
                 s0::LD2State                = LD2State(π, -π),
                 output::Int64               = 1

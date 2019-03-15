@@ -79,13 +79,17 @@ end
 
 # Replaces the default call
 function LPDM.isterminal(pomdp::AbstractLD2, particles::Vector{LPDMParticle{LD2State}})
-    expected_state = 0.0
+    expected_state = Vec2(0.0,0.0)
 
+    LPDM.normalize!(particles)
     for p in particles
-        expected_state += p.state*p.weight # NOTE: assume weights are normalized
+        expected_state += p.state*p.weight
     end
+
+    # println("expected state: $expected_state")
     return isterminal(pomdp,expected_state)
 end
+
 
 POMDPs.initial_state_distribution(p::AbstractLD2) = p.init_dist
 # function POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2)
