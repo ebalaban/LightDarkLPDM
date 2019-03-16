@@ -66,16 +66,6 @@ LPDM.default_action(p::LightDark1DLpdm, ::Vector{LPDMParticle{LD1State}}) = LPDM
 
 POMDPs.rand(p::LightDark1DLpdm, s::LD1State, rng::LPDM.RNGVector) = norminvcdf(s, p.resample_std, rand(rng)) # for resampling
 
-# Replaces the default call
-function LPDM.isterminal(pomdp::LightDark1DLpdm, particles::Vector{LPDMParticle{LD1State}})
-    expected_state = 0.0
-
-    for p in particles
-        expected_state += p.state*p.weight # NOTE: assume weights are normalized
-    end
-    return isterminal(pomdp,expected_state)
-end
-
 # Version with discrete observations
 function generate_o(p::LightDark1DLpdm, sp::Float64, rng::AbstractRNG)
     o = rand(rng, observation(p, sp))

@@ -70,6 +70,16 @@ POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64) =
 POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = POMDPs.reward(p,s,a)
 POMDPs.discount(p::AbstractLD1) = p.discount
 
+# Replaces the default call
+function LPDM.isterminal(pomdp::AbstractLD1, particles::Vector{LPDMParticle{LD1State}})
+    expected_state = 0.0
+
+    LPDM.normalize!(particles)
+    for p in particles
+        expected_state += p.state*p.weight # NOTE: assume weights are normalized
+    end
+    return isterminal(pomdp,expected_state)
+end
 POMDPs.isterminal(p::AbstractLD1, s::Float64) = (abs(s) <= p.term_radius)
 
 struct Normal
