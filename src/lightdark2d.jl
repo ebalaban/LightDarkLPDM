@@ -80,12 +80,13 @@ end
 # Replaces the default call
 function LPDM.isterminal(pomdp::AbstractLD2, particles::Vector{LPDMParticle{LD2State}})
     expected_state = Vec2(0.0,0.0)
-
-    LPDM.normalize!(particles)
+    weight_sum = 0.0
+    # LPDM.normalize!(particles)
     for p in particles
         expected_state += p.state*p.weight
+        weight_sum += p.weight
     end
-
+    expected_state /= weight_sum
     # println("expected state: $expected_state")
     return isterminal(pomdp,expected_state)
 end

@@ -73,13 +73,16 @@ POMDPs.discount(p::AbstractLD1) = p.discount
 # Replaces the default call
 function LPDM.isterminal(pomdp::AbstractLD1, particles::Vector{LPDMParticle{LD1State}})
     expected_state = 0.0
-
-    LPDM.normalize!(particles)
+    weight_sum = 0.0
+    # LPDM.normalize!(particles)
     for p in particles
-        expected_state += p.state*p.weight # NOTE: assume weights are normalized
+        expected_state += p.state*p.weight
+        weight_sum += p.weight
     end
+    expected_state /= weight_sum
     return isterminal(pomdp,expected_state)
 end
+
 POMDPs.isterminal(p::AbstractLD1, s::Float64) = (abs(s) <= p.term_radius)
 
 struct Normal

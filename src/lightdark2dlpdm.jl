@@ -49,7 +49,7 @@ mutable struct LightDark2DLpdm <: AbstractLD2
         this.max_actions             = 100
         this.action_limits           = (-5.0,5.0)
         this.action_space_type       = action_space_type
-        this.exploit_visits          = 25
+        this.exploit_visits          = 50
         # this.base_action_space       = [1.0, 0.1, 0.01]
         this.nominal_moves      = [1.0, 0.1, 0.01]
         this.extended_moves     = vcat(1*this.nominal_moves,
