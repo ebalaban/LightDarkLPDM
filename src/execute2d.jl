@@ -25,13 +25,14 @@ end
 function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     test=Array{LPDMTest}(undef,0)
 
-    push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
     push!(test, LPDMTest(:despot, :small, reward_func))
     push!(test, LPDMTest(:despot, :large, reward_func))
-    push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
+    # push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
+    # push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
 
     scen=Array{LPDMScenario}(undef,0)
-    push!(scen, LPDMScenario(LD2State(-2*π, π)))
+    # push!(scen, LPDMScenario(LD2State(-2*π, π)))
+    push!(scen, LPDMScenario(LD2State(-π, π)))
     # push!(scen, LPDMScenario(LD2State(π/2, π/2)))
     # push!(scen, LPDMScenario(LD2State(π, -π)))
     # push!(scen, LPDMScenario(LD2State(2*π,2*π)))
@@ -39,14 +40,14 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     # Dummy execution, just to make sure all the code is compiled and loaded,
     # to improve uniformity of subsequent executions.
     # execute(solv_mode = :despot, action_space_type = :small, n_sims = 1, s0 = LD2State(π,π), output = 0)
-    # execute(solv_mode = :despot, action_space_type = :small, n_sims = 1, s0 = LD2State(3.70,7.34), output = debug)
+    execute(solv_mode = :lpdm, action_space_type = :adaptive, n_sims = 1, s0 = LD2State(π,π), output = 0)
 
     # General solver parameters
     steps::Int64                = -1
-    time_per_move::Float64      = -1.0
+    time_per_move::Float64      = 1.0
     search_depth::Int64         = 30
     n_particles::Int64          = 50
-    max_trials::Int64           = 1000
+    max_trials::Int64           = -1
 
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
 
@@ -90,6 +91,8 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
 
             Printf.@printf(f,"%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
                             string(t.mode), string(t.action_space), steps_avg, steps_std, reward_avg, reward_std)
+
+            debug >=0 && println("STATS: solver=$(t.mode), actions=$(t.action_space), steps = $(steps_avg) ($steps_std), reward = $(reward_avg) ($reward_std)")
         end
         Printf.@printf(f,"==================================================================\n")
         Printf.@printf(f,"%d tests per scenario\n\n", n)
@@ -103,10 +106,10 @@ function execute(;vis::Vector{Int64}        = Int64[],
                 reward_func::Symbol         = :quadratic,
                 n_sims::Int64               = 1,
                 steps::Int64                = -1,
-                time_per_move::Float64      = -1.0,
-                search_depth::Int64         = 30,
+                time_per_move::Float64      = 5.0,
+                search_depth::Int64         = 50,
                 n_particles::Int64          = 50,
-                max_trials::Int64           = 1000,
+                max_trials::Int64           = -1,
                 # s0::LD2State                = LD2State(0.5*π, 2*π),
                 s0::LD2State                = LD2State(π, -π),
                 output::Int64               = 1

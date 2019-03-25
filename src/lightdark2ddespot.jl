@@ -39,7 +39,7 @@ mutable struct LightDark2DDespot <: AbstractLD2
         this.bin_centers             = [(this.bin_edges[i]+this.bin_edges[i+1])/2 for i=1:this.n_bins]
         this.lindisc                 = LinearDiscretizer(this.bin_edges)
         this.init_dist               = SymmetricNormal2([2.0, 2.0], 0.5)
-        this.discount                = 1.0
+        this.discount                = 0.9
         this.count                   = 0
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling

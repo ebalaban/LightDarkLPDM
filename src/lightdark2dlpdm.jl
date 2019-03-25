@@ -42,11 +42,11 @@ mutable struct LightDark2DLpdm <: AbstractLD2
         this.bin_edges               = collect(-this.max_xy:(2*this.max_xy)/this.n_bins:this.max_xy)
         this.bin_centers             = [(this.bin_edges[i]+this.bin_edges[i+1])/2 for i=1:this.n_bins]
         this.lindisc                 = LinearDiscretizer(this.bin_edges)
-        this.discount                = 0.9
+        this.discount                = 1.0
         this.count                   = 0
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
-        this.max_actions             = 100
+        this.max_actions             = 169
         this.action_limits           = (-5.0,5.0)
         this.action_space_type       = action_space_type
         this.exploit_visits          = 50
@@ -75,6 +75,7 @@ LPDM.max_actions(pomdp::LightDark2DLpdm) = pomdp.max_actions
 
 # For "simulated annealing"
 function LPDM.next_actions(pomdp::LightDark2DLpdm,
+                           depth::Int64,
                            current_action_space::Vector{LD2Action},
                            a_star::LD2Action,
                            n_visits::Int64,
@@ -83,7 +84,12 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
     # simulated annealing temperature
     if isempty(current_action_space) # initial request
         # return vcat(-pomdp.nominal_action_space, [0], pomdp.nominal_action_space)
-        return pomdp.nominal_action_space
+        if depth > 1
+            return pomdp.extended_action_space
+        else
+            # return pomdp.extended_action_space   #DEBUG, let's try this...
+            return pomdp.nominal_action_space
+        end
     end
 
     l_initial = length(pomdp.nominal_action_space)
@@ -96,7 +102,7 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
     if (n_visits > adj_exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
 
         # Use the full range as initial radius to accomodate points at the edges of it
-        radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * T
+        radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * 0.8 * T #DEBUG, let's try "lowering" the temperature
 
         in_set = true
         a_x = NaN
@@ -131,8 +137,8 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
            return pomdp.nominal_action_space
      end
 
-    if (n_visits > 25) && (length(current_action_space) < LPDM.max_actions(pomdp))
-        M = 100
+    if (n_visits > pomdp.exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
+        M = pomdp.max_actions
         # TODO: Create a formal sampler for RNGVector when there is time
         Apool_x = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]
         Apool_y = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]
