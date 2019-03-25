@@ -9,7 +9,7 @@ import POMDPs:
         discount,
         reward
 
-import LPDM.isterminal
+import LPDM: isterminal, max_belief_clusters
 using StatsFuns
 
 # Typealias appropriately
@@ -69,6 +69,7 @@ POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64) =
 
 POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = POMDPs.reward(p,s,a)
 POMDPs.discount(p::AbstractLD1) = p.discount
+LPDM.max_belief_clusters(p::LightDark1DLpdm) = p.max_belief_clusters
 
 # Replaces the default call
 function LPDM.isterminal(pomdp::AbstractLD1, particles::Vector{LPDMParticle{LD1State}})

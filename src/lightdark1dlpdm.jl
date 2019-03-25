@@ -1,5 +1,5 @@
 using Discretizers
-import LPDM: default_action, next_actions, isterminal
+import LPDM: default_action, next_actions, state_distance
 import POMDPs: rand, actions
 
 mutable struct LightDark1DLpdm <: AbstractLD1
@@ -21,6 +21,7 @@ mutable struct LightDark1DLpdm <: AbstractLD1
     resample_std::Float64
     exploit_visits::Int64
     max_actions::Int64
+    max_belief_clusters::Int64
     action_limits::Tuple{Float64,Float64}
     action_space_type::Symbol
     base_action_space::Vector{LD1Action}
@@ -45,6 +46,7 @@ mutable struct LightDark1DLpdm <: AbstractLD1
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
         this.max_actions             = 30
+        this.max_belief_clusters     = 10
         this.action_limits           = (-5.0,5.0)
         this.action_space_type       = action_space_type
         this.exploit_visits          = 50
@@ -149,11 +151,28 @@ function LPDM.next_actions(pomdp::LightDark1DLpdm,
     end
 end
 
-
 # Blind Value function
 function bv(a::LD1Action, ρ::Float64, Aexpl::Vector{LD1Action}, Q::Vector{Float64})::LD1Action
     scores = [ρ*abs(a-Aexpl[i])+Q[i] for i in 1:length(Aexpl)]
     return Aexpl[argmin(scores)]
+end
+
+function LPDM.state_distance(pomdp::LightDark1DLpdm,
+                            particles::Vector{Particle{LD1State}},
+                            s::LD1State,
+                            a::LD1Action,
+                            obs::LD1Obs,
+                            sp::LD1State)
+
+    od = POMDPs.observation(bu.pomdp,
+                            current_belief.particles[i].state,
+                            a,
+                            s)
+
+    likelihood = POMDPs.pdf(od,obs)
+
+    for p in particles
+        d =
 end
 
 # NOTE: OLD VERSION. implements "fast" simulated annealing
