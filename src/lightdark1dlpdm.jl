@@ -157,23 +157,8 @@ function bv(a::LD1Action, ρ::Float64, Aexpl::Vector{LD1Action}, Q::Vector{Float
     return Aexpl[argmin(scores)]
 end
 
-function LPDM.state_distance(pomdp::LightDark1DLpdm,
-                            particles::Vector{Particle{LD1State}},
-                            s::LD1State,
-                            a::LD1Action,
-                            obs::LD1Obs,
-                            sp::LD1State)
+LPDM.state_distance(pomdp::LightDark1DLpdm, s1::LD1State, s2::LD1State) = abs(s2-s1)
 
-    od = POMDPs.observation(bu.pomdp,
-                            current_belief.particles[i].state,
-                            a,
-                            s)
-
-    likelihood = POMDPs.pdf(od,obs)
-
-    for p in particles
-        d =
-end
 
 # NOTE: OLD VERSION. implements "fast" simulated annealing
 # function LPDM.next_actions(pomdp::LightDark1DLpdm,
