@@ -15,7 +15,7 @@ struct LPDMTest
     solver_mode::Symbol
     action_mode::Symbol
     obs_mode::Symbol
-    reward_func::Symbol
+    reward_mode::Symbol
 end
 
 struct LPDMScenario
@@ -23,14 +23,14 @@ struct LPDMScenario
 end
 
 # reward function options - :quadratic or :fixed
-function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
+function batch_execute(;n::Int64=1, debug::Int64=1, reward_mode=:quadratic)
     test=Array{LPDMTest}(undef,0)
 
-    push!(test, LPDMTest(:lpdm, :standard, :continuous, reward_func)) # simulated annealing
-    # push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
-    # push!(test, LPDMTest(:despot, :small, reward_func))
-    # push!(test, LPDMTest(:despot, :large, reward_func))
-    # push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
+    push!(test, LPDMTest(:lpdm, :standard, :continuous, reward_mode)) # simulated annealing
+    # push!(test, LPDMTest(:lpdm, :adapt, reward_mode)) # simulated annealing
+    # push!(test, LPDMTest(:despot, :small, reward_mode))
+    # push!(test, LPDMTest(:despot, :large, reward_mode))
+    # push!(test, LPDMTest(:lpdm_bv, :bv, reward_mode)) # blind value
 
     scen=Array{LPDMScenario}(undef,0)
     push!(scen, LPDMScenario(LD1State(-2*π)))
@@ -51,14 +51,14 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
             println("------------------------")
         end
 
-        Printf.@printf(f,"SCENARIO %d, s0 = %f, %s reward function\n", i, scen[i].s0, reward_func)
+        Printf.@printf(f,"SCENARIO %d, s0 = %f, %s reward function\n", i, scen[i].s0, reward_mode)
         Printf.@printf(f,"==================================================================\n")
         # Printf.@printf(f,"mode\t\tact. space\t\tsteps(std)\t\treward(std)\n")
         Printf.@printf(f,"SOLVER\t\tACT. SPACE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
         Printf.@printf(f,"==================================================================\n")
         for t in test
             if debug >= 0
-                println("mode: $(t.mode), action space: $(t.action_space), reward: $(t.reward_func)")
+                println("mode: $(t.mode), action space: $(t.action_space), reward: $(t.reward_mode)")
             end
             steps, steps_std, reward, reward_std =
                         execute(solv_mode         = t.mode,
@@ -66,7 +66,7 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
                                 n_sims            = n,
                                 s0                = scen[i].s0,
                                 output            = debug,
-                                reward_func       = reward_func)
+                                reward_mode       = reward_mode)
 
             Printf.@printf(f,"%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
                             string(t.mode), string(t.action_space), steps, steps_std, reward, reward_std)
@@ -79,18 +79,18 @@ end
 
 function execute(;vis::Vector{Int64}=Int64[],
                 solver_mode::Symbol=:despot,
-                action_mode::Symbol=:standard
-                obs_mode::Symbol=:discrete
-                reward_func = :quadratic,
+                action_mode::Symbol=:standard,
+                obs_mode::Symbol=:discrete,
+                reward_mode = :quadratic,
                 n_sims::Int64=1,
                 steps::Int64=-1,
                 s0::LD1State=LD1State(1.9),
                 output::Int64=1)#n_sims::Int64 = 100)
 
     if solver_mode == :despot
-        p = LightDark1DDespot(action_space_type, reward_func = reward_func)
-    elseif solver_mode = :lpdm
-        p = LightDark1DLpdm(action_space_type, reward_func = reward_func)
+        p = LightDark1DDespot(action_mode, reward_mode = reward_mode)
+    elseif solver_mode == :lpdm
+        p = LightDark1DLpdm(action_mode, reward_mode = reward_mode)
     end
 
     sim_rewards = Vector{Float64}(undef,n_sims)
@@ -135,7 +135,9 @@ function execute(;vis::Vector{Int64}=Int64[],
                                                                             seed = UInt32(2*sim+1),
                                                                             # max_trials = 10)
                                                                             max_trials = 1000,
-                                                                            mode = solv_mode)
+                                                                            solver_mode = solver_mode,
+                                                                            action_mode = action_mode,
+                                                                            obs_mode    = obs_mode)
 
     #---------------------------------------------------------------------------------
         # Belief
@@ -157,7 +159,7 @@ function execute(;vis::Vector{Int64}=Int64[],
         # output >= 1 && println("=============== SIMULATION # $sim ================")
         if output >= 0
             println("")
-            println("*** SIM $sim (mode: $solv_mode, action space: $action_space_type, s0: $s0)***")
+            println("*** SIM $sim (solver mode: $solver_mode, action mode: $action_mode, obs mode: $obs_mode, s0: $s0)***")
             println("")
         end
 

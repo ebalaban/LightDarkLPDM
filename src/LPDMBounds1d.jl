@@ -100,7 +100,7 @@ function move(p::AbstractLD1, x1::Float64, x2::Float64)#::(Float64,Float64)
         # println("BOUNDS: x=$x, x1=$x1, x2=$x2, min_a = $min_a, all_actions=$all_actions, pos_actions=$pos_actions, av_actions=$(all_actions[all_actions .< abs(x2-x)]), a_dir=$a_dir,  r=$r ")
         x += a_dir # take the step
     end
-    error("review below, might be a bug with assigning first_a = 0.0")
+    # error("review below, might be a bug with assigning first_a = 0.0")
     if abs(x2) <= p.term_radius
         # x1 < 0.7 && println("TERMINATION REWARD #2 FOR x2=$x")
         r += reward(p,x2,0.0) #termination reward

@@ -23,13 +23,15 @@ mutable struct LightDark1DLpdm <: AbstractLD1
     max_actions::Int64
     max_belief_clusters::Int64
     action_limits::Tuple{Float64,Float64}
-    action_space_type::Symbol
+    action_mode::Symbol
+    obs_mode::Symbol
+    reward_mode::Symbol
     base_action_space::Vector{LD1Action}
     nominal_action_space::Vector{LD1Action}
     extended_action_space::Vector{LD1Action}
-    reward_func::Symbol
 
-    function LightDark1DLpdm(action_space_type::Symbol; reward_func = :quadratic)
+
+    function LightDark1DLpdm(action_mode::Symbol; obs_mode = :discrete, reward_mode = :quadratic)
         this = new()
         this.min_noise               = 0.0
         this.min_noise_loc           = 5.0
@@ -48,7 +50,8 @@ mutable struct LightDark1DLpdm <: AbstractLD1
         this.max_actions             = 30
         this.max_belief_clusters     = 10
         this.action_limits           = (-5.0,5.0)
-        this.action_space_type       = action_space_type
+        this.action_mode             = action_mode
+        this.obs_mode                = obs_mode
         this.exploit_visits          = 50
         # this.base_action_space       = [1.0, 0.1, 0.01]
         this.nominal_action_space    = [1.0, 0.1, 0.01]
@@ -57,7 +60,7 @@ mutable struct LightDark1DLpdm <: AbstractLD1
                                             3*this.nominal_action_space,
                                             4*this.nominal_action_space,
                                             5*this.nominal_action_space)
-        this.reward_func                  = reward_func
+        this.reward_mode                  = reward_mode
         return this
     end
 end
@@ -157,6 +160,7 @@ function bv(a::LD1Action, ρ::Float64, Aexpl::Vector{LD1Action}, Q::Vector{Float
     return Aexpl[argmin(scores)]
 end
 
+LPDM.max_belief_clusters(p::LightDark1DLpdm) = p.max_belief_clusters
 LPDM.state_distance(pomdp::LightDark1DLpdm, s1::LD1State, s2::LD1State) = abs(s2-s1)
 
 
