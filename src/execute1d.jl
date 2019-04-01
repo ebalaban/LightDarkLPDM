@@ -12,8 +12,9 @@ using LightDarkPOMDPs
 include("LPDMBounds1d.jl")
 
 struct LPDMTest
-    mode::Symbol
-    action_space::Symbol
+    solver_mode::Symbol
+    action_mode::Symbol
+    obs_mode::Symbol
     reward_func::Symbol
 end
 
@@ -25,10 +26,11 @@ end
 function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     test=Array{LPDMTest}(undef,0)
 
-    push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
-    push!(test, LPDMTest(:despot, :small, reward_func))
-    push!(test, LPDMTest(:despot, :large, reward_func))
-    push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
+    push!(test, LPDMTest(:lpdm, :standard, :continuous, reward_func)) # simulated annealing
+    # push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
+    # push!(test, LPDMTest(:despot, :small, reward_func))
+    # push!(test, LPDMTest(:despot, :large, reward_func))
+    # push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
 
     scen=Array{LPDMScenario}(undef,0)
     push!(scen, LPDMScenario(LD1State(-2*π)))
@@ -76,17 +78,18 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
 end
 
 function execute(;vis::Vector{Int64}=Int64[],
-                solv_mode::Symbol=:lpdm,
-                action_space_type::Symbol=:adapt,
+                solver_mode::Symbol=:despot,
+                action_mode::Symbol=:standard
+                obs_mode::Symbol=:discrete
                 reward_func = :quadratic,
                 n_sims::Int64=1,
                 steps::Int64=-1,
                 s0::LD1State=LD1State(1.9),
                 output::Int64=1)#n_sims::Int64 = 100)
 
-    if solv_mode == :despot
+    if solver_mode == :despot
         p = LightDark1DDespot(action_space_type, reward_func = reward_func)
-    elseif (solv_mode == :lpdm || solv_mode == :lpdm_bv)
+    elseif solver_mode = :lpdm
         p = LightDark1DLpdm(action_space_type, reward_func = reward_func)
     end
 
