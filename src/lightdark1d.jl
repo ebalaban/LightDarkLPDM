@@ -11,6 +11,7 @@ import POMDPs:
 
 import LPDM: isterminal, max_belief_clusters
 using StatsFuns
+using Random
 
 # Typealias appropriately
 const LD1State  = Float64
@@ -50,7 +51,7 @@ abstract type AbstractLD1 <: POMDP{Float64, Float64, Float64} end
     Q::Float64              = 0.5
     R::Float64              = 0.5
     term_radius::Float64    = 1e-5
-    init_dist::Any          = Normal(2.0, 0.5)
+    # init_dist::Any          = Normal(2.0, 0.5)
     #init_dist::Any          = Normal(-3.0, 0.5)
     discount::Float64       = 1.0
     count::Int              = 0
@@ -59,8 +60,25 @@ end
 # POMDPs.jl API functions:
 POMDPs.generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = generate_s(p, s, a)
 POMDPs.generate_o(p::AbstractLD1, s::Float64, a::Float64, sp::Float64, rng::AbstractRNG) = generate_o(p, sp, rng)
+POMDPs.observation(p::AbstractLD1, sp::Float64) = Distributions.Normal(sp,obs_std(p,sp))
 POMDPs.observation(p::AbstractLD1, a::Float64, sp::Float64) = observation(p, sp)
-# POMDPs.initial_state_distribution(p::AbstractLD1) = p.init_dist
+POMDPs.observation(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = observation(p,sp)
+
+function generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG)
+    o = rand(rng, observation(p, sp))
+    if p.obs_mode == :discrete
+        o_disc = p.bin_centers[encode(p.lindisc,o)]
+        return o_disc
+    elseif p.obs_mode == :continuous
+        return o
+    else
+        error("Invalid obs_mode = $(p.obs_mode)")
+    end
+    # return obs_index(p,o_disc) # return a single combined obs index
+end
+
+
+# generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG) = rand(rng, observation(p, sp))
 
 # POMDPs.reward(p::AbstractLD1, s::Float64, a::Float64)              = -1.0
 
@@ -85,32 +103,32 @@ end
 
 POMDPs.isterminal(p::AbstractLD1, s::Float64) = (abs(s) <= p.term_radius)
 
-struct Normal
-    mean::Float64
-    std::Float64
-end
+# struct Normal
+#     mean::Float64
+#     std::Float64
+# end
 
 # Base.rand(p::AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, std(p.init_dist)))
 
-function Base.rand(rng::LPDM.RNGVector,
-                   d::Normal)
-
-    # error("IN HERE!!!")
-    # a random number selected from normal distribution
-    r1 = norminvcdf(d.mean, d.std, rand(rng))
-    return r1
-end
+# function Base.rand(rng::LPDM.RNGVector,
+#                    d::Normal)
+#
+#     # error("IN HERE!!!")
+#     # a random number selected from normal distribution
+#     r1 = norminvcdf(mean(d), std(d), rand(rng))
+#     return r1
+# end
 
 # rand(rng::AbstractRNG, d::Normal) = d.mean + d.std*Float64(randn(rng, 2))
 # POMDPs.pdf(d::Normal, o::Float64) = exp(-0.5*sum((o-d.mean).^2)/d.std^2)/(2*pi*d.std^2); println("observing!")
-function POMDPs.pdf(d::Normal, o::Float64) #DEBUG version
-    # error("In my pdf")
-    return exp(-0.5*sum((o-d.mean).^2)/d.std^2)/(2*pi*d.std^2)
-end
-
-mean(d::Normal) = d.mean
-mode(d::Normal) = d.mean
-Base.eltype(::Type{Normal}) = Float64
+# function POMDPs.pdf(d::Normal, o::Float64) #DEBUG version
+#     # error("In my pdf")
+#     return exp(-0.5*sum((o-d.mean).^2)/d.std^2)/(2*pi*d.std^2)
+# end
+#
+# mean(d::Normal) = d.mean
+# mode(d::Normal) = d.mean
+# Base.eltype(::Type{Normal}) = Float64
 
 # chose this on 2/6/17 because I like the bowtie particle patterns it produces
 # unclear which one was actually used in the paper
@@ -128,10 +146,6 @@ function generate_s(p::AbstractLD1, s::Float64, a::Float64)
     return s+a
 end
 
-POMDPs.observation(p::AbstractLD1, sp::Float64) = Normal(sp,obs_std(p,sp))
-POMDPs.observation(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = observation(p,sp)
-
-generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG) = rand(rng, observation(p, sp))
 # generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG) = sp #DEBUG: trying no noise at all
 
 # function generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG)
@@ -153,7 +167,7 @@ function state_distribution(pomdp::AbstractLD1, s0::LD1State, config::LPDMConfig
     return states
 end
 
-function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG)
+function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::RNGVector)
 
     s = generate_s(p,s,a,rng)
     o = generate_o(p,s,rng)

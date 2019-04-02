@@ -42,6 +42,7 @@ mutable struct LightDark2DLpdm <: AbstractLD2
         this.bin_edges               = collect(-this.max_xy:(2*this.max_xy)/this.n_bins:this.max_xy)
         this.bin_centers             = [(this.bin_edges[i]+this.bin_edges[i+1])/2 for i=1:this.n_bins]
         this.lindisc                 = LinearDiscretizer(this.bin_edges)
+        this.init_dist               = XXXXXXXXXXXXX
         this.discount                = 1.0
         this.count                   = 0
         this.n_rand                  = 0

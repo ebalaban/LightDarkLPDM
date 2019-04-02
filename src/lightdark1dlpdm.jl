@@ -14,7 +14,6 @@ mutable struct LightDark1DLpdm <: AbstractLD1
     bin_edges::Vector{Float64}
     bin_centers::Vector{Float64}
     lindisc::LinearDiscretizer
-    init_dist::Any
     discount::Float64
     count::Int
     n_rand::Int
@@ -31,7 +30,10 @@ mutable struct LightDark1DLpdm <: AbstractLD1
     extended_action_space::Vector{LD1Action}
 
 
-    function LightDark1DLpdm(action_mode::Symbol; obs_mode = :discrete, reward_mode = :quadratic)
+    function LightDark1DLpdm(;
+                             action_mode::Symbol = :adaptive,
+                             obs_mode = :continuous,
+                             reward_mode = :quadratic)
         this = new()
         this.min_noise               = 0.0
         this.min_noise_loc           = 5.0
@@ -70,13 +72,6 @@ LPDM.default_action(p::LightDark1DLpdm) = 0.00
 LPDM.default_action(p::LightDark1DLpdm, ::Vector{LPDMParticle{LD1State}}) = LPDM.default_action(p)
 
 POMDPs.rand(p::LightDark1DLpdm, s::LD1State, rng::LPDM.RNGVector) = norminvcdf(s, p.resample_std, rand(rng)) # for resampling
-
-# Version with discrete observations
-function generate_o(p::LightDark1DLpdm, sp::Float64, rng::AbstractRNG)
-    o = rand(rng, observation(p, sp))
-    o_disc = p.bin_centers[encode(p.lindisc,o)]
-    return o_disc
-end
 
 # For bounds calculations
 POMDPs.actions(pomdp::LightDark1DLpdm) = vcat(-pomdp.extended_action_space, pomdp.extended_action_space)

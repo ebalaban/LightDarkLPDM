@@ -73,14 +73,6 @@ LPDM.default_action(p::LightDark1DDespot) = 0.00
 LPDM.default_action(p::LightDark1DDespot, ::Vector{LPDMParticle{LD1State}}) = LPDM.default_action(p)
 POMDPs.rand(p::LightDark1DDespot, s::LD1State, rng::LPDM.RNGVector) = norminvcdf(s, p.resample_std, rand(rng)) # for resampling
 
-# Version with discrete observations
-function generate_o(p::LightDark1DDespot, sp::Float64, rng::AbstractRNG)
-    o = rand(rng, observation(p, sp))
-    o_disc = p.bin_centers[encode(p.lindisc,o)]
-    return o_disc
-    # return obs_index(p,o_disc) # return a single combined obs index
-end
-
 # POMDPs.actions(p::LightDark1DDespot, ::Bool) = [0.1, 0.01]
 #POMDPs.actions(p::LightDark1DDespot) = Float64Iter(collect(permutations(vcat(POMDPs.actions(p, true), -POMDPs.actions(p,true)), 2)))
 

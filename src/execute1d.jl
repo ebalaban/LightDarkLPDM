@@ -88,9 +88,13 @@ function execute(;vis::Vector{Int64}=Int64[],
                 output::Int64=1)#n_sims::Int64 = 100)
 
     if solver_mode == :despot
-        p = LightDark1DDespot(action_mode, reward_mode = reward_mode)
+        p = LightDark1DDespot(action_mode = action_mode,
+                            obs_mode = obs_mode,
+                            reward_mode = reward_mode)
     elseif solver_mode == :lpdm
-        p = LightDark1DLpdm(action_mode, reward_mode = reward_mode)
+        p = LightDark1DLpdm(action_mode = action_mode,
+                            obs_mode = obs_mode,
+                            reward_mode = reward_mode)
     end
 
     sim_rewards = Vector{Float64}(undef,n_sims)
