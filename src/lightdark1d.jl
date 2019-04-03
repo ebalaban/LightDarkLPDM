@@ -60,12 +60,13 @@ end
 # POMDPs.jl API functions:
 POMDPs.generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = generate_s(p, s, a)
 POMDPs.generate_o(p::AbstractLD1, s::Float64, a::Float64, sp::Float64, rng::AbstractRNG) = generate_o(p, sp, rng)
-POMDPs.observation(p::AbstractLD1, sp::Float64) = Distributions.Normal(sp,obs_std(p,sp))
+POMDPs.observation(p::AbstractLD1, sp::Float64) = Normal1D(sp,obs_std(p,sp))
 POMDPs.observation(p::AbstractLD1, a::Float64, sp::Float64) = observation(p, sp)
 POMDPs.observation(p::AbstractLD1, s::Float64, a::Float64, sp::Float64) = observation(p,sp)
 
 function generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG)
-    o = rand(rng, observation(p, sp))
+    d = observation(p, sp)
+    o = rand(rng, Distributions.Normal(d.mean, d.std))
     if p.obs_mode == :discrete
         o_disc = p.bin_centers[encode(p.lindisc,o)]
         return o_disc
@@ -103,10 +104,10 @@ end
 
 POMDPs.isterminal(p::AbstractLD1, s::Float64) = (abs(s) <= p.term_radius)
 
-# struct Normal
-#     mean::Float64
-#     std::Float64
-# end
+struct Normal1D
+    mean::Float64
+    std::Float64
+end
 
 # Base.rand(p::AbstractLD1, s::Float64, rng::LPDM.RNGVector) = rand(rng, Normal(s, std(p.init_dist)))
 
@@ -140,6 +141,15 @@ POMDPs.isterminal(p::AbstractLD1, s::Float64) = (abs(s) <= p.term_radius)
 # EB 10/20/18, implementing the version from Platt et al:
 obs_std(p::AbstractLD1, x::Float64) = sqrt(0.5*(p.min_noise_loc-x)^2 + p.min_noise)
 
+# NOTE: the whole point of defining Normal1D is to avoid the so-called type piracy when defining this POMDPs.pdf method
+POMDPs.pdf(d::Normal1D, o::Float64) = Distributions.pdf(Distributions.Normal(d.mean, d.std),o)
+
+# function POMDPs.pdf(d::Normal1D, o::Float64)
+#     # pdf=Distributions.pdf(d,o)
+#     println("In pdf: d=$d, o=$o")
+#     println("pdf=$(Distributions.pdf(Distributions.Normal(d.mean, d.std),o))")
+#     return nothing
+# end
 
 function generate_s(p::AbstractLD1, s::Float64, a::Float64)
     p.count += 1
@@ -158,9 +168,9 @@ function state_distribution(pomdp::AbstractLD1, s0::LD1State, config::LPDMConfig
     states = Vector{LPDMParticle{Float64}}();
     weight = 1/(config.n_particles^2) # weight of each individual particle
     particle = LPDMParticle{LD1State}(0.0, 1, weight)
-
+    d = observation(pomdp,s0)
     for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
-        particle = LPDMParticle{Float64}(LPDM.rand(rng, observation(pomdp,s0)), i, weight)
+        particle = LPDMParticle{Float64}(LPDM.rand(rng, Distributions.Normal(d.mean, d.std)), i, weight)
         push!(states, particle)
     end
     # println("n states: $(length(states))")

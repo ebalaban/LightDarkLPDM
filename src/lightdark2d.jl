@@ -144,7 +144,8 @@ end
 
 # Random.rand(rng::AbstractRNG, d::Random.SamplerTrivial{SymmetricNormal2}) = d[].mean + d[].std*Vec2(rand(rng)-0.5,rand(rng)-0.5)
 Random.rand(rng::AbstractRNG, d::Random.SamplerTrivial{SymmetricNormal2}) = Vec2(rand(rng)-0.5,rand(rng)-0.5)
-POMDPs.pdf(d::SymmetricNormal2, s::Vec2) = exp(-0.5*sum((s-d.mean).^2)/d.std^2)/(2*pi*d.std^2)
+# POMDPs.pdf(d::SymmetricNormal2, s::Vec2) = exp(-0.5*sum((s-d.mean).^2)/d.std^2)/(2*pi*d.std^2)
+POMDPs.pdf(d::SymmetricNormal2, s::Vec2) = error("Define me please!")
 mean(d::SymmetricNormal2) = d.mean
 mode(d::SymmetricNormal2) = d.mean
 Base.eltype(::Type{SymmetricNormal2}) = Vec2

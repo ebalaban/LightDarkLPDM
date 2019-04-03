@@ -26,6 +26,7 @@ end
 function batch_execute(;n::Int64=1, debug::Int64=1, reward_mode=:quadratic)
     test=Array{LPDMTest}(undef,0)
 
+    push!(test, LPDMTest(:lpdm, :standard, :discrete, reward_mode)) # simulated annealing
     push!(test, LPDMTest(:lpdm, :standard, :continuous, reward_mode)) # simulated annealing
     # push!(test, LPDMTest(:lpdm, :adapt, reward_mode)) # simulated annealing
     # push!(test, LPDMTest(:despot, :small, reward_mode))
@@ -40,7 +41,7 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_mode=:quadratic)
 
     # Dummy execution, just to make sure all the code is compiled and loaded,
     # to improve uniformity of subsequent executions.
-    execute(solv_mode = :lpdm, action_space_type = :adapt, n_sims = 1, s0 = LD1State(π), output = 0)
+    # execute(solv_mode = :lpdm, action_space_type = :adapt, n_sims = 1, s0 = LD1State(π), output = 0)
 
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
     for i in 1:length(scen)
@@ -58,18 +59,19 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_mode=:quadratic)
         Printf.@printf(f,"==================================================================\n")
         for t in test
             if debug >= 0
-                println("mode: $(t.mode), action space: $(t.action_space), reward: $(t.reward_mode)")
+                println("mode: $(t.solver_mode), actions: $(t.action_mode), observations: $(t.obs_mode), rewards: $(t.reward_mode)")
             end
             steps, steps_std, reward, reward_std =
-                        execute(solv_mode         = t.mode,
-                                action_space_type = t.action_space,
+                        execute(solver_mode       = t.solver_mode,
+                                action_mode       = t.action_mode,
+                                obs_mode          = t.obs_mode,
+                                reward_mode       = t.reward_mode,
                                 n_sims            = n,
                                 s0                = scen[i].s0,
-                                output            = debug,
-                                reward_mode       = reward_mode)
+                                output            = debug)
 
             Printf.@printf(f,"%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
-                            string(t.mode), string(t.action_space), steps, steps_std, reward, reward_std)
+                            string(t.solver_mode), string(t.action_mode), steps, steps_std, reward, reward_std)
         end
         Printf.@printf(f,"==================================================================\n")
         Printf.@printf(f,"%d tests per scenario\n\n", n)
@@ -216,7 +218,7 @@ function execute(;vis::Vector{Int64}=Int64[],
                 # blink(t)
             end
             if output >= 1
-                solv_mode == :lpdm && println("root actions: $(solver.root.action_space)")
+                solver_mode == :lpdm && println("root actions: $(solver.root.action_space)")
             end
         end
 

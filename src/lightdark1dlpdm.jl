@@ -40,7 +40,7 @@ mutable struct LightDark1DLpdm <: AbstractLD1
         this.Q                       = 0.5
         this.R                       = 0.5
         this.term_radius             = 0.05
-        this.n_bins                  = 100 # per linear dimension
+        this.n_bins                  = 10 # per linear dimension
         this.max_x                   = 10     # assume symmetry in x and y for simplicity
         this.bin_edges               = collect(-this.max_x:(2*this.max_x)/this.n_bins:this.max_x)
         this.bin_centers             = [(this.bin_edges[i]+this.bin_edges[i+1])/2 for i=1:this.n_bins]
