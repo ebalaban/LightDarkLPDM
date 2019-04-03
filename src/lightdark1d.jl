@@ -160,7 +160,7 @@ function state_distribution(pomdp::AbstractLD1, s0::LD1State, config::LPDMConfig
     particle = LPDMParticle{LD1State}(0.0, 1, weight)
 
     for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
-        particle = LPDMParticle{Float64}(rand(rng, observation(pomdp,s0)), i, weight)
+        particle = LPDMParticle{Float64}(LPDM.rand(rng, observation(pomdp,s0)), i, weight)
         push!(states, particle)
     end
     # println("n states: $(length(states))")
