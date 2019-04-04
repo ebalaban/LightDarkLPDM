@@ -53,10 +53,10 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_mode=:quadratic)
         end
 
         Printf.@printf(f,"SCENARIO %d, s0 = %f, %s reward function\n", i, scen[i].s0, reward_mode)
-        Printf.@printf(f,"==================================================================\n")
+        Printf.@printf(f,"=====================================================================\n")
         # Printf.@printf(f,"mode\t\tact. space\t\tsteps(std)\t\treward(std)\n")
-        Printf.@printf(f,"SOLVER\t\tACT. SPACE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
-        Printf.@printf(f,"==================================================================\n")
+        Printf.@printf(f,"SOLVER\t\tACT. MODE\t\tOBS. MODE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
+        Printf.@printf(f,"=====================================================================\n")
         for t in test
             if debug >= 0
                 println("mode: $(t.solver_mode), actions: $(t.action_mode), observations: $(t.obs_mode), rewards: $(t.reward_mode)")
@@ -70,10 +70,10 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_mode=:quadratic)
                                 s0                = scen[i].s0,
                                 output            = debug)
 
-            Printf.@printf(f,"%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
-                            string(t.solver_mode), string(t.action_mode), steps, steps_std, reward, reward_std)
+            Printf.@printf(f,"%s\t\t%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
+                            string(t.solver_mode), string(t.action_mode), string(t.obs_mode), steps, steps_std, reward, reward_std)
         end
-        Printf.@printf(f,"==================================================================\n")
+        Printf.@printf(f,"=====================================================================\n")
         Printf.@printf(f,"%d tests per scenario\n\n", n)
     end
     close(f)
@@ -140,7 +140,7 @@ function execute(;vis::Vector{Int64}=Int64[],
                                                                             # seed = UInt32(2),
                                                                             seed = UInt32(2*sim+1),
                                                                             # max_trials = 10)
-                                                                            max_trials = 1000,
+                                                                            max_trials = 1,
                                                                             solver_mode = solver_mode,
                                                                             action_mode = action_mode,
                                                                             obs_mode    = obs_mode)
