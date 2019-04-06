@@ -12,9 +12,10 @@ using LightDarkPOMDPs
 include("LPDMBounds2d.jl")
 
 struct LPDMTest
-    mode::Symbol
-    action_space::Symbol
-    reward_func::Symbol
+    solver_mode::Symbol
+    action_mode::Symbol
+    obs_mode::Symbol
+    reward_mode::Symbol
 end
 
 struct LPDMScenario
@@ -22,11 +23,11 @@ struct LPDMScenario
 end
 
 # reward function options - :quadratic or :fixed
-function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
+function batch_execute(;n::Int64=1, debug::Int64=1, reward_mode=:quadratic)
     test=Array{LPDMTest}(undef,0)
 
-    push!(test, LPDMTest(:despot, :small, reward_func))
-    push!(test, LPDMTest(:despot, :large, reward_func))
+    push!(test, LPDMTest(:lpdm, :standard, :discrete, reward_mode))
+    push!(test, LPDMTest(:lpdm, :standard, :continuous, reward_mode))
     # push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
     # push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
 
@@ -40,7 +41,7 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
     # Dummy execution, just to make sure all the code is compiled and loaded,
     # to improve uniformity of subsequent executions.
     # execute(solv_mode = :despot, action_space_type = :small, n_sims = 1, s0 = LD2State(π,π), output = 0)
-    execute(solv_mode = :lpdm, action_space_type = :adaptive, n_sims = 1, s0 = LD2State(π,π), output = 0)
+    # execute(solv_mode = :lpdm, action_space_type = :adaptive, n_sims = 1, s0 = LD2State(π,π), output = 0)
 
     # General solver parameters
     steps::Int64                = -1
@@ -70,11 +71,11 @@ function batch_execute(;n::Int64=1, debug::Int64=1, reward_func=:quadratic)
         Printf.@printf(f,"SCENARIO %d, s0 = (%f,%f)\n", i, scen[i].s0[1], scen[i].s0[2])
         Printf.@printf(f,"==================================================================\n")
         # Printf.@printf(f,"mode\t\tact. space\t\tsteps(std)\t\treward(std)\n")
-        Printf.@printf(f,"SOLVER\t\tACT. SPACE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
-        Printf.@printf(f,"==================================================================\n")
+        Printf.@printf(f,"SOLVER\t\tACT. MODE\t\tOBS. MODE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
+        Printf.@printf(f,"=====================================================================\n")
         for t in test
             if debug >= 0
-                println("mode: $(t.mode), action space: $(t.action_space), reward: $(t.reward_func)")
+                println("mode: $(t.solver_mode), actions: $(t.action_mode), observations: $(t.obs_mode), rewards: $(t.reward_mode)")
             end
             steps_avg, steps_std, reward_avg, reward_std =
                         execute(solv_mode         = t.mode,
