@@ -123,7 +123,7 @@ POMDPs.discount(p::AbstractLD2) = p.discount
 LPDM.default_action(p::AbstractLD2) = Vec2(0.0,0.0)
 LPDM.default_action(p::AbstractLD2, ::Vector{LPDMParticle{Vec2}}) = LPDM.default_action(p)
 
-struct SymmetricNormal2
+struct SymmetricNormal2D
     mean::Vec2
     std::Float64
 end
@@ -143,13 +143,13 @@ function permute(moves::Vector{Float64})::Vector{LD2Action}
 end
 
 # Random.rand(rng::AbstractRNG, d::Random.SamplerTrivial{SymmetricNormal2}) = d[].mean + d[].std*Vec2(rand(rng)-0.5,rand(rng)-0.5)
-Random.rand(rng::AbstractRNG, d::Random.SamplerTrivial{SymmetricNormal2}) = Vec2(rand(rng)-0.5,rand(rng)-0.5)
+# Random.rand(rng::AbstractRNG, d::Random.SamplerTrivial{SymmetricNormal2}) = Vec2(rand(rng)-0.5,rand(rng)-0.5)
 # POMDPs.pdf(d::SymmetricNormal2, s::Vec2) = exp(-0.5*sum((s-d.mean).^2)/d.std^2)/(2*pi*d.std^2)
-POMDPs.pdf(d::SymmetricNormal2, s::Vec2) = error("Define me please!")
-mean(d::SymmetricNormal2) = d.mean
-mode(d::SymmetricNormal2) = d.mean
-Base.eltype(::Type{SymmetricNormal2}) = Vec2
-POMDPs.rand(p::AbstractLD2, s::LD2State, rng::LPDM.RNGVector) = rand(rng, SymmetricNormal2(s,p.resample_std)) # for resampling
+POMDPs.pdf(d::SymmetricNormal2D, o::LD2Obs) = Distributions.pdf(Distributions.MvNormal([d.mean,d.mean],[d.std,d.std]), o)
+mean(d::SymmetricNormal2D) = d.mean
+mode(d::SymmetricNormal2D) = d.mean
+Base.eltype(::Type{SymmetricNormal2D}) = Vec2
+POMDPs.rand(p::AbstractLD2, s::LD2State, rng::LPDM.RNGVector) = rand(rng, SymmetricNormal2D(s,p.resample_std)) # for resampling
 
 # chose this on 2/6/17 because I like the bowtie particle patterns it produces
 # unclear which one was actually used in the paper
@@ -161,7 +161,7 @@ function generate_s(p::AbstractLD2, s::Vec2, a::Vec2)
     p.count += 1
     return s+a
 end
-POMDPs.observation(p::AbstractLD2, sp::Vec2) = SymmetricNormal2(sp, obs_std(p, sp[1]))
+POMDPs.observation(p::AbstractLD2, sp::Vec2) = SymmetricNormal2D(sp, obs_std(p, sp[1]))
 POMDPs.observation(p::AbstractLD1, s::Vec2, a::Vec2, sp::Vec2) = observation(p,sp)
 
 generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG) = rand(rng, observation(p, sp))
