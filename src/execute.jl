@@ -24,20 +24,20 @@ struct LPDMScenario{S}
 end
 
 # reward function options - :quadratic or :fixed
-function batch_execute(problem::Symbol; n::Int64=1, debug::Int64=1, reward_mode=:quadratic)
+function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:quadratic)
 
-    if problem == :1d
+    if dims == 1
         S = LD1State
         A = LD1Action
         O = LD1Obs
         B = LDBounds1d{S,A,O}
-    elseif problem == :2d
+    elseif dims == 2
         S = LD2State
         A = LD2Action
         O = LD2Obs
         B = LDBounds2d{S,A,O}
     else
-        error("Invalid problem type $problem")
+        error("Invalid number of dimensions $dims")
     end
 
     test=Array{LPDMTest}(undef,0)
@@ -48,12 +48,12 @@ function batch_execute(problem::Symbol; n::Int64=1, debug::Int64=1, reward_mode=
     # push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
 
     scen=Array{LPDMScenario{S}}(undef,0)
-    if problem == :1d
+    if dims == 1
         push!(scen, LPDMScenario(LD1State(-2*π)))
         # push!(scen, LPDMScenario(LD1State(π/2)))
         # push!(scen, LPDMScenario(LD1State(3/2*π)))
         # push!(scen, LPDMScenario(LD1State(2*π)))
-    elseif problem == :2d
+    elseif dims == 2
         # push!(scen, LPDMScenario(LD2State(-2*π, π)))
         push!(scen, LPDMScenario(LD2State(-π, π)))
         # push!(scen, LPDMScenario(LD2State(π/2, π/2)))
@@ -76,7 +76,6 @@ function batch_execute(problem::Symbol; n::Int64=1, debug::Int64=1, reward_mode=
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
 
     Printf.@printf(f,"GENERAL SOLVER PARAMETERS\n")
-    Printf.@printf(f,"\treward function:\t\t\t%s\n", reward_func)
     Printf.@printf(f,"\tsteps:\t\t\t%d\n", steps)
     Printf.@printf(f,"\ttime per move:\t\t\t%f\n", time_per_move)
     Printf.@printf(f,"\tsearch depth:\t\t\t%d\n", search_depth)
@@ -84,7 +83,6 @@ function batch_execute(problem::Symbol; n::Int64=1, debug::Int64=1, reward_mode=
     Printf.@printf(f,"\tmax trials:\t\t\t%d\n\n", max_trials)
 
     for i in 1:length(scen)
-        # write(f,"SCENARIO $i, s0 = $(scen[i].s0)\n\n")
         if debug >= 0
             println("")
             println("SCENARIO $i, s0 = $(scen[i].s0)")
@@ -93,31 +91,30 @@ function batch_execute(problem::Symbol; n::Int64=1, debug::Int64=1, reward_mode=
 
         Printf.@printf(f,"SCENARIO %d, s0 = %s\n", i, "$(scen[i].s0)")
         Printf.@printf(f,"==================================================================\n")
-        # Printf.@printf(f,"mode\t\tact. space\t\tsteps(std)\t\treward(std)\n")
         Printf.@printf(f,"SOLVER\t\tACT. MODE\t\tOBS. MODE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
         Printf.@printf(f,"=====================================================================\n")
         for t in test
             if debug >= 0
-                println("problem: $problem, mode: $(t.solver_mode), actions: $(t.action_mode), observations: $(t.obs_mode), rewards: $(t.reward_mode)")
+                println("dimensions: $dims, mode: $(t.solver_mode), actions: $(t.action_mode), observations: $(t.obs_mode), rewards: $(t.reward_mode)")
             end
             steps, steps_std, reward, reward_std =
-                        execute(scen[i].s0,
-                                problem           = problem,
-                                solver_mode       = t.solver_mode,
-                                action_mode       = t.action_mode,
-                                obs_mode          = t.obs_mode,
-                                n_sims            = n,
-                                steps             = steps,
-                                time_per_move     = time_per_move,
-                                search_depth      = search_depth,
-                                n_particles       = n_particles,
-                                max_trials        = max_trials,
-                                output            = debug)
+                        run_scenario(scen[i].s0, A, O, B,
+                                    dims              = dims,
+                                    solver_mode       = t.solver_mode,
+                                    action_mode       = t.action_mode,
+                                    obs_mode          = t.obs_mode,
+                                    n_sims            = n,
+                                    steps             = steps,
+                                    time_per_move     = time_per_move,
+                                    search_depth      = search_depth,
+                                    n_particles       = n_particles,
+                                    max_trials        = max_trials,
+                                    output            = debug)
 
             Printf.@printf(f,"%s\t\t%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
                                             string(t.solver_mode), string(t.action_mode), string(t.obs_mode), steps, steps_std, reward, reward_std)
 
-            debug >=0 && println("STATS: solver=$(t.mode), actions=$(t.action_space), steps = $(steps_avg) ($steps_std), reward = $(reward_avg) ($reward_std)")
+            debug >=0 && println("STATS: solver=$(t.solver_mode), actions=$(t.action_mode), observations=$(t.obs_mode), steps = $(steps) ($steps_std), reward = $(reward) ($reward_std)")
         end
         Printf.@printf(f,"==================================================================\n")
         Printf.@printf(f,"%d tests per scenario\n\n", n)
@@ -125,11 +122,15 @@ function batch_execute(problem::Symbol; n::Int64=1, debug::Int64=1, reward_mode=
     close(f)
 end
 
-function execute{S,A,O,B}(s0::S;
+function run_scenario(s0::S,
+                A::Type,
+                O::Type,
+                B::Type;
+                dims::Int64                 = 1,
                 vis::Vector{Int64}          = Int64[],
-                solver_mode::Symbol         =:despot,
-                action_mode::Symbol         =:standard,
-                obs_mode::Symbol            =:discrete,
+                solver_mode::Symbol         = :despot,
+                action_mode::Symbol         = :standard,
+                obs_mode::Symbol            = :discrete,
                 reward_mode                 = :quadratic,
                 n_sims::Int64               = 1,
                 steps::Int64                = -1,
@@ -138,9 +139,9 @@ function execute{S,A,O,B}(s0::S;
                 n_particles::Int64          = 50,
                 max_trials::Int64           = -1,
                 output::Int64               = 1
-                ) where {S,A,O,B}
+                ) where {S}
 
-    if problem == :1d
+    if dims == 1
         if solver_mode == :despot
             p = LightDark1DDespot(action_mode = action_mode,
                                   obs_mode = obs_mode,
@@ -150,7 +151,7 @@ function execute{S,A,O,B}(s0::S;
                                 obs_mode = obs_mode,
                                 reward_mode = reward_mode)
         end
-    elseif problem == :2d
+    elseif dims == 2
         if solver_mode == :despot
             p = LightDark2DDespot(action_mode = action_mode,
                                   obs_mode = obs_mode,
@@ -172,19 +173,21 @@ function execute{S,A,O,B}(s0::S;
         step_rewards::Array{Float64}     = Vector{Float64}(undef,0)
 
         solver = LPDM.LPDMSolver{S, A, O, B, RNGVector}(
-                                                                            # rng = sim_rng,
-                                                                            debug = output,
-                                                                            time_per_move = time_per_move,  #sec
-                                                                            # time_per_move = 1.0,  #sec
-                                                                            sim_len = steps,
-                                                                            #sim_len = 20,
-                                                                            search_depth = search_depth,
-                                                                            n_particles = n_particles,
-                                                                            # seed = UInt32(2),
-                                                                            seed = UInt32(2*sim+1),
-                                                                            # max_trials = 1000)
-                                                                            max_trials = max_trials,
-                                                                            mode = solv_mode)
+                                                        # rng = sim_rng,
+                                                        debug = output,
+                                                        time_per_move = time_per_move,  #sec
+                                                        # time_per_move = 1.0,  #sec
+                                                        sim_len = steps,
+                                                        #sim_len = 20,
+                                                        search_depth = search_depth,
+                                                        n_particles = n_particles,
+                                                        # seed = UInt32(2),
+                                                        seed = UInt32(2*sim+1),
+                                                        # max_trials = 1000)
+                                                        max_trials = max_trials,
+                                                        solver_mode = solver_mode,
+                                                        action_mode = action_mode,
+                                                        obs_mode    = obs_mode)
 
     #---------------------------------------------------------------------------------
         # Belief
@@ -203,10 +206,9 @@ function execute{S,A,O,B}(s0::S;
         step::Int64 = 0
         r::Float64 = 0.0
 
-        # output >= 1 && println("=============== SIMULATION # $sim ================")
         if output >= 0
             println("")
-            println("*** SIM $sim (mode: $solv_mode, action space: $action_space_type, s0: $s0)***")
+            println("*** SIM $sim (dimensions: $dims, solver mode: $solver_mode, action mode: $action_mode, obs mode: $obs_mode, s0: $s0)***")
             println("")
         end
 
