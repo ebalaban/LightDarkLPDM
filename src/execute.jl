@@ -42,7 +42,7 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
 
     test=Array{LPDMTest}(undef,0)
 
-    push!(test, LPDMTest(:lpdm, :standard, :discrete, reward_mode))
+    # push!(test, LPDMTest(:lpdm, :standard, :discrete, reward_mode))
     push!(test, LPDMTest(:lpdm, :standard, :continuous, reward_mode))
     # push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
     # push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
@@ -114,7 +114,7 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
             Printf.@printf(f,"%s\t\t%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
                                             string(t.solver_mode), string(t.action_mode), string(t.obs_mode), steps, steps_std, reward, reward_std)
 
-            debug >=0 && println("STATS: solver=$(t.solver_mode), actions=$(t.action_mode), observations=$(t.obs_mode), steps = $(steps) ($steps_std), reward = $(reward) ($reward_std)")
+            debug >=0 && println("STATS: solver=$(t.solver_mode), actions=$(t.action_mode), observations=$(t.obs_mode), steps = $(steps) ($steps_std), reward = $(reward) ($reward_std)\n")
         end
         Printf.@printf(f,"==================================================================\n")
         Printf.@printf(f,"%d tests per scenario\n\n", n)

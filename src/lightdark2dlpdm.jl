@@ -21,14 +21,17 @@ mutable struct LightDark2DLpdm <: AbstractLD2
     resample_std::Float64
     exploit_visits::Int64
     max_actions::Int64
+    max_belief_clusters::Int64
     action_limits::Tuple{Float64,Float64}
+    action_mode::Symbol
+    obs_mode::Symbol
+    reward_mode::Symbol
     action_space_type::Symbol
     nominal_moves::Vector{Float64}
     extended_moves::Vector{Float64}
     base_action_space::Vector{LD2Action}
     nominal_action_space::Vector{LD2Action}
     extended_action_space::Vector{LD2Action}
-    reward_func::Symbol
 
     function LightDark2DLpdm(;
                              action_mode::Symbol = :adaptive,
@@ -74,7 +77,30 @@ function generate_o(p::LightDark2DLpdm, sp::Float64, rng::AbstractRNG)
 end
 
 # For bounds calculations
-POMDPs.actions(p::LightDark2DLpdm, ::Bool) = p.extended_moves
+# POMDPs.actions(p::LightDark2DLpdm, ::Bool) = p.extended_moves
+function POMDPs.actions(p::LightDark2DLpdm, ::Bool)
+    if p.action_mode == :standard
+        # return vcat(-p.nominal_action_space, [0.0], p.nominal_action_space)
+        return p.nominal_moves
+    elseif p.action_mode == :extended
+        # return vcat(-p.extended_action_space, [0.0], p.extended_action_space)
+        return p.extended_moves
+    else
+        error("Action space $(p.action_space_type) is not valid for POMDP of type $(typeof(p))")
+    end
+end
+
+function POMDPs.actions(p::LightDark2DLpdm)
+     if p.action_mode == :standard
+         return p.nominal_action_space
+     elseif p.action_mode == :extended
+         return p.extended_action_space
+     else
+         return []
+     end
+end
+
+POMDPs.actions(p::LightDark2DLpdm, ::LD2State) = actions(p::LightDark2DLpdm)
 
 LPDM.max_actions(pomdp::LightDark2DLpdm) = pomdp.max_actions
 

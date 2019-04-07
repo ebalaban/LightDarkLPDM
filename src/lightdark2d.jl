@@ -93,26 +93,12 @@ end
 
 
 POMDPs.initial_state_distribution(p::AbstractLD2) = p.init_dist
-# function POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2)
-#     if a == Vec2(0.0,0.0)
-#         if isterminal(p,s)
-#             r = 0.0
-#         else
-#             r = -1000.0 # penalize doing nothing
-#         end
-#     elseif isterminal(p,s)
-#         r = 0.0
-#     else
-#         r = (p.reward_func == :quadratic) ?  -(dot(s, p.Q*s) + dot(a, p.R*a)) : -1
-#     end
-#     return r
-# end
 
 function POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2)
     if isterminal(p,s)
         r = 0.0
     else
-        r = (p.reward_func == :quadratic) ?  -(dot(s, p.Q*s) + dot(a, p.R*a)) : -1
+        r = (p.reward_mode == :quadratic) ?  -(dot(s, p.Q*s) + dot(a, p.R*a)) : -1
     end
     return r
 end
@@ -145,7 +131,7 @@ end
 # Random.rand(rng::AbstractRNG, d::Random.SamplerTrivial{SymmetricNormal2}) = d[].mean + d[].std*Vec2(rand(rng)-0.5,rand(rng)-0.5)
 # Random.rand(rng::AbstractRNG, d::Random.SamplerTrivial{SymmetricNormal2}) = Vec2(rand(rng)-0.5,rand(rng)-0.5)
 # POMDPs.pdf(d::SymmetricNormal2, s::Vec2) = exp(-0.5*sum((s-d.mean).^2)/d.std^2)/(2*pi*d.std^2)
-POMDPs.pdf(d::SymmetricNormal2D, o::LD2Obs) = Distributions.pdf(Distributions.MvNormal([d.mean,d.mean],[d.std,d.std]), o)
+POMDPs.pdf(d::SymmetricNormal2D, o::LD2Obs) = Distributions.pdf(Distributions.MvNormal([d.mean[1],d.mean[2]],[d.std,d.std]), o)
 mean(d::SymmetricNormal2D) = d.mean
 mode(d::SymmetricNormal2D) = d.mean
 Base.eltype(::Type{SymmetricNormal2D}) = Vec2
@@ -162,9 +148,26 @@ function generate_s(p::AbstractLD2, s::Vec2, a::Vec2)
     return s+a
 end
 POMDPs.observation(p::AbstractLD2, sp::Vec2) = SymmetricNormal2D(sp, obs_std(p, sp[1]))
-POMDPs.observation(p::AbstractLD1, s::Vec2, a::Vec2, sp::Vec2) = observation(p,sp)
+POMDPs.observation(p::AbstractLD2, s::Vec2, a::Vec2, sp::Vec2) = observation(p,sp)
 
-generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG) = rand(rng, observation(p, sp))
+# generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG) = rand(rng, observation(p, sp))
+function generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG)
+    d = observation(p, sp)
+    println("sp: $sp")
+    println("d: $d")
+    o = rand(rng, Distributions.MvNormal([d.mean[1],d.mean[2]],[d.std,d.std]))
+    if p.obs_mode == :discrete
+        o_disc = Vec2(p.bin_centers[encode(p.lindisc,o[1])],
+                      p.bin_centers[encode(p.lindisc,o[2])])
+        return o_disc
+    elseif p.obs_mode == :continuous
+        println("o: $o")
+        return Vec2(o)
+    else
+        error("Invalid obs_mode = $(p.obs_mode)")
+    end
+    # return obs_index(p,o_disc) # return a single combined obs index
+end
 
 # Initial distribution corresponds to how the observations would look
 #TODO: possibly move to LightDarkPOMDPs
@@ -173,8 +176,13 @@ function state_distribution(pomdp::AbstractLD2, s0::LD2State, config::LPDMConfig
     weight = 1/(config.n_particles^2) # weight of each individual particle
     particle = LPDMParticle{LD2State}(LD2State(0.0,0.0), 1, weight)
 
+    d = observation(pomdp,s0)
+    println("state distribution d: $d")
     for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
-        particle = LPDMParticle{LD2State}(rand(rng, observation(pomdp,s0)), i, weight)
+        s = Vec2(rand(rng, Distributions.MvNormal([d.mean[1],d.mean[2]],[d.std,d.std])))
+        particle = LPDMParticle{LD2State}(s,
+                                          i,
+                                          weight)
         push!(states, particle)
     end
     return states

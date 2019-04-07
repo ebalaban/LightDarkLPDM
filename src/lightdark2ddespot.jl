@@ -74,7 +74,7 @@ POMDPs.actions(p::LightDark2DDespot) = p.action_space_type == :small ? p.nominal
 
 # Version with discrete observations
 function generate_o(p::LightDark2DDespot, sp::Vec2, rng::AbstractRNG)
-    o_disc = Vec2()
+    # o_disc = Vec2()
     o = rand(rng, observation(p, sp))
     o_disc = Vec2(p.bin_centers[encode(p.lindisc,o[1])],
                   p.bin_centers[encode(p.lindisc,o[2])])
