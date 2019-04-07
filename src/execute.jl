@@ -1,4 +1,4 @@
-module execute2d
+module execute
 using LPDM
 using POMDPs, Parameters, StaticArrays, D3Trees, Distributions, SparseArrays
 using Combinatorics
@@ -30,10 +30,12 @@ function batch_execute(problem::Symbol; n::Int64=1, debug::Int64=1, reward_mode=
         S = LD1State
         A = LD1Action
         O = LD1Obs
+        B = LDBounds1d{S,A,O}
     elseif problem == :2d
-        S = LD1State
-        A = LD1Action
-        O = LD1Obs
+        S = LD2State
+        A = LD2Action
+        O = LD2Obs
+        B = LDBounds2d{S,A,O}
     else
         error("Invalid problem type $problem")
     end
@@ -89,30 +91,31 @@ function batch_execute(problem::Symbol; n::Int64=1, debug::Int64=1, reward_mode=
             println("------------------------")
         end
 
-        Printf.@printf(f,"SCENARIO %d, s0 = (%f,%f)\n", i, scen[i].s0[1], scen[i].s0[2])
+        Printf.@printf(f,"SCENARIO %d, s0 = %s\n", i, "$(scen[i].s0)")
         Printf.@printf(f,"==================================================================\n")
         # Printf.@printf(f,"mode\t\tact. space\t\tsteps(std)\t\treward(std)\n")
         Printf.@printf(f,"SOLVER\t\tACT. MODE\t\tOBS. MODE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
         Printf.@printf(f,"=====================================================================\n")
         for t in test
             if debug >= 0
-                println("mode: $(t.solver_mode), actions: $(t.action_mode), observations: $(t.obs_mode), rewards: $(t.reward_mode)")
+                println("problem: $problem, mode: $(t.solver_mode), actions: $(t.action_mode), observations: $(t.obs_mode), rewards: $(t.reward_mode)")
             end
-            steps_avg, steps_std, reward_avg, reward_std =
-                        execute(solv_mode         = t.mode,
-                                action_space_type = t.action_space,
+            steps, steps_std, reward, reward_std =
+                        execute(scen[i].s0,
+                                problem           = problem,
+                                solver_mode       = t.solver_mode,
+                                action_mode       = t.action_mode,
+                                obs_mode          = t.obs_mode,
                                 n_sims            = n,
                                 steps             = steps,
                                 time_per_move     = time_per_move,
                                 search_depth      = search_depth,
                                 n_particles       = n_particles,
                                 max_trials        = max_trials,
-                                s0                = scen[i].s0,
-                                output            = debug,
-                                reward_func       = reward_func)
+                                output            = debug)
 
-            Printf.@printf(f,"%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
-                            string(t.mode), string(t.action_space), steps_avg, steps_std, reward_avg, reward_std)
+            Printf.@printf(f,"%s\t\t%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
+                                            string(t.solver_mode), string(t.action_mode), string(t.obs_mode), steps, steps_std, reward, reward_std)
 
             debug >=0 && println("STATS: solver=$(t.mode), actions=$(t.action_space), steps = $(steps_avg) ($steps_std), reward = $(reward_avg) ($reward_std)")
         end
@@ -122,25 +125,41 @@ function batch_execute(problem::Symbol; n::Int64=1, debug::Int64=1, reward_mode=
     close(f)
 end
 
-function execute(;vis::Vector{Int64}        = Int64[],
-                solv_mode::Symbol           = :despot,
-                action_space_type::Symbol   = :small,
-                reward_func::Symbol         = :quadratic,
+function execute{S,A,O,B}(s0::S;
+                vis::Vector{Int64}          = Int64[],
+                solver_mode::Symbol         =:despot,
+                action_mode::Symbol         =:standard,
+                obs_mode::Symbol            =:discrete,
+                reward_mode                 = :quadratic,
                 n_sims::Int64               = 1,
                 steps::Int64                = -1,
                 time_per_move::Float64      = 5.0,
                 search_depth::Int64         = 50,
                 n_particles::Int64          = 50,
                 max_trials::Int64           = -1,
-                # s0::LD2State                = LD2State(0.5*π, 2*π),
-                s0::LD2State                = LD2State(π, -π),
                 output::Int64               = 1
-                )
+                ) where {S,A,O,B}
 
-    if solv_mode == :despot
-        p = LightDark2DDespot(action_space_type, reward_func = reward_func)
-    elseif (solv_mode == :lpdm || solv_mode == :lpdm_bv)
-        p = LightDark2DLpdm(action_space_type, reward_func = reward_func)
+    if problem == :1d
+        if solver_mode == :despot
+            p = LightDark1DDespot(action_mode = action_mode,
+                                  obs_mode = obs_mode,
+                                  reward_mode = reward_mode)
+        elseif solver_mode == :lpdm
+            p = LightDark1DLpdm(action_mode = action_mode,
+                                obs_mode = obs_mode,
+                                reward_mode = reward_mode)
+        end
+    elseif problem == :2d
+        if solver_mode == :despot
+            p = LightDark2DDespot(action_mode = action_mode,
+                                  obs_mode = obs_mode,
+                                  reward_mode = reward_mode)
+        elseif solver_mode == :lpdm
+            p = LightDark2DLpdm(action_mode = action_mode,
+                                obs_mode = obs_mode,
+                                reward_mode = reward_mode)
+        end
     end
 
     sim_rewards = Vector{Float64}(undef,n_sims)
@@ -150,29 +169,9 @@ function execute(;vis::Vector{Int64}        = Int64[],
 
         world_rng = RNGVector(1, UInt32(sim))
         LPDM.set!(world_rng, 1)
-
-        # NOTE: restrict initial state to positive numbers only, for now
-        # s::LD2State                  = LD2State(π);    # initial state
         step_rewards::Array{Float64}     = Vector{Float64}(undef,0)
 
-
-        # NOTE: Original version
-        # solver = LPDM.LPDMSolver{LD2State, LD2Action, LD2Obs, LDBounds2d{LD2State, LD2Action, LD2Obs}, RNGVector}(
-        #                                                                     # rng = sim_rng,
-        #                                                                     debug = output,
-        #                                                                     time_per_move = 1.0,  #sec
-        #                                                                     # time_per_move = 1.0,  #sec
-        #                                                                     sim_len = -1,
-        #                                                                     search_depth = 50,
-        #                                                                     n_particles = 20,
-        #                                                                     # seed = UInt32(5),
-        #                                                                     seed = UInt32(2*sim+1),
-        #                                                                     # max_trials = 10)
-        #                                                                     max_trials = -1,
-        #                                                                     mode = solv_mode)
-
-        # NOTE: Test version
-        solver = LPDM.LPDMSolver{LD2State, LD2Action, LD2Obs, LDBounds2d{LD2State, LD2Action, LD2Obs}, RNGVector}(
+        solver = LPDM.LPDMSolver{S, A, O, B, RNGVector}(
                                                                             # rng = sim_rng,
                                                                             debug = output,
                                                                             time_per_move = time_per_move,  #sec
@@ -187,29 +186,16 @@ function execute(;vis::Vector{Int64}        = Int64[],
                                                                             max_trials = max_trials,
                                                                             mode = solv_mode)
 
-        # #DEBUG: remove ###############################
-        # # states=[Vec2(3.6971,7.3388), Vec2(3.5,-1.2), Vec2(7.1,7.3), Vec2(5.35,0.0)]
-        # states=[Vec2(3.14,3.14)]
-        # for st in states
-        #     b = LDBounds2d{LD2State, LD2Action, LD2Obs}(p)
-        #     lb, ub = LPDM.bounds(b,p,[LPDMParticle{Vec2}(st,1,1.0)],solver.config)
-        #     println("s=$st, lb = $lb, ub = $ub, lba=$(best_lb_action(b)), uba=$(best_ub_action(b))")
-        # end
-        # error("stop for now")
-        # ##############################################
     #---------------------------------------------------------------------------------
         # Belief
         bu = LPDMBeliefUpdater(p,
                                n_particles = solver.config.n_particles,
                                seed = UInt32(3*sim+1));  # initialize belief updater
         initial_states = state_distribution(p, s0, solver.config, world_rng)     # create initial  distribution
-        # println(initial_states)
         current_belief = LPDM.create_belief(bu)                       # allocate an updated belief object
         LPDM.initialize_belief(bu, initial_states, current_belief)    # initialize belief
-        # show(current_belief)
         updated_belief = LPDM.create_belief(bu)
-        # println("$(length(actions(p))) actions: $(actions(p))")
-        # error("")
+
     #---------------------------------------------------------------------------------
 
         policy::LPDMPolicy = POMDPs.solve(solver, p)
