@@ -27,10 +27,10 @@ mutable struct LightDark2DLpdm <: AbstractLD2
     obs_mode::Symbol
     reward_mode::Symbol
     action_space_type::Symbol
-    nominal_moves::Vector{Float64}
+    standard_moves::Vector{Float64}
     extended_moves::Vector{Float64}
     base_action_space::Vector{LD2Action}
-    nominal_action_space::Vector{LD2Action}
+    standard_action_space::Vector{LD2Action}
     extended_action_space::Vector{LD2Action}
 
     function LightDark2DLpdm(;
@@ -59,10 +59,10 @@ mutable struct LightDark2DLpdm <: AbstractLD2
         this.obs_mode                = obs_mode
         this.exploit_visits          = 50
         # this.base_action_space       = [1.0, 0.1, 0.01]
-        this.nominal_moves      = [1.0, 0.1, 0.01]
-        this.extended_moves     = vcat(1*this.nominal_moves,
-                                       5*this.nominal_moves)
-        this.nominal_action_space  = permute(this.nominal_moves)
+        this.standard_moves      = [1.0, 0.1, 0.01]
+        this.extended_moves     = vcat(1*this.standard_moves,
+                                       5*this.standard_moves)
+        this.standard_action_space  = permute(this.standard_moves)
         this.extended_action_space = permute(this.extended_moves)
         this.reward_mode              = reward_mode
         return this
@@ -80,8 +80,8 @@ end
 # POMDPs.actions(p::LightDark2DLpdm, ::Bool) = p.extended_moves
 function POMDPs.actions(p::LightDark2DLpdm, ::Bool)
     if p.action_mode == :standard
-        # return vcat(-p.nominal_action_space, [0.0], p.nominal_action_space)
-        return p.nominal_moves
+        # return vcat(-p.standard_action_space, [0.0], p.standard_action_space)
+        return p.standard_moves
     elseif p.action_mode == :extended
         # return vcat(-p.extended_action_space, [0.0], p.extended_action_space)
         return p.extended_moves
@@ -92,7 +92,7 @@ end
 
 function POMDPs.actions(p::LightDark2DLpdm)
      if p.action_mode == :standard
-         return p.nominal_action_space
+         return p.standard_action_space
      elseif p.action_mode == :extended
          return p.extended_action_space
      else
@@ -114,16 +114,16 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
 
     # simulated annealing temperature
     if isempty(current_action_space) # initial request
-        # return vcat(-pomdp.nominal_action_space, [0], pomdp.nominal_action_space)
+        # return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
         if depth > 1
             return pomdp.extended_action_space
         else
             # return pomdp.extended_action_space   #DEBUG, let's try this...
-            return pomdp.nominal_action_space
+            return pomdp.standard_action_space
         end
     end
 
-    l_initial = length(pomdp.nominal_action_space)
+    l_initial = length(pomdp.standard_action_space)
 
     # don't count initial "seed" actions in computing T
     T = 1 - (length(current_action_space) - l_initial)/(LPDM.max_actions(pomdp) - l_initial)
@@ -160,12 +160,12 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
                            n_visits::Int64,
                            rng::RNGVector)::Vector{LD2Action}
 
-     # initial_space = vcat(-pomdp.nominal_action_space, pomdp.nominal_action_space)
+     # initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
      # initial_space = [0.0]
 
        # simulated annealing temperature
      if isempty(current_action_space) # initial request
-           return pomdp.nominal_action_space
+           return pomdp.standard_action_space
      end
 
     if (n_visits > pomdp.exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
@@ -211,11 +211,11 @@ end
 #                            n_visits::Int64,
 #                            rng::RNGVector)::Vector{LD2Action}
 #
-#     initial_space = vcat(-pomdp.nominal_action_space, pomdp.nominal_action_space)
+#     initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
 #
 #     # simulated annealing temperature
 #     if isempty(current_action_space) # initial request
-#         # return vcat(-pomdp.nominal_action_space, [0], pomdp.nominal_action_space)
+#         # return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
 #         return initial_space
 #     end
 #
@@ -241,11 +241,11 @@ end
 # # Hard-coded version for now for debugging
 # function LPDM.next_actions(pomdp::LightDark2DLpdm, current_action_space::Vector{LD2Action})::Vector{LD2Action}
 #     if isempty(current_action_space) # initial request
-#         return vcat(-pomdp.nominal_action_space, [0], pomdp.nominal_action_space)
+#         return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
 #     end
 #
 #     # index of the new action in the extended_action_space
-#     n = round(Int64, 0.5*(length(current_action_space) - (2*length(pomdp.nominal_action_space) + 1))) + 1
+#     n = round(Int64, 0.5*(length(current_action_space) - (2*length(pomdp.standard_action_space) + 1))) + 1
 #     if (length(current_action_space) < pomdp.max_actions -1) && (n <= length(pomdp.extended_action_space))
 #         # println("current: $current_action_space")
 #         # accounting for zero with the first +1; 0.5 because we add in pairs.

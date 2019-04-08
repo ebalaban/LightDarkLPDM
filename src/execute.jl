@@ -13,7 +13,7 @@ include("LPDMBounds1d.jl")
 include("LPDMBounds2d.jl")
 
 struct LPDMTest
-    solver_mode::Symbol
+    # solver_mode::Symbol
     action_mode::Symbol
     obs_mode::Symbol
     reward_mode::Symbol
@@ -42,10 +42,17 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
 
     test=Array{LPDMTest}(undef,0)
 
-    # push!(test, LPDMTest(:lpdm, :standard, :discrete, reward_mode))
-    push!(test, LPDMTest(:lpdm, :standard, :continuous, reward_mode))
-    # push!(test, LPDMTest(:lpdm_bv, :bv, reward_func)) # blind value
-    # push!(test, LPDMTest(:lpdm, :adapt, reward_func)) # simulated annealing
+    # DISCRETE OBSERVATIONS
+    push!(test, LPDMTest(:standard, :discrete, reward_mode))
+    # push!(test, LPDMTest(:extended, :discrete, reward_mode))
+    # push!(test, LPDMTest(:blind_vl, :discrete, reward_mode))
+    # push!(test, LPDMTest(:adaptive, :discrete, reward_mode))
+
+    # CONTINUOUS OBSERVATIONS
+    # push!(test, LPDMTest(:standard, :continuous, reward_mode))
+    # push!(test, LPDMTest(:extended, :continuous, reward_mode))
+    # push!(test, LPDMTest(:blind_vl,       :continuous, reward_mode))
+    # push!(test, LPDMTest(:adaptive, :continuous, reward_mode))
 
     scen=Array{LPDMScenario{S}}(undef,0)
     if dims == 1
@@ -67,11 +74,11 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
     # execute(solv_mode = :lpdm, action_space_type = :adaptive, n_sims = 1, s0 = LD2State(π,π), output = 0)
 
     # General solver parameters
-    steps::Int64                = -1
-    time_per_move::Float64      = 1.0
+    steps::Int64                = 2
+    time_per_move::Float64      = -1.0
     search_depth::Int64         = 30
     n_particles::Int64          = 50
-    max_trials::Int64           = -1
+    max_trials::Int64           = 2
 
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
 
@@ -90,17 +97,17 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
         end
 
         Printf.@printf(f,"SCENARIO %d, s0 = %s\n", i, "$(scen[i].s0)")
-        Printf.@printf(f,"==================================================================\n")
-        Printf.@printf(f,"SOLVER\t\tACT. MODE\t\tOBS. MODE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
-        Printf.@printf(f,"=====================================================================\n")
+        Printf.@printf(f,"================================================================\n")
+        Printf.@printf(f,"ACT. MODE\t\tOBS. MODE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
+        Printf.@printf(f,"================================================================\n")
         for t in test
             if debug >= 0
-                println("dimensions: $dims, mode: $(t.solver_mode), actions: $(t.action_mode), observations: $(t.obs_mode), rewards: $(t.reward_mode)")
+                println("dimensions: $dims, actions: $(t.action_mode), observations: $(t.obs_mode), rewards: $(t.reward_mode)")
             end
             steps, steps_std, reward, reward_std =
                         run_scenario(scen[i].s0, A, O, B,
                                     dims              = dims,
-                                    solver_mode       = t.solver_mode,
+                                    # solver_mode       = t.solver_mode,
                                     action_mode       = t.action_mode,
                                     obs_mode          = t.obs_mode,
                                     n_sims            = n,
@@ -111,10 +118,10 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
                                     max_trials        = max_trials,
                                     output            = debug)
 
-            Printf.@printf(f,"%s\t\t%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
-                                            string(t.solver_mode), string(t.action_mode), string(t.obs_mode), steps, steps_std, reward, reward_std)
+            Printf.@printf(f,"%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
+                                            string(t.action_mode), string(t.obs_mode), steps, steps_std, reward, reward_std)
 
-            debug >=0 && println("STATS: solver=$(t.solver_mode), actions=$(t.action_mode), observations=$(t.obs_mode), steps = $(steps) ($steps_std), reward = $(reward) ($reward_std)\n")
+            debug >=0 && println("STATS: actions=$(t.action_mode), observations=$(t.obs_mode), steps = $(steps) ($steps_std), reward = $(reward) ($reward_std)\n")
         end
         Printf.@printf(f,"==================================================================\n")
         Printf.@printf(f,"%d tests per scenario\n\n", n)
@@ -128,7 +135,7 @@ function run_scenario(s0::S,
                 B::Type;
                 dims::Int64                 = 1,
                 vis::Vector{Int64}          = Int64[],
-                solver_mode::Symbol         = :despot,
+                # solver_mode::Symbol         = :despot,
                 action_mode::Symbol         = :standard,
                 obs_mode::Symbol            = :discrete,
                 reward_mode                 = :quadratic,
@@ -142,25 +149,31 @@ function run_scenario(s0::S,
                 ) where {S}
 
     if dims == 1
-        if solver_mode == :despot
-            p = LightDark1DDespot(action_mode = action_mode,
-                                  obs_mode = obs_mode,
-                                  reward_mode = reward_mode)
-        elseif solver_mode == :lpdm
-            p = LightDark1DLpdm(action_mode = action_mode,
-                                obs_mode = obs_mode,
-                                reward_mode = reward_mode)
-        end
+        # if solver_mode == :despot
+        #     p = LightDark1DDespot(action_mode = action_mode,
+        #                           obs_mode = obs_mode,
+        #                           reward_mode = reward_mode)
+        # elseif solver_mode == :lpdm
+        #     p = LightDark1DLpdm(action_mode = action_mode,
+        #                         obs_mode = obs_mode,
+        #                         reward_mode = reward_mode)
+        # end
+        p = LightDark1DLpdm(action_mode = action_mode,
+                            obs_mode = obs_mode,
+                            reward_mode = reward_mode)
     elseif dims == 2
-        if solver_mode == :despot
-            p = LightDark2DDespot(action_mode = action_mode,
-                                  obs_mode = obs_mode,
-                                  reward_mode = reward_mode)
-        elseif solver_mode == :lpdm
-            p = LightDark2DLpdm(action_mode = action_mode,
-                                obs_mode = obs_mode,
-                                reward_mode = reward_mode)
-        end
+        # if solver_mode == :despot
+        #     p = LightDark2DDespot(action_mode = action_mode,
+        #                           obs_mode = obs_mode,
+        #                           reward_mode = reward_mode)
+        # elseif solver_mode == :lpdm
+        #     p = LightDark2DLpdm(action_mode = action_mode,
+        #                         obs_mode = obs_mode,
+        #                         reward_mode = reward_mode)
+        # end
+        p = LightDark2DLpdm(action_mode = action_mode,
+                            obs_mode = obs_mode,
+                            reward_mode = reward_mode)
     end
 
     sim_rewards = Vector{Float64}(undef,n_sims)
@@ -185,7 +198,7 @@ function run_scenario(s0::S,
                                                         seed = UInt32(2*sim+1),
                                                         # max_trials = 1000)
                                                         max_trials = max_trials,
-                                                        solver_mode = solver_mode,
+                                                        # solver_mode = solver_mode,
                                                         action_mode = action_mode,
                                                         obs_mode    = obs_mode)
 
@@ -208,7 +221,7 @@ function run_scenario(s0::S,
 
         if output >= 0
             println("")
-            println("*** SIM $sim (dimensions: $dims, solver mode: $solver_mode, action mode: $action_mode, obs mode: $obs_mode, s0: $s0)***")
+            println("*** SIM $sim (dimensions: $dims, action mode: $action_mode, obs mode: $obs_mode, s0: $s0)***")
             println("")
         end
 
@@ -260,7 +273,7 @@ function run_scenario(s0::S,
                 # blink(t)
             end
             if output >= 1
-                solv_mode == :lpdm && println("root actions: $(solver.root.action_space)")
+                println("root actions: $(solver.root.action_space)")
             end
         end
 

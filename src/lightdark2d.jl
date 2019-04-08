@@ -153,8 +153,8 @@ POMDPs.observation(p::AbstractLD2, s::Vec2, a::Vec2, sp::Vec2) = observation(p,s
 # generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG) = rand(rng, observation(p, sp))
 function generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG)
     d = observation(p, sp)
-    println("sp: $sp")
-    println("d: $d")
+    # println("sp: $sp")
+    # println("d: $d")
     o = rand(rng, Distributions.MvNormal([d.mean[1],d.mean[2]],[d.std,d.std]))
     if p.obs_mode == :discrete
         o_disc = Vec2(p.bin_centers[encode(p.lindisc,o[1])],

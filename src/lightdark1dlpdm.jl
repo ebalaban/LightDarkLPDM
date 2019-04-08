@@ -26,7 +26,7 @@ mutable struct LightDark1DLpdm <: AbstractLD1
     obs_mode::Symbol
     reward_mode::Symbol
     base_action_space::Vector{LD1Action}
-    nominal_action_space::Vector{LD1Action}
+    standard_action_space::Vector{LD1Action}
     extended_action_space::Vector{LD1Action}
 
 
@@ -56,12 +56,12 @@ mutable struct LightDark1DLpdm <: AbstractLD1
         this.obs_mode                = obs_mode
         this.exploit_visits          = 50
         # this.base_action_space       = [1.0, 0.1, 0.01]
-        this.nominal_action_space    = [1.0, 0.1, 0.01]
-        this.extended_action_space   = vcat(1*this.nominal_action_space,
-                                            2*this.nominal_action_space,
-                                            3*this.nominal_action_space,
-                                            4*this.nominal_action_space,
-                                            5*this.nominal_action_space)
+        this.standard_action_space    = [1.0, 0.1, 0.01]
+        this.extended_action_space   = vcat(1*this.standard_action_space,
+                                            2*this.standard_action_space,
+                                            3*this.standard_action_space,
+                                            4*this.standard_action_space,
+                                            5*this.standard_action_space)
         this.reward_mode                  = reward_mode
         return this
     end
@@ -73,22 +73,36 @@ LPDM.default_action(p::LightDark1DLpdm, ::Vector{LPDMParticle{LD1State}}) = LPDM
 
 POMDPs.rand(p::LightDark1DLpdm, s::LD1State, rng::LPDM.RNGVector) = norminvcdf(s, p.resample_std, rand(rng)) # for resampling
 
-# For bounds calculations
-POMDPs.actions(pomdp::LightDark1DLpdm) = vcat(-pomdp.extended_action_space, pomdp.extended_action_space)
+
+function POMDPs.actions(p::LightDark1DLpdm)
+    if p.action_mode == :standard
+        println("POMDP actions: standard actions")
+        return vcat(-p.standard_action_space, p.standard_action_space)
+    elseif p.action_mode ∈ [:extended, :blind_vl, :adaptive] # the latter two use this for bounds calculations
+        println("POMDP actions: standard actions")
+        return vcat(-p.extended_action_space, p.extended_action_space)
+    else
+        error("Action space $(p.action_mode) is not valid for POMDP of type $(typeof(p))")
+    end
+end
+# POMDPs.actions(pomdp::LightDark1DLpdm) = vcat(-pomdp.extended_action_space, pomdp.extended_action_space)
+
 LPDM.max_actions(pomdp::LightDark1DLpdm) = pomdp.max_actions
 
 # For "simulated annealing"
 function LPDM.next_actions(pomdp::LightDark1DLpdm,
+                           depth::Int64,
                            current_action_space::Vector{LD1Action},
                            a_star::LD1Action,
                            n_visits::Int64,
                            rng::RNGVector)::Vector{LD1Action}
 
-    initial_space = vcat(-pomdp.nominal_action_space, pomdp.nominal_action_space)
+    println("POMDP: adaptive actions")
+    initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
 
     # simulated annealing temperature
     if isempty(current_action_space) # initial request
-        # return vcat(-pomdp.nominal_action_space, [0], pomdp.nominal_action_space)
+        # return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
         return initial_space
     end
 
@@ -115,7 +129,7 @@ function LPDM.next_actions(pomdp::LightDark1DLpdm,
         # println("a_star: $a_star, T: $T, radius: $radius, a: $a")
         return [a] # New action, returned as a one element vector.
     else
-        return []
+        return LD1Action[]
     end
 end
 
@@ -126,7 +140,8 @@ function LPDM.next_actions(pomdp::LightDark1DLpdm,
                            n_visits::Int64,
                            rng::RNGVector)::Vector{LD1Action}
 
-     initial_space = vcat(-pomdp.nominal_action_space, pomdp.nominal_action_space)
+    println("POMDP: blind value actions")
+     initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
      # initial_space = [0.0]
 
        # simulated annealing temperature
@@ -166,11 +181,11 @@ LPDM.state_distance(pomdp::LightDark1DLpdm, s1::LD1State, s2::LD1State) = abs(s2
 #                            n_visits::Int64,
 #                            rng::RNGVector)::Vector{LD1Action}
 #
-#     initial_space = vcat(-pomdp.nominal_action_space, pomdp.nominal_action_space)
+#     initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
 #
 #     # simulated annealing temperature
 #     if isempty(current_action_space) # initial request
-#         # return vcat(-pomdp.nominal_action_space, [0], pomdp.nominal_action_space)
+#         # return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
 #         return initial_space
 #     end
 #
@@ -196,11 +211,11 @@ LPDM.state_distance(pomdp::LightDark1DLpdm, s1::LD1State, s2::LD1State) = abs(s2
 # # Hard-coded version for now for debugging
 # function LPDM.next_actions(pomdp::LightDark1DLpdm, current_action_space::Vector{LD1Action})::Vector{LD1Action}
 #     if isempty(current_action_space) # initial request
-#         return vcat(-pomdp.nominal_action_space, [0], pomdp.nominal_action_space)
+#         return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
 #     end
 #
 #     # index of the new action in the extended_action_space
-#     n = round(Int64, 0.5*(length(current_action_space) - (2*length(pomdp.nominal_action_space) + 1))) + 1
+#     n = round(Int64, 0.5*(length(current_action_space) - (2*length(pomdp.standard_action_space) + 1))) + 1
 #     if (length(current_action_space) < pomdp.max_actions -1) && (n <= length(pomdp.extended_action_space))
 #         # println("current: $current_action_space")
 #         # accounting for zero with the first +1; 0.5 because we add in pairs.
