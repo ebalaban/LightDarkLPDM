@@ -51,7 +51,7 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
     # CONTINUOUS OBSERVATIONS
     # push!(test, LPDMTest(:standard, :continuous, reward_mode))
     # push!(test, LPDMTest(:extended, :continuous, reward_mode))
-    # push!(test, LPDMTest(:blind_vl,       :continuous, reward_mode))
+    # push!(test, LPDMTest(:blind_vl,   :continuous, reward_mode))
     # push!(test, LPDMTest(:adaptive, :continuous, reward_mode))
 
     scen=Array{LPDMScenario{S}}(undef,0)

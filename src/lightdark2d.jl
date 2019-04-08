@@ -135,7 +135,9 @@ POMDPs.pdf(d::SymmetricNormal2D, o::LD2Obs) = Distributions.pdf(Distributions.Mv
 mean(d::SymmetricNormal2D) = d.mean
 mode(d::SymmetricNormal2D) = d.mean
 Base.eltype(::Type{SymmetricNormal2D}) = Vec2
-POMDPs.rand(p::AbstractLD2, s::LD2State, rng::LPDM.RNGVector) = rand(rng, SymmetricNormal2D(s,p.resample_std)) # for resampling
+# POMDPs.rand(p::AbstractLD2, s::LD2State, rng::LPDM.RNGVector) = rand(rng, SymmetricNormal2D(s,p.resample_std)) # for resampling
+POMDPs.rand(p::AbstractLD2, s::LD2State, rng::LPDM.RNGVector) = LD2State(rand(rng, Distributions.MvNormal([s[1],s[2]],[p.resample_std,p.resample_std]))) # for resampling
+
 
 # chose this on 2/6/17 because I like the bowtie particle patterns it produces
 # unclear which one was actually used in the paper

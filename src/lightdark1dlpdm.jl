@@ -76,10 +76,10 @@ POMDPs.rand(p::LightDark1DLpdm, s::LD1State, rng::LPDM.RNGVector) = norminvcdf(s
 
 function POMDPs.actions(p::LightDark1DLpdm)
     if p.action_mode == :standard
-        println("POMDP actions: standard actions")
+        println("POMDP 1D actions: standard actions")
         return vcat(-p.standard_action_space, p.standard_action_space)
     elseif p.action_mode ∈ [:extended, :blind_vl, :adaptive] # the latter two use this for bounds calculations
-        println("POMDP actions: standard actions")
+        println("POMDP 1D actions: extended actions")
         return vcat(-p.extended_action_space, p.extended_action_space)
     else
         error("Action space $(p.action_mode) is not valid for POMDP of type $(typeof(p))")

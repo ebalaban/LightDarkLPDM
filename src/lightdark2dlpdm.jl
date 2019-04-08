@@ -80,9 +80,11 @@ end
 # POMDPs.actions(p::LightDark2DLpdm, ::Bool) = p.extended_moves
 function POMDPs.actions(p::LightDark2DLpdm, ::Bool)
     if p.action_mode == :standard
+        println("POMDP 2D actions: standard actions")
         # return vcat(-p.standard_action_space, [0.0], p.standard_action_space)
         return p.standard_moves
     elseif p.action_mode == :extended
+        println("POMDP 2D actions: standard actions")
         # return vcat(-p.extended_action_space, [0.0], p.extended_action_space)
         return p.extended_moves
     else
