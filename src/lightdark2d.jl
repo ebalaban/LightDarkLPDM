@@ -159,13 +159,12 @@ function generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG)
     # println("d: $d")
     o = rand(rng, Distributions.MvNormal([d.mean[1],d.mean[2]],[d.std,d.std]))
     if p.obs_mode == :discrete
-
         o_disc = Vec2(p.bin_centers[encode(p.lindisc,o[1])],
                       p.bin_centers[encode(p.lindisc,o[2])])
-        println("generate_o: discrete")
+        # println("generate_o: discrete")
         return o_disc
     elseif p.obs_mode == :continuous
-        println("generate_o: continuous")
+        # println("generate_o: continuous")
         return Vec2(o)
     else
         error("Invalid obs_mode = $(p.obs_mode)")

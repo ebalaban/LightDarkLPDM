@@ -43,16 +43,16 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
     test=Array{LPDMTest}(undef,0)
 
     # DISCRETE OBSERVATIONS
-    # push!(test, LPDMTest(:standard, :discrete, reward_mode))
-    # push!(test, LPDMTest(:extended, :discrete, reward_mode))
-    # push!(test, LPDMTest(:blind_vl, :discrete, reward_mode))
-    # push!(test, LPDMTest(:adaptive, :discrete, reward_mode))
+    push!(test, LPDMTest(:standard, :discrete, reward_mode))
+    push!(test, LPDMTest(:extended, :discrete, reward_mode))
+    push!(test, LPDMTest(:blind_vl, :discrete, reward_mode))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode))
 
     # CONTINUOUS OBSERVATIONS
     # push!(test, LPDMTest(:standard, :continuous, reward_mode))
     # push!(test, LPDMTest(:extended, :continuous, reward_mode))
     # push!(test, LPDMTest(:blind_vl,   :continuous, reward_mode))
-    push!(test, LPDMTest(:adaptive, :continuous, reward_mode))
+    # push!(test, LPDMTest(:adaptive, :continuous, reward_mode))
 
     scen=Array{LPDMScenario{S}}(undef,0)
     if dims == 1
@@ -74,11 +74,11 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
     # execute(solv_mode = :lpdm, action_space_type = :adaptive, n_sims = 1, s0 = LD2State(π,π), output = 0)
 
     # General solver parameters
-    steps::Int64                = 2
+    steps::Int64                = -1
     time_per_move::Float64      = -1.0
     search_depth::Int64         = 30
     n_particles::Int64          = 50
-    max_trials::Int64           = 2
+    max_trials::Int64           = 1000
 
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
 
@@ -104,7 +104,7 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
             if debug >= 0
                 println("dimensions: $dims, actions: $(t.action_mode), observations: $(t.obs_mode), rewards: $(t.reward_mode)")
             end
-            steps, steps_std, reward, reward_std =
+            steps_avg, steps_std, reward_avg, reward_std =
                         run_scenario(scen[i].s0, A, O, B,
                                     dims              = dims,
                                     # solver_mode       = t.solver_mode,
@@ -119,9 +119,9 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
                                     output            = debug)
 
             Printf.@printf(f,"%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
-                                            string(t.action_mode), string(t.obs_mode), steps, steps_std, reward, reward_std)
+                                            string(t.action_mode), string(t.obs_mode), steps_avg, steps_std, reward_avg, reward_std)
 
-            debug >=0 && println("STATS: actions=$(t.action_mode), observations=$(t.obs_mode), steps = $(steps) ($steps_std), reward = $(reward) ($reward_std)\n")
+            debug >=0 && println("STATS: actions=$(t.action_mode), observations=$(t.obs_mode), steps = $(steps_avg) ($steps_std), reward = $(reward_avg) ($reward_std)\n")
         end
         Printf.@printf(f,"==================================================================\n")
         Printf.@printf(f,"%d tests per scenario\n\n", n)
@@ -149,28 +149,10 @@ function run_scenario(s0::S,
                 ) where {S}
 
     if dims == 1
-        # if solver_mode == :despot
-        #     p = LightDark1DDespot(action_mode = action_mode,
-        #                           obs_mode = obs_mode,
-        #                           reward_mode = reward_mode)
-        # elseif solver_mode == :lpdm
-        #     p = LightDark1DLpdm(action_mode = action_mode,
-        #                         obs_mode = obs_mode,
-        #                         reward_mode = reward_mode)
-        # end
         p = LightDark1DLpdm(action_mode = action_mode,
                             obs_mode = obs_mode,
                             reward_mode = reward_mode)
     elseif dims == 2
-        # if solver_mode == :despot
-        #     p = LightDark2DDespot(action_mode = action_mode,
-        #                           obs_mode = obs_mode,
-        #                           reward_mode = reward_mode)
-        # elseif solver_mode == :lpdm
-        #     p = LightDark2DLpdm(action_mode = action_mode,
-        #                         obs_mode = obs_mode,
-        #                         reward_mode = reward_mode)
-        # end
         p = LightDark2DLpdm(action_mode = action_mode,
                             obs_mode = obs_mode,
                             reward_mode = reward_mode)

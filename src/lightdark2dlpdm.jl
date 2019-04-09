@@ -82,25 +82,28 @@ end
 # POMDPs.actions(p::LightDark2DLpdm, ::Bool) = p.extended_moves
 function POMDPs.actions(p::LightDark2DLpdm, ::Bool)
     if p.action_mode == :standard
-        println("POMDP 2D actions: standard actions")
+        # println("POMDP 2D actions: standard actions")
         # return vcat(-p.standard_action_space, [0.0], p.standard_action_space)
         return p.standard_moves
     elseif p.action_mode ∈ [:extended, :blind_vl, :adaptive]
-        println("POMDP 2D actions: extended actions")
+        # println("POMDP 2D actions: extended actions")
         # return vcat(-p.extended_action_space, [0.0], p.extended_action_space)
         return p.extended_moves
     else
-        error("Action space $(p.action_mode) is not valid for POMDP of type $(typeof(p))")
+        error("Action space type $(p.action_mode) is not valid for POMDP of type $(typeof(p))")
     end
 end
 
+# for tree construction
 function POMDPs.actions(p::LightDark2DLpdm)
      if p.action_mode == :standard
          return p.standard_action_space
      elseif p.action_mode == :extended
          return p.extended_action_space
-     else
+     elseif p.action_mode ∈ [:blind_vl, :adaptive]
          return []
+     else
+         error("Action space type $(p.action_mode) is not valid for POMDP of type $(typeof(p))")
      end
 end
 
@@ -153,7 +156,7 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
         # println("a_star: $a_star, T: $T, radius: $radius, a: $a")
         return [Vec2(a_x,a_y)] # New action, returned as a one element vector.
     else
-        return []
+        return Vec2[]
     end
 end
 
