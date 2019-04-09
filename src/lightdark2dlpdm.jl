@@ -69,6 +69,8 @@ mutable struct LightDark2DLpdm <: AbstractLD2
     end
 end
 
+LPDM.max_belief_clusters(p::LightDark2DLpdm) = p.max_belief_clusters
+
 # Version with discrete observations
 function generate_o(p::LightDark2DLpdm, sp::Float64, rng::AbstractRNG)
     o = rand(rng, observation(p, sp))
@@ -83,12 +85,12 @@ function POMDPs.actions(p::LightDark2DLpdm, ::Bool)
         println("POMDP 2D actions: standard actions")
         # return vcat(-p.standard_action_space, [0.0], p.standard_action_space)
         return p.standard_moves
-    elseif p.action_mode == :extended
-        println("POMDP 2D actions: standard actions")
+    elseif p.action_mode ∈ [:extended, :blind_vl, :adaptive]
+        println("POMDP 2D actions: extended actions")
         # return vcat(-p.extended_action_space, [0.0], p.extended_action_space)
         return p.extended_moves
     else
-        error("Action space $(p.action_space_type) is not valid for POMDP of type $(typeof(p))")
+        error("Action space $(p.action_mode) is not valid for POMDP of type $(typeof(p))")
     end
 end
 

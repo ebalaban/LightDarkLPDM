@@ -43,7 +43,7 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
     test=Array{LPDMTest}(undef,0)
 
     # DISCRETE OBSERVATIONS
-    push!(test, LPDMTest(:standard, :discrete, reward_mode))
+    # push!(test, LPDMTest(:standard, :discrete, reward_mode))
     # push!(test, LPDMTest(:extended, :discrete, reward_mode))
     # push!(test, LPDMTest(:blind_vl, :discrete, reward_mode))
     # push!(test, LPDMTest(:adaptive, :discrete, reward_mode))
@@ -52,7 +52,7 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
     # push!(test, LPDMTest(:standard, :continuous, reward_mode))
     # push!(test, LPDMTest(:extended, :continuous, reward_mode))
     # push!(test, LPDMTest(:blind_vl,   :continuous, reward_mode))
-    # push!(test, LPDMTest(:adaptive, :continuous, reward_mode))
+    push!(test, LPDMTest(:adaptive, :continuous, reward_mode))
 
     scen=Array{LPDMScenario{S}}(undef,0)
     if dims == 1
