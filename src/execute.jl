@@ -61,8 +61,8 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
         # push!(scen, LPDMScenario(LD1State(3/2*π)))
         # push!(scen, LPDMScenario(LD1State(2*π)))
     elseif dims == 2
-        # push!(scen, LPDMScenario(LD2State(-2*π, π)))
-        push!(scen, LPDMScenario(LD2State(-π, π)))
+        push!(scen, LPDMScenario(LD2State(-2*π, π)))
+        # push!(scen, LPDMScenario(LD2State(-π, π)))
         # push!(scen, LPDMScenario(LD2State(π/2, π/2)))
         # push!(scen, LPDMScenario(LD2State(π, -π)))
         # push!(scen, LPDMScenario(LD2State(2*π,2*π)))
@@ -77,8 +77,8 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
     steps::Int64                = -1
     time_per_move::Float64      = -1.0
     search_depth::Int64         = 30
-    n_particles::Int64          = 50
-    max_trials::Int64           = 1000
+    n_particles::Int64          = 25
+    max_trials::Int64           = 100
 
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
 
