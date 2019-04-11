@@ -12,11 +12,19 @@ using LightDarkPOMDPs
 include("LPDMBounds1d.jl")
 include("LPDMBounds2d.jl")
 
+struct POMDPConfig
+    n_bins              ::Int64
+    max_actions         ::Int64
+    max_exploit_visits  ::Int64
+    max_belief_clusters ::Int64
+end
+
 struct LPDMTest
-    # solver_mode::Symbol
-    action_mode::Symbol
-    obs_mode::Symbol
-    reward_mode::Symbol
+    action_mode         ::Symbol
+    obs_mode            ::Symbol
+    reward_mode         ::Symbol
+    pomdp_config        ::POMDPConfig
+    n_sims              ::Int64
 end
 
 struct LPDMScenario{S}
@@ -24,7 +32,34 @@ struct LPDMScenario{S}
 end
 
 # reward function options - :quadratic or :fixed
-function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:quadratic)
+function batch_execute(;dims::Int64=1)
+
+    # General solver parameters
+    steps::Int64                = -1
+    time_per_move::Float64      = 1.0
+    search_depth::Int64         = 30
+    n_particles::Int64          = 25
+    max_trials::Int64           = -1
+    debug::Int64                = 0
+
+    # General test parameters
+    reward_mode                 = :quadratic
+    n_sims                      = 50
+
+    # 1D configuration
+    n_bins1d                    = 10
+    max_actions1d               = 50
+    max_exploit_visits1d        = 25
+    max_belief_clusters1d       = 4
+
+    # 2D configuration
+    n_bins2d                    = 10 # per dimension
+    max_actions2d               = 150
+    max_exploit_visits2d        = 25
+    max_belief_clusters2d       = 8
+
+    pconfig1d = POMDPConfig(n_bins1d, max_actions1d, max_exploit_visits1d, max_belief_clusters1d)
+    pconfig2d = POMDPConfig(n_bins2d, max_actions2d, max_exploit_visits2d, max_belief_clusters2d)
 
     if dims == 1
         S = LD1State
@@ -40,21 +75,22 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
         error("Invalid number of dimensions $dims")
     end
 
-    test=Array{LPDMTest}(undef,0)
+    test = Array{LPDMTest}(undef,0)
 
     # DISCRETE OBSERVATIONS
-    push!(test, LPDMTest(:standard, :discrete, reward_mode))
-    push!(test, LPDMTest(:extended, :discrete, reward_mode))
-    push!(test, LPDMTest(:blind_vl, :discrete, reward_mode))
-    push!(test, LPDMTest(:adaptive, :discrete, reward_mode))
+    push!(test, LPDMTest(:standard, :discrete, reward_mode, pconfig1d, n_sims))
+    push!(test, LPDMTest(:extended, :discrete, reward_mode, pconfig1d, n_sims))
+    push!(test, LPDMTest(:blind_vl, :discrete, reward_mode, pconfig1d, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig1d, n_sims))
 
     # CONTINUOUS OBSERVATIONS
-    # push!(test, LPDMTest(:standard, :continuous, reward_mode))
-    # push!(test, LPDMTest(:extended, :continuous, reward_mode))
-    # push!(test, LPDMTest(:blind_vl,   :continuous, reward_mode))
-    # push!(test, LPDMTest(:adaptive, :continuous, reward_mode))
+    # push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig1d, n_sims))
+    # push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig1d, n_sims))
+    # push!(test, LPDMTest(:blind_vl, :continuous, reward_mode, pconfig1d, n_sims))
+    # push!(test, LPDMTest(:adaptive, :continuous, reward_mode, pconfig1d, n_sims))
 
     scen=Array{LPDMScenario{S}}(undef,0)
+
     if dims == 1
         push!(scen, LPDMScenario(LD1State(-2*π)))
         # push!(scen, LPDMScenario(LD1State(π/2)))
@@ -63,22 +99,15 @@ function batch_execute(;dims::Int64=1, n::Int64=1, debug::Int64=1, reward_mode=:
     elseif dims == 2
         push!(scen, LPDMScenario(LD2State(-2*π, π)))
         # push!(scen, LPDMScenario(LD2State(-π, π)))
-        # push!(scen, LPDMScenario(LD2State(π/2, π/2)))
-        # push!(scen, LPDMScenario(LD2State(π, -π)))
-        # push!(scen, LPDMScenario(LD2State(2*π,2*π)))
+        push!(scen, LPDMScenario(LD2State(π/2, π/2)))
+        push!(scen, LPDMScenario(LD2State(π, -π)))
+        push!(scen, LPDMScenario(LD2State(2*π,2*π)))
     end
 
     # Dummy execution, just to make sure all the code is compiled and loaded,
     # to improve uniformity of subsequent executions.
     # execute(solv_mode = :despot, action_space_type = :small, n_sims = 1, s0 = LD2State(π,π), output = 0)
     # execute(solv_mode = :lpdm, action_space_type = :adaptive, n_sims = 1, s0 = LD2State(π,π), output = 0)
-
-    # General solver parameters
-    steps::Int64                = -1
-    time_per_move::Float64      = -1.0
-    search_depth::Int64         = 30
-    n_particles::Int64          = 25
-    max_trials::Int64           = 100
 
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
 
