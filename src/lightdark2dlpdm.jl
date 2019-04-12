@@ -34,16 +34,21 @@ mutable struct LightDark2DLpdm <: AbstractLD2
     extended_action_space::Vector{LD2Action}
 
     function LightDark2DLpdm(;
-                             action_mode::Symbol = :adaptive,
-                             obs_mode = :continuous,
-                             reward_mode = :quadratic)
+                             action_mode         ::Symbol   = :adaptive,
+                             obs_mode            ::Symbol   = :continuous,
+                             reward_mode         ::Symbol   = :quadratic,
+                             n_bins              ::Int64    = 10, # per linear dimension
+                             max_actions         ::Int64    = 150,
+                             max_exploit_visits  ::Int64    = 25,
+                             max_belief_clusters ::Int64    = 8
+                             )
         this = new()
         this.min_noise               = 0.0
         this.min_noise_loc           = 5.0
         this.Q                       = diagm(0=>[0.5, 0.5])
         this.R                       = diagm(0=>[0.5, 0.5])
         this.term_radius             = 0.05
-        this.n_bins                  = 10 # per linear dimension
+        this.n_bins                  = n_bins # per linear dimension
         this.max_xy                  = 10     # assume symmetry in x and y for simplicity
         this.bin_edges               = collect(-this.max_xy:(2*this.max_xy)/this.n_bins:this.max_xy)
         this.bin_centers             = [(this.bin_edges[i]+this.bin_edges[i+1])/2 for i=1:this.n_bins]
@@ -52,19 +57,18 @@ mutable struct LightDark2DLpdm <: AbstractLD2
         this.count                   = 0
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
-        this.max_actions             = 150
-        this.max_belief_clusters     = 10
+        this.max_actions             = max_actions
         this.action_limits           = (-5.0,5.0)
         this.action_mode             = action_mode
         this.obs_mode                = obs_mode
-        this.exploit_visits          = 25
-        # this.base_action_space       = [1.0, 0.1, 0.01]
-        this.standard_moves      = [1.0, 0.1, 0.01]
-        this.extended_moves     = vcat(1*this.standard_moves,
+        this.exploit_visits          = max_exploit_visits
+        this.max_belief_clusters     = max_belief_clusters
+        this.standard_moves          = [1.0, 0.1, 0.01]
+        this.extended_moves          = vcat(1*this.standard_moves,
                                        5*this.standard_moves)
-        this.standard_action_space  = permute(this.standard_moves)
-        this.extended_action_space = permute(this.extended_moves)
-        this.reward_mode              = reward_mode
+        this.standard_action_space   = permute(this.standard_moves)
+        this.extended_action_space   = permute(this.extended_moves)
+        this.reward_mode             = reward_mode
         return this
     end
 end
