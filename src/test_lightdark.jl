@@ -4,6 +4,7 @@ steps = 1
 
 # execute.batch_execute(dims=1, n=1, debug=1, reward_mode=:quadratic)
 execute.batch_execute(dims=1)
+execute.batch_execute(dims=2)
 # execute.batch_execute(dims=2, n=30, debug=0, reward_mode=:quadratic)
 
 # Juno.@enter execute.batch_execute(dims=1, n=1, debug=1, reward_mode=:quadratic)

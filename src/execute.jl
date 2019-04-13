@@ -12,8 +12,9 @@ using LightDarkPOMDPs
 include("LPDMBounds1d.jl")
 include("LPDMBounds2d.jl")
 
-struct POMDPConfig
+struct ProblemConfig
     n_bins              ::Int64
+    n_particles         ::Int64
     max_actions         ::Int64
     max_exploit_visits  ::Int64
     max_belief_clusters ::Int64
@@ -23,7 +24,7 @@ struct LPDMTest
     action_mode         ::Symbol
     obs_mode            ::Symbol
     reward_mode         ::Symbol
-    pomdp_config        ::POMDPConfig
+    problem_config      ::ProblemConfig
     n_sims              ::Int64
 end
 
@@ -45,22 +46,24 @@ function batch_execute(;dims::Int64=1)
 
     # General test parameters
     reward_mode                 = :quadratic
-    n_sims                      = 2
+    n_sims                      = 50
 
     # 1D configuration
     n_bins1d                    = 10
+    n_particles1d               = 25
     max_actions1d               = 50
     max_exploit_visits1d        = 25
     max_belief_clusters1d       = 4
 
     # 2D configuration
     n_bins2d                    = 10 # per dimension
-    max_actions2d               = 150
+    n_particles1d               = 50
+    max_actions2d               = 100
     max_exploit_visits2d        = 25
     max_belief_clusters2d       = 8
 
-    pconfig1d = POMDPConfig(n_bins1d, max_actions1d, max_exploit_visits1d, max_belief_clusters1d)
-    pconfig2d = POMDPConfig(n_bins2d, max_actions2d, max_exploit_visits2d, max_belief_clusters2d)
+    pconfig1d = ProblemConfig(n_bins1d, max_actions1d, max_exploit_visits1d, max_belief_clusters1d)
+    pconfig2d = ProblemConfig(n_bins2d, max_actions2d, max_exploit_visits2d, max_belief_clusters2d)
 
     if dims == 1
         S = LD1State
@@ -87,18 +90,18 @@ function batch_execute(;dims::Int64=1)
     push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig, n_sims))
 
     # CONTINUOUS OBSERVATIONS
-    # push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
-    # push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig, n_sims))
-    # push!(test, LPDMTest(:blind_vl, :continuous, reward_mode, pconfig, n_sims))
-    # push!(test, LPDMTest(:adaptive, :continuous, reward_mode, pconfig, n_sims))
+    push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
+    push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig, n_sims))
+    push!(test, LPDMTest(:blind_vl, :continuous, reward_mode, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :continuous, reward_mode, pconfig, n_sims))
 
     scen=Array{LPDMScenario{S}}(undef,0)
 
     if dims == 1
         push!(scen, LPDMScenario(LD1State(-2*π)))
-        # push!(scen, LPDMScenario(LD1State(π/2)))
-        # push!(scen, LPDMScenario(LD1State(3/2*π)))
-        # push!(scen, LPDMScenario(LD1State(2*π)))
+        push!(scen, LPDMScenario(LD1State(π/2)))
+        push!(scen, LPDMScenario(LD1State(3/2*π)))
+        push!(scen, LPDMScenario(LD1State(2*π)))
     elseif dims == 2
         push!(scen, LPDMScenario(LD2State(-2*π, π)))
         # push!(scen, LPDMScenario(LD2State(-π, π)))
@@ -114,12 +117,13 @@ function batch_execute(;dims::Int64=1)
 
     f = open("results_" * Dates.format(now(),"yyyy-mm-dd_HH_MM") * ".txt", "w")
 
-    Printf.@printf(f,"GENERAL SOLVER PARAMETERS\n")
-    Printf.@printf(f,"\tsteps:\t\t\t%d\n", steps)
-    Printf.@printf(f,"\ttime per move:\t\t\t%f\n", time_per_move)
-    Printf.@printf(f,"\tsearch depth:\t\t\t%d\n", search_depth)
-    Printf.@printf(f,"\tN particles:\t\t\t%d\n", n_particles)
-    Printf.@printf(f,"\tmax trials:\t\t\t%d\n\n", max_trials)
+    # Printf.@printf(f,"GENERAL SOLVER PARAMETERS\n")
+    # Printf.@printf(f,"\tsteps:\t\t\t%d\n", steps)
+    # Printf.@printf(f,"\ttime per move:\t\t\t%f\n", time_per_move)
+    # Printf.@printf(f,"\tsearch depth:\t\t\t%d\n", search_depth)
+    # Printf.@printf(f,"\tN particles:\t\t\t%d\n", n_particles)
+    # Printf.@printf(f,"\tmax trials:\t\t\t%d\n\n", max_trials)
+    print(f, solver_config)
 
     Printf.@printf(f,"PROBLEM PARAMETERS\n")
     Printf.@printf(f,"\tdimensions:\t\t\t%d\n",             dims)
@@ -182,19 +186,19 @@ function run_scenario(s0::S, test::LPDMTest, A::Type, O::Type, B::Type;
         p = LightDark1DLpdm(action_mode         = test.action_mode,
                             obs_mode            = test.obs_mode,
                             reward_mode         = test.reward_mode,
-                            n_bins              = test.pomdp_config.n_bins,
-                            max_actions         = test.pomdp_config.max_actions,
-                            max_exploit_visits  = test.pomdp_config.max_exploit_visits,
-                            max_belief_clusters = test.pomdp_config.max_belief_clusters
+                            n_bins              = test.problem_config.n_bins,
+                            max_actions         = test.problem_config.max_actions,
+                            max_exploit_visits  = test.problem_config.max_exploit_visits,
+                            max_belief_clusters = test.problem_config.max_belief_clusters
                             )
     elseif dims == 2
         p = LightDark2DLpdm(action_mode         = test.action_mode,
                             obs_mode            = test.obs_mode,
                             reward_mode         = test.reward_mode,
-                            n_bins              = test.pomdp_config.n_bins,
-                            max_actions         = test.pomdp_config.max_actions,
-                            max_exploit_visits  = test.pomdp_config.max_exploit_visits,
-                            max_belief_clusters = test.pomdp_config.max_belief_clusters
+                            n_bins              = test.problem_config.n_bins,
+                            max_actions         = test.problem_config.max_actions,
+                            max_exploit_visits  = test.problem_config.max_exploit_visits,
+                            max_belief_clusters = test.problem_config.max_belief_clusters
                             )
     end
 
