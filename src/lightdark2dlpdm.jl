@@ -124,7 +124,7 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
                            rng::RNGVector)::Vector{LD2Action}
 
     n_new_actions = 5
-    new_actions = Vector{LD2Action}(undef,5)
+    new_actions = Vector{LD2Action}(undef,n_new_actions)
 
     # simulated annealing temperature
     if isempty(current_action_space) # initial request

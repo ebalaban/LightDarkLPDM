@@ -99,9 +99,12 @@ function LPDM.next_actions(pomdp::LightDark1DLpdm,
                            current_action_space::Vector{LD1Action},
                            a_star::LD1Action,
                            n_visits::Int64,
+                           T_solver::Float64, # "temperature"
                            rng::RNGVector)::Vector{LD1Action}
 
     # println("POMDP: adaptive actions")
+    n_new_actions = 2 #TODO: make into a parameter
+    new_actions = Vector{LD1Action}(undef,n_new_actions)
     initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
 
     # simulated annealing temperature
@@ -112,26 +115,32 @@ function LPDM.next_actions(pomdp::LightDark1DLpdm,
 
     l_initial = length(initial_space)
 
-    # don't count initial "seed" actions in computing T
-    T = 1 - (length(current_action_space) - l_initial)/(LPDM.max_actions(pomdp) - l_initial)
-    adj_exploit_visits = pomdp.exploit_visits * (1-T) # exploit more as T decreases
+    # don't count initial "seed" actions in computing T_actions
+    T_actions = 1 - (length(current_action_space) - l_initial)/(LPDM.max_actions(pomdp) - l_initial)
+    T = minimum([T_solver T_actions]) # use the lowest "temperature"
+
+    # adj_exploit_visits = pomdp.exploit_visits * (1-T) # exploit more as T decreases
 
     # generate new action(s)
-    if (n_visits > adj_exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
+    # if (n_visits > adj_exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
+    if length(current_action_space) < LPDM.max_actions(pomdp)
 
         # Use the full range as initial radius to accomodate points at the edges of it
         radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * T
 
         in_set = true
         a = NaN
-        while in_set
-            a = (rand(rng, Uniform(a_star - radius, a_star + radius)))
-            a = clamp(a, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
-            in_set = a ∈ current_action_space
+        for i in 1:n_new_actions
+            in_set = true
+            while in_set
+                a = (rand(rng, Uniform(a_star - radius, a_star + radius)))
+                a = clamp(a, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
+                in_set = a ∈ current_action_space
+            end
+            new_actions[i]=a
         end
-
         # println("a_star: $a_star, T: $T, radius: $radius, a: $a")
-        return [a] # New action, returned as a one element vector.
+        return new_actions # New action, returned as a one element vector.
     else
         return LD1Action[]
     end
