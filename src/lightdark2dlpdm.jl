@@ -123,6 +123,9 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
                            n_visits::Int64,
                            rng::RNGVector)::Vector{LD2Action}
 
+    n_new_actions = 5
+    new_actions = Vector{LD2Action}(undef,5)
+
     # simulated annealing temperature
     if isempty(current_action_space) # initial request
         # return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
@@ -146,19 +149,22 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
         # Use the full range as initial radius to accomodate points at the edges of it
         radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * 0.8 * T #DEBUG, let's try "lowering" the temperature
 
-        in_set = true
         a_x = NaN
         a_y = NaN
-        while in_set
-            a_x = (rand(rng, Uniform(a_star[1] - radius, a_star[1] + radius)))
-            a_y = (rand(rng, Uniform(a_star[2] - radius, a_star[2] + radius)))
-            a_x = clamp(a_x, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
-            a_y = clamp(a_y, pomdp.action_limits[1], pomdp.action_limits[2])
-            in_set = Vec2(a_x,a_y) ∈ current_action_space
+        for i in 1:n_new_actions
+            in_set = true
+            while in_set
+                a_x = (rand(rng, Uniform(a_star[1] - radius, a_star[1] + radius)))
+                a_y = (rand(rng, Uniform(a_star[2] - radius, a_star[2] + radius)))
+                a_x = clamp(a_x, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
+                a_y = clamp(a_y, pomdp.action_limits[1], pomdp.action_limits[2])
+                in_set = (Vec2(a_x,a_y) ∈ current_action_space) || (Vec2(a_x,a_y) ∈ new_actions)
+            end
+            new_actions[i]=Vec2(a_x,a_y)
         end
 
         # println("a_star: $a_star, T: $T, radius: $radius, a: $a")
-        return [Vec2(a_x,a_y)] # New action, returned as a one element vector.
+        return new_actions
     else
         return Vec2[]
     end

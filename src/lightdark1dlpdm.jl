@@ -153,7 +153,7 @@ function LPDM.next_actions(pomdp::LightDark1DLpdm,
            return initial_space
      end
 
-    if (n_visits > 25) && (length(current_action_space) < LPDM.max_actions(pomdp))
+    if (n_visits > pomdp.exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
         M = 100
         # TODO: Create a formal sampler for RNGVector when there is time
         Apool = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i in 1:M]

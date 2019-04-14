@@ -180,7 +180,6 @@ function state_distribution(pomdp::AbstractLD2, s0::LD2State, config::LPDMConfig
     particle = LPDMParticle{LD2State}(LD2State(0.0,0.0), 1, weight)
 
     d = observation(pomdp,s0)
-    println("state distribution d: $d")
     for i = 1:config.n_particles^2 #TODO: Inefficient, possibly improve. Maybe too many particles
         s = Vec2(rand(rng, Distributions.MvNormal([d.mean[1],d.mean[2]],[d.std,d.std])))
         particle = LPDMParticle{LD2State}(s,

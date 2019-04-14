@@ -14,7 +14,6 @@ include("LPDMBounds2d.jl")
 
 struct ProblemConfig
     n_bins              ::Int64
-    n_particles         ::Int64
     max_actions         ::Int64
     max_exploit_visits  ::Int64
     max_belief_clusters ::Int64
@@ -35,35 +34,51 @@ end
 # reward function options - :quadratic or :fixed
 function batch_execute(;dims::Int64=1)
 
-    # General solver parameters
-    steps::Int64                = -1
-    time_per_move::Float64      = 1.0
-    search_depth::Int64         = 30
-    n_particles::Int64          = 25
-    max_trials::Int64           = -1
-    debug::Int64                = 0
-    vis::Vector{Int64}          = Int64[]
-
     # General test parameters
     reward_mode                 = :quadratic
     n_sims                      = 50
+    vis::Vector{Int64}          = Int64[]
+    debug                       = 0
 
-    # 1D configuration
+    # 1D problem configuration
     n_bins1d                    = 10
-    n_particles1d               = 25
     max_actions1d               = 50
-    max_exploit_visits1d        = 25
+    max_exploit_visits1d        = 0
     max_belief_clusters1d       = 4
 
-    # 2D configuration
+    # 2D problem configuration
     n_bins2d                    = 10 # per dimension
-    n_particles1d               = 50
     max_actions2d               = 100
-    max_exploit_visits2d        = 25
+    max_exploit_visits2d        = 0
     max_belief_clusters2d       = 8
 
     pconfig1d = ProblemConfig(n_bins1d, max_actions1d, max_exploit_visits1d, max_belief_clusters1d)
     pconfig2d = ProblemConfig(n_bins2d, max_actions2d, max_exploit_visits2d, max_belief_clusters2d)
+
+    # 1D solver configuration (some are left as defaults)
+    sconfig1d = LPDMConfig(
+            search_depth        = 30,
+            seed                = 0xffffffff, # assigned per scenario (will cause an error if not assigned)
+            time_per_move       = 1.0,
+            n_particles         = 25,
+            sim_len             = -1,
+            max_trials          = -1,
+            debug               = debug,
+            action_mode         = :tbd,     # assigned per test (will cause an error if not assigned)
+            obs_mode            = :tbd)     # assigned per test (will cause an error if not assigned)
+
+    # 2D solver configuration
+    sconfig2d = LPDMConfig(
+            search_depth        = 30,
+            seed                = 0xffffffff,  # assigned per scenario (will cause an error if not assigned)
+            time_per_move       = 1.0,
+            n_particles         = 50,
+            sim_len             = -1,
+            max_trials          = -1,
+            debug               = debug,
+            action_mode         = :tbd,     # assigned per test (will cause an error if not assigned)
+            obs_mode            = :tbd)     # assigned per test (will cause an error if not assigned)
+
 
     if dims == 1
         S = LD1State
@@ -71,12 +86,14 @@ function batch_execute(;dims::Int64=1)
         O = LD1Obs
         B = LDBounds1d{S,A,O}
         pconfig = pconfig1d
+        sconfig = sconfig1d
     elseif dims == 2
         S = LD2State
         A = LD2Action
         O = LD2Obs
         B = LDBounds2d{S,A,O}
         pconfig = pconfig2d
+        sconfig = sconfig2d
     else
         error("Invalid number of dimensions $dims")
     end
@@ -84,16 +101,16 @@ function batch_execute(;dims::Int64=1)
     test = Array{LPDMTest}(undef,0)
 
     # DISCRETE OBSERVATIONS
-    push!(test, LPDMTest(:standard, :discrete, reward_mode, pconfig, n_sims))
-    push!(test, LPDMTest(:extended, :discrete, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:standard, :discrete, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:extended, :discrete, reward_mode, pconfig, n_sims))
     push!(test, LPDMTest(:blind_vl, :discrete, reward_mode, pconfig, n_sims))
-    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig, n_sims))
 
     # CONTINUOUS OBSERVATIONS
-    push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
-    push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig, n_sims))
-    push!(test, LPDMTest(:blind_vl, :continuous, reward_mode, pconfig, n_sims))
-    push!(test, LPDMTest(:adaptive, :continuous, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:blind_vl, :continuous, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:adaptive, :continuous, reward_mode, pconfig, n_sims))
 
     scen=Array{LPDMScenario{S}}(undef,0)
 
@@ -103,8 +120,8 @@ function batch_execute(;dims::Int64=1)
         push!(scen, LPDMScenario(LD1State(3/2*π)))
         push!(scen, LPDMScenario(LD1State(2*π)))
     elseif dims == 2
-        push!(scen, LPDMScenario(LD2State(-2*π, π)))
-        # push!(scen, LPDMScenario(LD2State(-π, π)))
+        # push!(scen, LPDMScenario(LD2State(-2*π, π)))
+        push!(scen, LPDMScenario(LD2State(-π, π)))
         push!(scen, LPDMScenario(LD2State(π/2, π/2)))
         push!(scen, LPDMScenario(LD2State(π, -π)))
         push!(scen, LPDMScenario(LD2State(2*π,2*π)))
@@ -123,14 +140,13 @@ function batch_execute(;dims::Int64=1)
     # Printf.@printf(f,"\tsearch depth:\t\t\t%d\n", search_depth)
     # Printf.@printf(f,"\tN particles:\t\t\t%d\n", n_particles)
     # Printf.@printf(f,"\tmax trials:\t\t\t%d\n\n", max_trials)
-    print(f, solver_config)
-
-    Printf.@printf(f,"PROBLEM PARAMETERS\n")
+    print(f,sconfig)
+    Printf.@printf(f,"\nPROBLEM PARAMETERS\n")
     Printf.@printf(f,"\tdimensions:\t\t\t%d\n",             dims)
     Printf.@printf(f,"\tN bins (per dim):\t\t\t%d\n",       pconfig.n_bins)
     Printf.@printf(f,"\tmax actions:\t\t\t%d\n",            pconfig.max_actions)
     Printf.@printf(f,"\tmax exploit. visits:\t\t\t%d\n",    pconfig.max_exploit_visits)
-    Printf.@printf(f,"\tmax belief clusters:\t\t\t%d\n\n",  pconfig.max_belief_clusters)
+    Printf.@printf(f,"\tmax belief clusters:\t\t\t%d\n",  pconfig.max_belief_clusters)
     Printf.@printf(f,"\ttests per scenario:\t\t\t%d\n\n",   n_sims)
 
     for i in 1:length(scen)
@@ -142,45 +158,35 @@ function batch_execute(;dims::Int64=1)
 
         Printf.@printf(f,"SCENARIO %d, s0 = %s\n", i, "$(scen[i].s0)")
         Printf.@printf(f,"================================================================\n")
-        Printf.@printf(f,"ACT. MODE\t\tOBS. MODE\t\tSTEPS (STD)\t\t\tREWARD (STD)\n")
+        Printf.@printf(f,"ACT. MODE\t\tOBS. MODE\t\t\tSTEPS (STD)\t\t\t\tREWARD (STD)\n")
         Printf.@printf(f,"================================================================\n")
         for t in test
             if debug >= 0
                 println("dimensions: $dims, actions: $(t.action_mode), observations: $(t.obs_mode), rewards: $(t.reward_mode)")
             end
             steps_avg, steps_std, reward_avg, reward_std =
-                        run_scenario(scen[i].s0, t, A, O, B,
-                                    dims              = dims,
-                                    n_sims            = n_sims,
-                                    steps             = steps,
-                                    time_per_move     = time_per_move,
-                                    search_depth      = search_depth,
-                                    n_particles       = n_particles,
-                                    max_trials        = max_trials,
-                                    debug             = debug,
-                                    vis               = vis)
+                        run_scenario(scen[i].s0, t, A, O, B, sconfig,
+                                     dims      = dims,
+                                     n_sims    = n_sims,
+                                     vis       = vis)
 
             Printf.@printf(f,"%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
                                             string(t.action_mode), string(t.obs_mode), steps_avg, steps_std, reward_avg, reward_std)
-
-            debug >=0 && println("STATS: actions=$(t.action_mode), observations=$(t.obs_mode), steps = $(steps_avg) ($steps_std), reward = $(reward_avg) ($reward_std)\n")
+            flush(f)
+            debug >=0 && println("\n*******************************************************************************************************")
+            debug >=0 && println("STATS: actions=$(t.action_mode), observations=$(t.obs_mode), steps = $(steps_avg) ($steps_std), reward = $(reward_avg) ($reward_std)")
+            debug >=0 && println("*******************************************************************************************************\n")
         end
-        Printf.@printf(f,"==================================================================\n\n")
+        Printf.@printf(f,"================================================================\n\n")
     end
     close(f)
 end
 
-function run_scenario(s0::S, test::LPDMTest, A::Type, O::Type, B::Type;
-                dims::Int64                 = 1,
-                n_sims::Int64               = 1,
-                steps::Int64                = -1,
-                time_per_move::Float64      = 5.0,
-                search_depth::Int64         = 50,
-                n_particles::Int64          = 50,
-                max_trials::Int64           = -1,
-                debug::Int64                = 1,
-                vis::Vector{Int64}          = Int64[]
-                ) where {S}
+function run_scenario(s0::S, test::LPDMTest, A::Type, O::Type, B::Type, sconfig::LPDMConfig;
+                      dims::Int64                 = 1,
+                      n_sims::Int64               = 1,
+                      vis::Vector{Int64}          = Int64[]
+                      ) where {S}
 
     if dims == 1
         p = LightDark1DLpdm(action_mode         = test.action_mode,
@@ -211,23 +217,17 @@ function run_scenario(s0::S, test::LPDMTest, A::Type, O::Type, B::Type;
         LPDM.set!(world_rng, 1)
         step_rewards::Array{Float64}     = Vector{Float64}(undef,0)
 
-        solver = LPDM.LPDMSolver{S, A, O, B, RNGVector}(
-                                                        debug = debug,
-                                                        time_per_move = time_per_move,  #sec
-                                                        sim_len = steps,
-                                                        search_depth = search_depth,
-                                                        n_particles = n_particles,
-                                                        seed = UInt32(2*sim+1),
-                                                        max_trials = max_trials,
-                                                        action_mode = test.action_mode,
-                                                        obs_mode    = test.obs_mode)
+        sconfig.seed        = UInt32(2*sim+1)
+        sconfig.action_mode = test.action_mode
+        sconfig.obs_mode    = test.obs_mode
+        solver = LPDM.LPDMSolver{S, A, O, B, RNGVector}(config = sconfig)
 
     #---------------------------------------------------------------------------------
         # Belief
         bu = LPDMBeliefUpdater(p,
-                               n_particles = solver.config.n_particles,
+                               n_particles = sconfig.n_particles,
                                seed = UInt32(3*sim+1));  # initialize belief updater
-        initial_states = state_distribution(p, s0, solver.config, world_rng)     # create initial  distribution
+        initial_states = state_distribution(p, s0, sconfig, world_rng)     # create initial  distribution
         current_belief = LPDM.create_belief(bu)                       # allocate an updated belief object
         LPDM.initialize_belief(bu, initial_states, current_belief)    # initialize belief
         updated_belief = LPDM.create_belief(bu)
@@ -239,31 +239,31 @@ function run_scenario(s0::S, test::LPDMTest, A::Type, O::Type, B::Type;
         step::Int64 = 0
         r::Float64 = 0.0
 
-        if debug >= 0
+        if sconfig.debug >= 0
             println("")
             println("*** SIM $sim (dimensions: $dims, action mode: $(test.action_mode), obs mode: $(test.obs_mode), s0: $s0)***")
             println("")
         end
 
         val, run_time, bytes, gctime, memallocs =
-        @timed while !isterminal(p, s) && (solver.config.sim_len == -1 || step < solver.config.sim_len)
+        @timed while !isterminal(p, s) && (sconfig.sim_len == -1 || step < sconfig.sim_len)
             step += 1
 
-            if debug >= 1
+            if sconfig.debug >= 1
                 println("")
                 println("=============== Step $step ================")
                 show(current_belief)
             end
 
             a = POMDPs.action(policy, current_belief)
-            if debug >= 1
+            if sconfig.debug >= 1
                 println("s: $s")
                 println("a: $a")
             end
 
             s, o, r = POMDPs.generate_sor(p, s, a, world_rng)
             push!(step_rewards, r)
-            if debug >= 1
+            if sconfig.debug >= 1
                 println("s': $s")
                 println("o': $o")
                 println("r: $r")
@@ -276,7 +276,7 @@ function run_scenario(s0::S, test::LPDMTest, A::Type, O::Type, B::Type;
             # show(updated_belief) #NOTE: don't show for now
 
             if LPDM.isterminal(p, current_belief.particles)
-                if debug >= 1
+                if sconfig.debug >= 1
                     println("Terminal belief. Execution completed.")
                     show(current_belief)
                 end
@@ -292,14 +292,14 @@ function run_scenario(s0::S, test::LPDMTest, A::Type, O::Type, B::Type;
                 inchrome(t)
                 # blink(t)
             end
-            if debug >= 1
+            if sconfig.debug >= 1
                 println("root actions: $(solver.root.action_space)")
             end
         end
 
         sim_steps[sim] = step
         sim_rewards[sim] = sum(step_rewards)
-        debug >= 0 && println("steps=$(sim_steps[sim]), reward=$(sim_rewards[sim])")
+        sconfig.debug >= 0 && println("steps=$(sim_steps[sim]), reward=$(sim_rewards[sim])")
     end
 
     return mean(sim_steps), std(sim_steps), mean(sim_rewards), std(sim_rewards)
