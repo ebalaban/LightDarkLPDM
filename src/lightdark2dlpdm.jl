@@ -21,6 +21,8 @@ mutable struct LightDark2DLpdm <: AbstractLD2
     resample_std::Float64
     exploit_visits::Int64
     max_actions::Int64
+    n_new_actions::Int64
+    action_range_fraction::Float64
     max_belief_clusters::Int64
     action_limits::Tuple{Float64,Float64}
     action_mode::Symbol
@@ -34,13 +36,15 @@ mutable struct LightDark2DLpdm <: AbstractLD2
     extended_action_space::Vector{LD2Action}
 
     function LightDark2DLpdm(;
-                             action_mode         ::Symbol   = :adaptive,
-                             obs_mode            ::Symbol   = :continuous,
-                             reward_mode         ::Symbol   = :quadratic,
-                             n_bins              ::Int64    = 10, # per linear dimension
-                             max_actions         ::Int64    = 150,
-                             max_exploit_visits  ::Int64    = 25,
-                             max_belief_clusters ::Int64    = 8
+                             action_mode            ::Symbol   = :adaptive,
+                             obs_mode               ::Symbol   = :continuous,
+                             reward_mode            ::Symbol   = :quadratic,
+                             n_bins                 ::Int64    = 10, # per linear dimension
+                             max_actions            ::Int64    = 150,
+                             n_new_actions          ::Int64    = 1,# number of new actions to select at the same time in SA
+                             action_range_fraction  ::Float64  = 0.5,
+                             max_exploit_visits     ::Int64    = 25,
+                             max_belief_clusters    ::Int64    = 8
                              )
         this = new()
         this.min_noise               = 0.0
@@ -58,6 +62,8 @@ mutable struct LightDark2DLpdm <: AbstractLD2
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
         this.max_actions             = max_actions
+        this.n_new_actions           = n_new_actions
+        this.action_range_fraction   = action_range_fraction
         this.action_limits           = (-5.0,5.0)
         this.action_mode             = action_mode
         this.obs_mode                = obs_mode
@@ -121,16 +127,17 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
                            current_action_space::Vector{LD2Action},
                            a_star::LD2Action,
                            n_visits::Int64,
+                           T_solver::Float64, # "temperature"
                            rng::RNGVector)::Vector{LD2Action}
 
-    n_new_actions = 5
-    new_actions = Vector{LD2Action}(undef,n_new_actions)
+    new_actions = Vector{LD2Action}(undef,pomdp.n_new_actions)
 
     # simulated annealing temperature
     if isempty(current_action_space) # initial request
         # return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
         if depth > 1
-            return pomdp.extended_action_space
+            return pomdp.standard_action_space
+            # return pomdp.extended_action_space #DEBUG
         else
             # return pomdp.extended_action_space   #DEBUG, let's try this...
             return pomdp.standard_action_space
@@ -140,18 +147,20 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
     l_initial = length(pomdp.standard_action_space)
 
     # don't count initial "seed" actions in computing T
-    T = 1 - (length(current_action_space) - l_initial)/(LPDM.max_actions(pomdp) - l_initial)
-    adj_exploit_visits = pomdp.exploit_visits * (1-T) # exploit more as T decreases
+    T_actions = 1 - (length(current_action_space) - l_initial)/(LPDM.max_actions(pomdp) - l_initial)
+    T = minimum([T_solver T_actions])
+    # adj_exploit_visits = pomdp.exploit_visits * (1-T) # exploit more as T decreases
 
     # generate new action(s)
-    if (n_visits > adj_exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
+    # if (n_visits > adj_exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
+    if length(current_action_space) < LPDM.max_actions(pomdp)
 
         # Use the full range as initial radius to accomodate points at the edges of it
-        radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * 0.8 * T #DEBUG, let's try "lowering" the temperature
+        radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * pomdp.action_range_fraction * T
 
         a_x = NaN
         a_y = NaN
-        for i in 1:n_new_actions
+        for i in 1:pomdp.n_new_actions
             in_set = true
             while in_set
                 a_x = (rand(rng, Uniform(a_star[1] - radius, a_star[1] + radius)))
@@ -179,14 +188,15 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
 
      # initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
      # initial_space = [0.0]
+    M = pomdp.max_actions
 
        # simulated annealing temperature
-     if isempty(current_action_space) # initial request
+    if isempty(current_action_space) # initial request
            return pomdp.standard_action_space
-     end
+    end
 
-    if (n_visits > pomdp.exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
-        M = pomdp.max_actions
+    if length(current_action_space) < LPDM.max_actions(pomdp)
+    # if (n_visits > pomdp.exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
         # TODO: Create a formal sampler for RNGVector when there is time
         Apool_x = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]
         Apool_y = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]

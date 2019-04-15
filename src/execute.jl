@@ -13,10 +13,12 @@ include("LPDMBounds1d.jl")
 include("LPDMBounds2d.jl")
 
 struct ProblemConfig
-    n_bins              ::Int64
-    max_actions         ::Int64
-    max_exploit_visits  ::Int64
-    max_belief_clusters ::Int64
+    n_bins                  ::Int64
+    max_actions             ::Int64
+    n_new_actions           ::Int64 # number of new actions to select at the same time in SA
+    action_range_fraction   ::Float64
+    max_exploit_visits      ::Int64
+    max_belief_clusters     ::Int64
 end
 
 struct LPDMTest
@@ -43,17 +45,21 @@ function batch_execute(;dims::Int64=1)
     # 1D problem configuration
     n_bins1d                    = 10
     max_actions1d               = 50
+    n_new_actions1d             = 2
+    action_range_fraction1d     = 0.25
     max_exploit_visits1d        = 0
     max_belief_clusters1d       = 4
 
     # 2D problem configuration
     n_bins2d                    = 10 # per dimension
     max_actions2d               = 100
+    n_new_actions2d             = 2
+    action_range_fraction2d     = 0.25
     max_exploit_visits2d        = 0
     max_belief_clusters2d       = 8
 
-    pconfig1d = ProblemConfig(n_bins1d, max_actions1d, max_exploit_visits1d, max_belief_clusters1d)
-    pconfig2d = ProblemConfig(n_bins2d, max_actions2d, max_exploit_visits2d, max_belief_clusters2d)
+    pconfig1d = ProblemConfig(n_bins1d, max_actions1d, n_new_actions1d, action_range_fraction1d, max_exploit_visits1d, max_belief_clusters1d)
+    pconfig2d = ProblemConfig(n_bins2d, max_actions2d, n_new_actions2d, action_range_fraction2d, max_exploit_visits2d, max_belief_clusters2d)
 
     # 1D solver configuration (some are left as defaults)
     sconfig1d = LPDMConfig(
@@ -71,7 +77,7 @@ function batch_execute(;dims::Int64=1)
     sconfig2d = LPDMConfig(
             search_depth        = 30,
             seed                = 0xffffffff,  # assigned per scenario (will cause an error if not assigned)
-            time_per_move       = 1.0,
+            time_per_move       = 2.0,
             n_particles         = 50,
             sim_len             = -1,
             max_trials          = -1,
@@ -121,10 +127,10 @@ function batch_execute(;dims::Int64=1)
         push!(scen, LPDMScenario(LD1State(2*π)))
     elseif dims == 2
         # push!(scen, LPDMScenario(LD2State(-2*π, π)))
-        push!(scen, LPDMScenario(LD2State(-π, π)))
-        push!(scen, LPDMScenario(LD2State(π/2, π/2)))
-        push!(scen, LPDMScenario(LD2State(π, -π)))
-        push!(scen, LPDMScenario(LD2State(2*π,2*π)))
+        push!(scen, LPDMScenario(LD2State(-2*π, π)))
+        # push!(scen, LPDMScenario(LD2State(π/2, -π/2)))
+        # push!(scen, LPDMScenario(LD2State(π, 2*π)))
+        # push!(scen, LPDMScenario(LD2State(2*π, -π)))
     end
 
     # Dummy execution, just to make sure all the code is compiled and loaded,
@@ -145,8 +151,10 @@ function batch_execute(;dims::Int64=1)
     Printf.@printf(f,"\tdimensions:\t\t\t%d\n",             dims)
     Printf.@printf(f,"\tN bins (per dim):\t\t\t%d\n",       pconfig.n_bins)
     Printf.@printf(f,"\tmax actions:\t\t\t%d\n",            pconfig.max_actions)
+    Printf.@printf(f,"\tN new actions:\t\t\t%d\n",          pconfig.n_new_actions)
+    Printf.@printf(f,"\taction range fraction:\t\t\t%f\n",  pconfig.action_range_fraction)
     Printf.@printf(f,"\tmax exploit. visits:\t\t\t%d\n",    pconfig.max_exploit_visits)
-    Printf.@printf(f,"\tmax belief clusters:\t\t\t%d\n",  pconfig.max_belief_clusters)
+    Printf.@printf(f,"\tmax belief clusters:\t\t\t%d\n",    pconfig.max_belief_clusters)
     Printf.@printf(f,"\ttests per scenario:\t\t\t%d\n\n",   n_sims)
 
     for i in 1:length(scen)
@@ -189,22 +197,26 @@ function run_scenario(s0::S, test::LPDMTest, A::Type, O::Type, B::Type, sconfig:
                       ) where {S}
 
     if dims == 1
-        p = LightDark1DLpdm(action_mode         = test.action_mode,
-                            obs_mode            = test.obs_mode,
-                            reward_mode         = test.reward_mode,
-                            n_bins              = test.problem_config.n_bins,
-                            max_actions         = test.problem_config.max_actions,
-                            max_exploit_visits  = test.problem_config.max_exploit_visits,
-                            max_belief_clusters = test.problem_config.max_belief_clusters
+        p = LightDark1DLpdm(action_mode             = test.action_mode,
+                            obs_mode                = test.obs_mode,
+                            reward_mode             = test.reward_mode,
+                            n_bins                  = test.problem_config.n_bins,
+                            max_actions             = test.problem_config.max_actions,
+                            n_new_actions           = test.problem_config.n_new_actions,
+                            action_range_fraction   = test.problem_config.action_range_fraction,
+                            max_exploit_visits      = test.problem_config.max_exploit_visits,
+                            max_belief_clusters     = test.problem_config.max_belief_clusters
                             )
     elseif dims == 2
-        p = LightDark2DLpdm(action_mode         = test.action_mode,
-                            obs_mode            = test.obs_mode,
-                            reward_mode         = test.reward_mode,
-                            n_bins              = test.problem_config.n_bins,
-                            max_actions         = test.problem_config.max_actions,
-                            max_exploit_visits  = test.problem_config.max_exploit_visits,
-                            max_belief_clusters = test.problem_config.max_belief_clusters
+        p = LightDark2DLpdm(action_mode             = test.action_mode,
+                            obs_mode                = test.obs_mode,
+                            reward_mode             = test.reward_mode,
+                            n_bins                  = test.problem_config.n_bins,
+                            max_actions             = test.problem_config.max_actions,
+                            n_new_actions           = test.problem_config.n_new_actions,
+                            action_range_fraction   = test.problem_config.action_range_fraction,
+                            max_exploit_visits      = test.problem_config.max_exploit_visits,
+                            max_belief_clusters     = test.problem_config.max_belief_clusters
                             )
     end
 

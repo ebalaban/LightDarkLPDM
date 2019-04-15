@@ -20,6 +20,8 @@ mutable struct LightDark1DLpdm <: AbstractLD1
     resample_std::Float64
     exploit_visits::Int64
     max_actions::Int64
+    n_new_actions::Int64
+    action_range_fraction::Float64
     max_belief_clusters::Int64
     action_limits::Tuple{Float64,Float64}
     action_mode::Symbol
@@ -31,13 +33,15 @@ mutable struct LightDark1DLpdm <: AbstractLD1
 
 
     function LightDark1DLpdm(;
-                             action_mode         ::Symbol   = :adaptive,
-                             obs_mode            ::Symbol   = :continuous,
-                             reward_mode         ::Symbol   = :quadratic,
-                             n_bins              ::Int64    = 10, # per linear dimension
-                             max_actions         ::Int64    = 50,
-                             max_exploit_visits  ::Int64    = 25,
-                             max_belief_clusters ::Int64    = 4
+                             action_mode            ::Symbol   = :adaptive,
+                             obs_mode               ::Symbol   = :continuous,
+                             reward_mode            ::Symbol   = :quadratic,
+                             n_bins                 ::Int64    = 10, # per linear dimension
+                             max_actions            ::Int64    = 50,
+                             n_new_actions          ::Int64    = 1,# number of new actions to select at the same time in SA
+                             action_range_fraction  ::Float64  = 0.5,
+                             max_exploit_visits     ::Int64    = 25,
+                             max_belief_clusters    ::Int64    = 4
                              )
         this = new()
         this.min_noise               = 0.0
@@ -55,6 +59,8 @@ mutable struct LightDark1DLpdm <: AbstractLD1
         this.n_rand                  = 0
         this.resample_std            = 0.5 # st. deviation for particle resampling
         this.max_actions             = max_actions
+        this.n_new_actions           = n_new_actions
+        this.action_range_fraction   = action_range_fraction
         this.action_limits           = (-5.0,5.0)
         this.action_mode             = action_mode
         this.obs_mode                = obs_mode
@@ -103,8 +109,7 @@ function LPDM.next_actions(pomdp::LightDark1DLpdm,
                            rng::RNGVector)::Vector{LD1Action}
 
     # println("POMDP: adaptive actions")
-    n_new_actions = 2 #TODO: make into a parameter
-    new_actions = Vector{LD1Action}(undef,n_new_actions)
+    new_actions = Vector{LD1Action}(undef,pomdp.n_new_actions)
     initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
 
     # simulated annealing temperature
@@ -126,11 +131,11 @@ function LPDM.next_actions(pomdp::LightDark1DLpdm,
     if length(current_action_space) < LPDM.max_actions(pomdp)
 
         # Use the full range as initial radius to accomodate points at the edges of it
-        radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * T
+        radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * pomdp.action_range_fraction * T # DEBUG: testing 0.5
 
         in_set = true
         a = NaN
-        for i in 1:n_new_actions
+        for i in 1:pomdp.n_new_actions
             in_set = true
             while in_set
                 a = (rand(rng, Uniform(a_star - radius, a_star + radius)))
@@ -156,6 +161,7 @@ function LPDM.next_actions(pomdp::LightDark1DLpdm,
     # println("POMDP: blind value actions")
      initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
      # initial_space = [0.0]
+     M = pomdp.max_actions
 
        # simulated annealing temperature
      if isempty(current_action_space) # initial request
@@ -163,7 +169,6 @@ function LPDM.next_actions(pomdp::LightDark1DLpdm,
      end
 
     if (n_visits > pomdp.exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
-        M = 100
         # TODO: Create a formal sampler for RNGVector when there is time
         Apool = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i in 1:M]
         σ_known = std(Q)
