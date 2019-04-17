@@ -48,7 +48,7 @@ function batch_execute(;dims::Int64=1)
     n_new_actions1d             = 2
     action_range_fraction1d     = 0.25
     max_exploit_visits1d        = 0
-    max_belief_clusters1d       = 4
+    max_belief_clusters1d       = 100
 
     # 2D problem configuration
     n_bins2d                    = 10 # per dimension
@@ -56,7 +56,7 @@ function batch_execute(;dims::Int64=1)
     n_new_actions2d             = 2
     action_range_fraction2d     = 0.25
     max_exploit_visits2d        = 0
-    max_belief_clusters2d       = 8
+    max_belief_clusters2d       = 100
 
     pconfig1d = ProblemConfig(n_bins1d, max_actions1d, n_new_actions1d, action_range_fraction1d, max_exploit_visits1d, max_belief_clusters1d)
     pconfig2d = ProblemConfig(n_bins2d, max_actions2d, n_new_actions2d, action_range_fraction2d, max_exploit_visits2d, max_belief_clusters2d)
@@ -110,13 +110,13 @@ function batch_execute(;dims::Int64=1)
     # push!(test, LPDMTest(:standard, :discrete, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:extended, :discrete, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:blind_vl, :discrete, reward_mode, pconfig, n_sims))
-    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig, n_sims))
 
     # CONTINUOUS OBSERVATIONS
-    # push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
-    # push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig, n_sims))
-    # push!(test, LPDMTest(:blind_vl, :continuous, reward_mode, pconfig, n_sims))
-    # push!(test, LPDMTest(:adaptive, :continuous, reward_mode, pconfig, n_sims))
+    push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
+    push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig, n_sims))
+    push!(test, LPDMTest(:blind_vl, :continuous, reward_mode, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :continuous, reward_mode, pconfig, n_sims))
 
     scen=Array{LPDMScenario{S}}(undef,0)
 
@@ -126,11 +126,10 @@ function batch_execute(;dims::Int64=1)
         push!(scen, LPDMScenario(LD1State(3/2*π)))
         push!(scen, LPDMScenario(LD1State(2*π)))
     elseif dims == 2
-        # push!(scen, LPDMScenario(LD2State(-2*π, π)))
         push!(scen, LPDMScenario(LD2State(-2*π, π)))
-        # push!(scen, LPDMScenario(LD2State(π/2, -π/2)))
-        # push!(scen, LPDMScenario(LD2State(π, 2*π)))
-        # push!(scen, LPDMScenario(LD2State(2*π, -π)))
+        push!(scen, LPDMScenario(LD2State(π/2, -π/2)))
+        push!(scen, LPDMScenario(LD2State(π, 2*π)))
+        push!(scen, LPDMScenario(LD2State(2*π, -π)))
     end
 
     # Dummy execution, just to make sure all the code is compiled and loaded,

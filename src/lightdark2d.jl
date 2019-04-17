@@ -165,6 +165,8 @@ function generate_o(p::AbstractLD2, sp::Vec2, rng::AbstractRNG)
         return o_disc
     elseif p.obs_mode == :continuous
         # println("generate_o: continuous")
+        o[1]=clamp(o[1], -p.max_xy, p.max_xy)
+        o[2]=clamp(o[2], -p.max_xy, p.max_xy)
         return Vec2(o)
     else
         error("Invalid obs_mode = $(p.obs_mode)")

@@ -53,7 +53,7 @@ mutable struct LightDark2DLpdm <: AbstractLD2
         this.R                       = diagm(0=>[0.5, 0.5])
         this.term_radius             = 0.05
         this.n_bins                  = n_bins # per linear dimension
-        this.max_xy                  = 10     # assume symmetry in x and y for simplicity
+        this.max_xy                  = 10.0     # assume symmetry in x and y for simplicity
         this.bin_edges               = collect(-this.max_xy:(2*this.max_xy)/this.n_bins:this.max_xy)
         this.bin_centers             = [(this.bin_edges[i]+this.bin_edges[i+1])/2 for i=1:this.n_bins]
         this.lindisc                 = LinearDiscretizer(this.bin_edges)
