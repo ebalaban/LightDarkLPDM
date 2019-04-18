@@ -1,5 +1,5 @@
 using Discretizers
-import LPDM: default_action, next_actions, state_distance
+import LPDM: default_action, next_actions, equivalent
 import POMDPs: rand, actions
 
 mutable struct LightDark1DLpdm <: AbstractLD1
@@ -26,6 +26,7 @@ mutable struct LightDark1DLpdm <: AbstractLD1
     action_limits::Tuple{Float64,Float64}
     action_mode::Symbol
     obs_mode::Symbol
+    obs_epsilon::Float64
     reward_mode::Symbol
     base_action_space::Vector{LD1Action}
     standard_action_space::Vector{LD1Action}
@@ -64,6 +65,7 @@ mutable struct LightDark1DLpdm <: AbstractLD1
         this.action_limits           = (-5.0,5.0)
         this.action_mode             = action_mode
         this.obs_mode                = obs_mode
+        this.obs_epsilon             = 0.5
         this.exploit_visits          = max_exploit_visits
         this.max_belief_clusters     = max_belief_clusters
         this.standard_action_space    = [1.0, 0.1, 0.01]
@@ -189,7 +191,7 @@ function bv(a::LD1Action, ρ::Float64, Aexpl::Vector{LD1Action}, Q::Vector{Float
 end
 
 LPDM.max_belief_clusters(p::LightDark1DLpdm) = p.max_belief_clusters
-LPDM.state_distance(pomdp::LightDark1DLpdm, s1::LD1State, s2::LD1State) = abs(s2-s1)
+LPDM.equivalent(pomdp::LightDark1DLpdm, o1::LD1Obs, o2::LD1Obs)::Bool = abs(o2-o1) < obs_epsilon
 
 
 # NOTE: OLD VERSION. implements "fast" simulated annealing
