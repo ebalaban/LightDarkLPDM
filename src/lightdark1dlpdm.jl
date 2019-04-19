@@ -51,7 +51,7 @@ mutable struct LightDark1DLpdm <: AbstractLD1
         this.R                       = 0.5
         this.term_radius             = 0.05
         this.n_bins                  = n_bins
-        this.max_x                   = 10     # assume symmetry in x and y for simplicity
+        this.max_x                   = 10.0     # assume symmetry in x and y for simplicity
         this.bin_edges               = collect(-this.max_x:(2*this.max_x)/this.n_bins:this.max_x)
         this.bin_centers             = [(this.bin_edges[i]+this.bin_edges[i+1])/2 for i=1:this.n_bins]
         this.lindisc                 = LinearDiscretizer(this.bin_edges)
@@ -191,7 +191,7 @@ function bv(a::LD1Action, ρ::Float64, Aexpl::Vector{LD1Action}, Q::Vector{Float
 end
 
 LPDM.max_belief_clusters(p::LightDark1DLpdm) = p.max_belief_clusters
-LPDM.equivalent(pomdp::LightDark1DLpdm, o1::LD1Obs, o2::LD1Obs)::Bool = abs(o2-o1) < obs_epsilon
+LPDM.equivalent(pomdp::LightDark1DLpdm, o1::LD1Obs, o2::LD1Obs)::Bool = abs(o2-o1) < pomdp.obs_epsilon
 
 
 # NOTE: OLD VERSION. implements "fast" simulated annealing

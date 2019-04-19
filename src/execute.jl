@@ -114,17 +114,17 @@ function batch_execute(;dims::Int64=1)
 
     # CONTINUOUS OBSERVATIONS
     push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
-    push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig, n_sims))
-    push!(test, LPDMTest(:blind_vl, :continuous, reward_mode, pconfig, n_sims))
-    push!(test, LPDMTest(:adaptive, :continuous, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:blind_vl, :continuous, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:adaptive, :continuous, reward_mode, pconfig, n_sims))
 
     scen=Array{LPDMScenario{S}}(undef,0)
 
     if dims == 1
-        push!(scen, LPDMScenario(LD1State(-2*π)))
-        push!(scen, LPDMScenario(LD1State(π/2)))
+        # push!(scen, LPDMScenario(LD1State(-2*π)))
+        # push!(scen, LPDMScenario(LD1State(π/2)))
         push!(scen, LPDMScenario(LD1State(3/2*π)))
-        push!(scen, LPDMScenario(LD1State(2*π)))
+        # push!(scen, LPDMScenario(LD1State(2*π)))
     elseif dims == 2
         push!(scen, LPDMScenario(LD2State(-2*π, π)))
         push!(scen, LPDMScenario(LD2State(π/2, -π/2)))
@@ -298,7 +298,7 @@ function run_scenario(s0::S, test::LPDMTest, A::Type, O::Type, B::Type, sconfig:
                 t = LPDM.d3tree(solver,
                                 detect_repeat=false,
                                 title="Step $step",
-                                init_expand=10)
+                                init_expand=2)
                 # # show(t)
                 inchrome(t)
                 # blink(t)

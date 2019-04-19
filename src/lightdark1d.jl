@@ -71,6 +71,7 @@ function generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG)
         o_disc = p.bin_centers[encode(p.lindisc,o)]
         return o_disc
     elseif p.obs_mode == :continuous
+        o=clamp(o, -p.max_x, p.max_x)
         return o
     else
         error("Invalid obs_mode = $(p.obs_mode)")
