@@ -38,9 +38,9 @@ function batch_execute(;dims::Int64=1)
 
     # General test parameters
     reward_mode                 = :quadratic
-    n_sims                      = 50
-    vis::Vector{Int64}          = Int64[]
-    debug                       = 0
+    n_sims                      = 1
+    vis::Vector{Int64}          = Int64[1]
+    debug                       = 3
 
     # 1D problem configuration
     n_bins1d                    = 10
@@ -67,7 +67,7 @@ function batch_execute(;dims::Int64=1)
             seed                = 0xffffffff, # assigned per scenario (will cause an error if not assigned)
             time_per_move       = 1.0,
             n_particles         = 25,
-            sim_len             = -1,
+            sim_len             = 1,
             max_trials          = -1,
             debug               = debug,
             action_mode         = :tbd,     # assigned per test (will cause an error if not assigned)
