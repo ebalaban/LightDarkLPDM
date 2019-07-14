@@ -105,6 +105,7 @@ function POMDPs.actions(p::LightDark2DLpdm, ::Bool)
 end
 
 # for tree construction
+# Action setup starts here, goes to LPDM.next_actions, and then to LPDM - solver.jl 
 function POMDPs.actions(p::LightDark2DLpdm)
      if p.action_mode == :standard
          return p.standard_action_space
@@ -112,6 +113,8 @@ function POMDPs.actions(p::LightDark2DLpdm)
          return p.extended_action_space
      elseif p.action_mode ∈ [:blind_vl, :adaptive]
          return []
+         #Will be a countinuous action space so it gets handled in LPDM.
+         #Returns an empty action space and LPDM will create the countinuous action space.
      else
          error("Action space type $(p.action_mode) is not valid for POMDP of type $(typeof(p))")
      end
@@ -122,6 +125,8 @@ POMDPs.actions(p::LightDark2DLpdm, ::LD2State) = actions(p::LightDark2DLpdm)
 LPDM.max_actions(pomdp::LightDark2DLpdm) = pomdp.max_actions
 
 # For "simulated annealing"
+# Uses POMDPs.actions and Solver.jl to create the action space.
+# Actual countinuous action space creation occurs dynamically in LPDM, not explicity in this code.
 function LPDM.next_actions(pomdp::LightDark2DLpdm,
                            depth::Int64,
                            current_action_space::Vector{LD2Action},
@@ -180,6 +185,8 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
 end
 
 # version for Blind Value
+# Uses POMDPs.actions and Solver.jl to create the action space.
+# Actual countinuous action space creation occurs dynamically in LPDM, not explicity in this code.
 function LPDM.next_actions(pomdp::LightDark2DLpdm,
                            current_action_space::Vector{LD2Action},
                            Q::Vector{Float64},
