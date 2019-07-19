@@ -124,7 +124,7 @@ POMDPs.actions(p::LightDark2DLpdm, ::LD2State) = actions(p::LightDark2DLpdm)
 
 LPDM.max_actions(pomdp::LightDark2DLpdm) = pomdp.max_actions
 
-# For "simulated annealing" which is adaptive.
+# For "simulated annealing" which is adaptive. 
 # Uses POMDPs.actions and Solver.jl to create the action space.
 # Actual countinuous action space creation occurs dynamically in LPDM, not explicity in this code.
 function LPDM.next_actions(pomdp::LightDark2DLpdm,
@@ -147,7 +147,7 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
             # return pomdp.extended_action_space   #DEBUG, let's try this...
             return pomdp.standard_action_space
         end
-        #NOTE: Why do we do this? the logic is not required... 
+        #NOTE: Why do we do this? the logic is not required...
     end
 
     l_initial = length(pomdp.standard_action_space)
