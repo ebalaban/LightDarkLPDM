@@ -1,4 +1,5 @@
 import LPDM: bounds, best_lb_action, best_ub_action
+using LightDarkPOMDPs
 
 mutable struct LDBounds2d{S,A,O}
     lb_    ::Float64
@@ -68,12 +69,9 @@ function LPDM.bounds(b::LDBounds2d{S,A,O},
     return b.lb_, b.ub_
 end
 
-
-
-LPDM.best_lb_action(b::LDBounds2d) = isnan(b.best_lb_action_) ? error("best_lb_action undefined ($(b.best_lb_action_)). Call bounds() first.") : b.best_lb_action_
+LPDM.best_lb_action(b::LDBounds2d) = isnan(b.best_lb_action_[1])||isnan(b.best_lb_action_[2]) ? error("best_lb_action undefined ($(b.best_lb_action_)). Call bounds() first.") : b.best_lb_action_
 # LPDM.best_ub_action(b::LDBounds2d) = isnan(b.best_ub_action_) ? error("best_ub_action undefined. Call bounds() first.") : b.best_ub_action_
-LPDM.best_ub_action(b::LDBounds2d) = isnan(b.best_ub_action_) ? error("best_ub_action undefined ($(b.best_ub_action_)). Call bounds() first.") : b.best_ub_action_
-
+LPDM.best_ub_action(b::LDBounds2d) = isnan(b.best_ub_action_[1])||isnan(b.best_ub_action_[2]) ? error("best_ub_action undefined ($(b.best_ub_action_)). Call bounds() first.") : b.best_ub_action_
 
 #TODO: these functions make sense for step-wise rewards, but not as much for quadratic rewards. May need to redo.
 

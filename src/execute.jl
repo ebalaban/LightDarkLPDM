@@ -107,13 +107,13 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
     test = Array{LPDMTest}(undef,0)
 
     # DISCRETE OBSERVATIONS
-    push!(test, LPDMTest(:standard, :discrete, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:standard, :discrete, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:extended, :discrete, reward_mode, pconfig, n_sims))
-    # push!(test, LPDMTest(:blind_vl, :discrete, reward_mode, pconfig, n_sims))
+    push!(test, LPDMTest(:blind_vl, :discrete, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig, n_sims))
 
     # CONTINUOUS OBSERVATIONS
-    push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:blind_vl, :continuous, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:adaptive, :continuous, reward_mode, pconfig, n_sims))
@@ -123,7 +123,7 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
     if dims == 1
         # push!(scen, LPDMScenario(LD1State(-2*π)))
         # push!(scen, LPDMScenario(LD1State(π/2)))
-        push!(scen, LPDMScenario(LD1State(3/2*π)))
+        # push!(scen, LPDMScenario(LD1State(3/2*π)))
         # push!(scen, LPDMScenario(LD1State(2*π)))
     elseif dims == 2
         # push!(scen, LPDMScenario(LD2State(-2*π, π)))

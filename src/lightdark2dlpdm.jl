@@ -1,5 +1,5 @@
 using Discretizers
-import LPDM: default_action, next_actions, isterminal
+import LPDM: default_action, next_actions, isterminal, bv_action_pool
 import POMDPs: rand, actions
 
 mutable struct LightDark2DLpdm <: AbstractLD2
@@ -104,13 +104,28 @@ function POMDPs.actions(p::LightDark2DLpdm, ::Bool)
     end
 end
 
+# # for tree construction
+# function POMDPs.actions(p::LightDark2DLpdm)
+#      if p.action_mode == :standard
+#          return p.standard_action_space
+#      elseif p.action_mode == :extended
+#          return p.extended_action_space
+#      elseif p.action_mode ∈ [:blind_vl, :adaptive]
+#          return []
+#      else
+#          error("Action space type $(p.action_mode) is not valid for POMDP of type $(typeof(p))")
+#      end
+# end
+
 # for tree construction
 function POMDPs.actions(p::LightDark2DLpdm)
      if p.action_mode == :standard
          return p.standard_action_space
      elseif p.action_mode == :extended
          return p.extended_action_space
-     elseif p.action_mode ∈ [:blind_vl, :adaptive]
+     elseif p.action_mode == :blind_vl
+         return p.standard_action_space
+     elseif p.action_mode == :adaptive
          return []
      else
          error("Action space type $(p.action_mode) is not valid for POMDP of type $(typeof(p))")
@@ -186,31 +201,37 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
                            n_visits::Int64,
                            rng::RNGVector)::Vector{LD2Action}
 
-     # initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
-     # initial_space = [0.0]
     M = pomdp.max_actions
 
-       # simulated annealing temperature
     if isempty(current_action_space) # initial request
-           return pomdp.standard_action_space
+           return actions(pomdp) # return whatever is defined as the initial set for Blind Value
     end
 
     if length(current_action_space) < LPDM.max_actions(pomdp)
     # if (n_visits > pomdp.exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
-        # TODO: Create a formal sampler for RNGVector when there is time
-        Apool_x = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]
-        Apool_y = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]
-        Apool = [LD2Action(Apool_x[i],Apool_y[i]) for i in 1:M]
-
+        a_pool, σ_pool = bv_action_pool(pomdp, M, rng)
         σ_known = std(Q)
-        σ_pool = std2d(hcat(Apool_x, Apool_y),[0.0,0.0]) # in our case distance to 0 (center of the domain) is just the abs. value of an action
         ρ = σ_known/σ_pool
-        bv_vector = [bv(a,ρ,current_action_space,Q) for a ∈ Apool]
+        bv_vector = [bv(a,ρ,current_action_space,Q) for a ∈ a_pool]
 
-        return [Apool[argmax(bv_vector)]] # New action, returned as a one element vector.
+        return [a_pool[argmax(bv_vector)]] # New action, returned as a one element vector.
     else
         return []
     end
+end
+
+
+function LPDM.bv_action_pool(pomdp::LightDark2DLpdm,
+                             M::Int64,  # the number of actions to return in the pool
+                             rng::RNGVector)
+
+    # TODO: Create a formal sampler for RNGVector when there is time
+    a_pool_x = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]
+    a_pool_y = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]
+    a_pool = [LD2Action(a_pool_x[i],a_pool_y[i]) for i in 1:M]
+    σ_pool = std2d(hcat(a_pool_x, a_pool_y),[0.0,0.0]) # in our case distance to 0 (center of the domain) is just the abs. value of an action
+
+    return a_pool, σ_pool
 end
 
 # TODO: Find a standard function for this and replace
