@@ -109,8 +109,8 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
     # DISCRETE OBSERVATIONS
     # push!(test, LPDMTest(:standard, :discrete, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:extended, :discrete, reward_mode, pconfig, n_sims))
-    push!(test, LPDMTest(:blind_vl, :discrete, reward_mode, pconfig, n_sims))
-    # push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:blind_vl, :discrete, reward_mode, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig, n_sims))
 
     # CONTINUOUS OBSERVATIONS
     # push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))

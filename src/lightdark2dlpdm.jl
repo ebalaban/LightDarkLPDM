@@ -1,5 +1,5 @@
 using Discretizers
-import LPDM: default_action, next_actions, isterminal, bv_action_pool
+import LPDM: default_action, next_actions, isterminal, bv_action_pool, adaptive_actions
 import POMDPs: rand, actions
 
 mutable struct LightDark2DLpdm <: AbstractLD2
@@ -136,7 +136,7 @@ POMDPs.actions(p::LightDark2DLpdm, ::LD2State) = actions(p::LightDark2DLpdm)
 
 LPDM.max_actions(pomdp::LightDark2DLpdm) = pomdp.max_actions
 
-# For "simulated annealing"
+# For adaptive action selection ("simulated annealing")
 function LPDM.next_actions(pomdp::LightDark2DLpdm,
                            depth::Int64,
                            current_action_space::Vector{LD2Action},
@@ -144,8 +144,6 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
                            n_visits::Int64,
                            T_solver::Float64, # "temperature"
                            rng::RNGVector)::Vector{LD2Action}
-
-    new_actions = Vector{LD2Action}(undef,pomdp.n_new_actions)
 
     # simulated annealing temperature
     if isempty(current_action_space) # initial request
@@ -169,29 +167,36 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
     # generate new action(s)
     # if (n_visits > adj_exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
     if length(current_action_space) < LPDM.max_actions(pomdp)
-
-        # Use the full range as initial radius to accomodate points at the edges of it
-        radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * pomdp.action_range_fraction * T
-
-        a_x = NaN
-        a_y = NaN
-        for i in 1:pomdp.n_new_actions
-            in_set = true
-            while in_set
-                a_x = (rand(rng, Uniform(a_star[1] - radius, a_star[1] + radius)))
-                a_y = (rand(rng, Uniform(a_star[2] - radius, a_star[2] + radius)))
-                a_x = clamp(a_x, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
-                a_y = clamp(a_y, pomdp.action_limits[1], pomdp.action_limits[2])
-                in_set = (Vec2(a_x,a_y) ∈ current_action_space) || (Vec2(a_x,a_y) ∈ new_actions)
-            end
-            new_actions[i]=Vec2(a_x,a_y)
-        end
-
-        # println("a_star: $a_star, T: $T, radius: $radius, a: $a")
-        return new_actions
+        return LPDM.adaptive_actions(pomdp, T, a_star, current_action_space, rng)
     else
         return Vec2[]
     end
+end
+
+function LPDM.adaptive_actions(pomdp::LightDark2DLpdm,
+                               T::Float64,
+                               a_star::LD2Action,
+                               current_action_space::Vector{LD2Action},
+                               rng::RNGVector)
+
+    # Use the full range as initial radius to accomodate points at the edges of it
+    radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * pomdp.action_range_fraction * T
+    new_actions = Vector{LD2Action}(undef,pomdp.n_new_actions)
+
+    a_x = NaN
+    a_y = NaN
+    for i in 1:pomdp.n_new_actions
+       in_set = true
+       while in_set
+           a_x = (rand(rng, Uniform(a_star[1] - radius, a_star[1] + radius)))
+           a_y = (rand(rng, Uniform(a_star[2] - radius, a_star[2] + radius)))
+           a_x = clamp(a_x, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
+           a_y = clamp(a_y, pomdp.action_limits[1], pomdp.action_limits[2])
+           in_set = (Vec2(a_x,a_y) ∈ current_action_space) || (Vec2(a_x,a_y) ∈ new_actions)
+       end
+       new_actions[i]=Vec2(a_x,a_y)
+    end
+    return new_actions
 end
 
 function LPDM.bv_action_pool(pomdp::LightDark2DLpdm,
