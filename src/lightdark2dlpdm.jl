@@ -194,33 +194,6 @@ function LPDM.next_actions(pomdp::LightDark2DLpdm,
     end
 end
 
-# version for Blind Value
-function LPDM.next_actions(pomdp::LightDark2DLpdm,
-                           current_action_space::Vector{LD2Action},
-                           Q::Vector{Float64},
-                           n_visits::Int64,
-                           rng::RNGVector)::Vector{LD2Action}
-
-    M = pomdp.max_actions
-
-    if isempty(current_action_space) # initial request
-           return actions(pomdp) # return whatever is defined as the initial set for Blind Value
-    end
-
-    if length(current_action_space) < LPDM.max_actions(pomdp)
-    # if (n_visits > pomdp.exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
-        a_pool, σ_pool = bv_action_pool(pomdp, M, rng)
-        σ_known = std(Q)
-        ρ = σ_known/σ_pool
-        bv_vector = [bv(a,ρ,current_action_space,Q) for a ∈ a_pool]
-
-        return [a_pool[argmax(bv_vector)]] # New action, returned as a one element vector.
-    else
-        return []
-    end
-end
-
-
 function LPDM.bv_action_pool(pomdp::LightDark2DLpdm,
                              M::Int64,  # the number of actions to return in the pool
                              rng::RNGVector)
@@ -244,62 +217,3 @@ function std2d(points2d::Array{Float64}, mean::Vector{Float64})
     end
     return norm_sum/sqrt(N-1)
 end
-
-# Blind Value function
-function bv(a::LD2Action, ρ::Float64, Aexpl::Vector{LD2Action}, Q::Vector{Float64})::LD2Action
-    # scores = [ρ*abs(a-Aexpl[i])+Q[i] for i in 1:length(Aexpl)]
-    scores = [ρ*norm(a-Aexpl[i])+Q[i] for i in 1:length(Aexpl)]
-    return Aexpl[argmin(scores)]
-end
-
-# NOTE: OLD VERSION. implements "fast" simulated annealing
-# function LPDM.next_actions(pomdp::LightDark2DLpdm,
-#                            current_action_space::Vector{LD2Action},
-#                            a_star::LD2Action,
-#                            n_visits::Int64,
-#                            rng::RNGVector)::Vector{LD2Action}
-#
-#     initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
-#
-#     # simulated annealing temperature
-#     if isempty(current_action_space) # initial request
-#         # return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
-#         return initial_space
-#     end
-#
-#     l_initial = length(initial_space)
-#
-#     # don't count initial "seed" actions in computing T
-#     T = 1 - (length(current_action_space) - l_initial)/(LPDM.max_actions(pomdp) - l_initial)
-#     adj_exploit_visits = pomdp.exploit_visits * (1-T) # exploit more as T decreases
-#
-#     # generate new action(s)
-#     if (n_visits > adj_exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
-#         # NOTE: use the actual point for now, convert to a distribution around it later
-#         left_d = abs(pomdp.action_limits[1]-a_star)
-#         right_d = abs(pomdp.action_limits[2]-a_star)
-#         d = left_d > right_d ? -left_d : right_d
-#         # println("a_star: $a_star, T: $T, left_d: $left_d, right_d: $right_d, d: $d, a: $(a_star + d*T)")
-#         return [a_star + d*T] # New action, returned as a one element vector. Value is scaled by T.
-#     else
-#         return []
-#     end
-# end
-
-# # Hard-coded version for now for debugging
-# function LPDM.next_actions(pomdp::LightDark2DLpdm, current_action_space::Vector{LD2Action})::Vector{LD2Action}
-#     if isempty(current_action_space) # initial request
-#         return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
-#     end
-#
-#     # index of the new action in the extended_action_space
-#     n = round(Int64, 0.5*(length(current_action_space) - (2*length(pomdp.standard_action_space) + 1))) + 1
-#     if (length(current_action_space) < pomdp.max_actions -1) && (n <= length(pomdp.extended_action_space))
-#         # println("current: $current_action_space")
-#         # accounting for zero with the first +1; 0.5 because we add in pairs.
-#
-#         return [-pomdp.extended_action_space[n], pomdp.extended_action_space[n]] # return as a 2-element vector
-#     else
-#         return []
-#     end
-# end
