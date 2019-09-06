@@ -126,7 +126,7 @@ function POMDPs.actions(p::LightDark2DLpdm)
      elseif p.action_mode == :blind_vl
          return p.standard_action_space
      elseif p.action_mode == :adaptive
-         return []
+         return p.standard_action_space
      else
          error("Action space type $(p.action_mode) is not valid for POMDP of type $(typeof(p))")
      end
@@ -135,43 +135,6 @@ end
 POMDPs.actions(p::LightDark2DLpdm, ::LD2State) = actions(p::LightDark2DLpdm)
 
 LPDM.max_actions(pomdp::LightDark2DLpdm) = pomdp.max_actions
-
-# For adaptive action selection ("simulated annealing")
-function LPDM.next_actions(pomdp::LightDark2DLpdm,
-                           depth::Int64,
-                           current_action_space::Vector{LD2Action},
-                           a_star::LD2Action,
-                           n_visits::Int64,
-                           T_solver::Float64, # "temperature"
-                           rng::RNGVector)::Vector{LD2Action}
-
-    # simulated annealing temperature
-    if isempty(current_action_space) # initial request
-        # return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
-        if depth > 1
-            return pomdp.standard_action_space
-            # return pomdp.extended_action_space #DEBUG
-        else
-            # return pomdp.extended_action_space   #DEBUG, let's try this...
-            return pomdp.standard_action_space
-        end
-    end
-
-    l_initial = length(pomdp.standard_action_space)
-
-    # don't count initial "seed" actions in computing T
-    T_actions = 1 - (length(current_action_space) - l_initial)/(LPDM.max_actions(pomdp) - l_initial)
-    T = minimum([T_solver T_actions])
-    # adj_exploit_visits = pomdp.exploit_visits * (1-T) # exploit more as T decreases
-
-    # generate new action(s)
-    # if (n_visits > adj_exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
-    if length(current_action_space) < LPDM.max_actions(pomdp)
-        return LPDM.adaptive_actions(pomdp, T, a_star, current_action_space, rng)
-    else
-        return Vec2[]
-    end
-end
 
 function LPDM.adaptive_actions(pomdp::LightDark2DLpdm,
                                T::Float64,

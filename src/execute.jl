@@ -78,9 +78,11 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
             search_depth        = 30,
             seed                = 0xffffffff,  # assigned per scenario (will cause an error if not assigned)
             time_per_move       = 2.0,
+            # time_per_move       = -1.0,
             n_particles         = 50,
             sim_len             = debugger ? 1 : -1,
             max_trials          = -1,
+            # max_trials          = 100,
             debug               = debug,
             action_mode         = :tbd,     # assigned per test (will cause an error if not assigned)
             obs_mode            = :tbd)     # assigned per test (will cause an error if not assigned)
@@ -128,8 +130,8 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
     elseif dims == 2
         # push!(scen, LPDMScenario(LD2State(-2*π, π)))
         # push!(scen, LPDMScenario(LD2State(π/2, -π/2)))
-        push!(scen, LPDMScenario(LD2State(π, 2*π)))
-        # push!(scen, LPDMScenario(LD2State(2*π, -π)))
+        # push!(scen, LPDMScenario(LD2State(π, 2*π)))
+        push!(scen, LPDMScenario(LD2State(2*π, -π)))
     end
 
     # Dummy execution, just to make sure all the code is compiled and loaded,
