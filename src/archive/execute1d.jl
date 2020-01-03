@@ -6,10 +6,10 @@ using StatsFuns
 using Printf
 using Dates
 
-include("LightDarkPOMDPs.jl")
+include("LightDarkLPDM.jl")
 using LightDarkPOMDPs
 
-include("LPDMBounds1d.jl")
+include("1D/LPDMBounds1d.jl")
 
 struct LPDMTest
     solver_mode::Symbol

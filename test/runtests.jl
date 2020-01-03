@@ -1,4 +1,4 @@
-using LightDarkPOMDPs
+using LightDarkLPDM
 using Base.Test
 using POMDPs
 using POMDPToolbox
@@ -24,10 +24,10 @@ bpol = FunctionPolicy(b -> -0.5*mean(b))
 up = LightDark2DKalman(p)
 h = simulate(hr, p, bpol, up)
 
-# plotly()
+
 pl = plot(p);
 plot!(pl, h)
-# gui()
+
 
 #### LightDark2DTarget Problem ####
 

@@ -1,6 +1,6 @@
 # __precompile__()
 
-module LightDarkPOMDPs
+module LightDarkLPDM
 
 # importall POMDPs
 using POMDPs
@@ -15,14 +15,14 @@ using Random
 # using ParticleFilters # for AbstractParticleBelief
 using LPDM
 
-include("lightdark1d.jl")
-include("lightdark2d.jl")
+include("1D/lightdark1d.jl")
+include("2D/lightdark2d.jl")
 # include("lightdark2dtarget.jl")
 # include("lightdark2dfilter.jl")
 # include("lightdark1ddespot.jl")
-include("lightdark1dlpdm.jl")
+include("1D/lightdark1dlpdm.jl")
 # include("lightdark2ddespot.jl")
-include("lightdark2dlpdm.jl")
+include("2D/lightdark2dlpdm.jl")
 
 # include("lightdark2dvis.jl")
 export
