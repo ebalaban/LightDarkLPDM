@@ -34,13 +34,13 @@ struct LPDMScenario{S}
 end
 
 # reward function options - :quadratic or :fixed
-function batch_execute(;dims::Int64=1)
+function batch_execute(;dims::Int64=1, debugger::Bool = false)
 
     # General test parameters
     reward_mode                 = :quadratic
-    n_sims                      = 1
-    vis::Vector{Int64}          = Int64[1]
-    debug                       = 3
+    n_sims                      = debugger ? 1 : 50
+    vis::Vector{Int64}          = debugger ? Int64[1] : Int64[]
+    debug                       = 0
 
     # 1D problem configuration
     n_bins1d                    = 10
@@ -65,9 +65,9 @@ function batch_execute(;dims::Int64=1)
     sconfig1d = LPDMConfig(
             search_depth        = 30,
             seed                = 0xffffffff, # assigned per scenario (will cause an error if not assigned)
-            time_per_move       = 1.0,
+            time_per_move       = 1.0, # should normally be 1.0
             n_particles         = 25,
-            sim_len             = 1,
+            sim_len             = debugger ? 1 : -1,
             max_trials          = -1,
             debug               = debug,
             action_mode         = :tbd,     # assigned per test (will cause an error if not assigned)
@@ -78,9 +78,11 @@ function batch_execute(;dims::Int64=1)
             search_depth        = 30,
             seed                = 0xffffffff,  # assigned per scenario (will cause an error if not assigned)
             time_per_move       = 2.0,
+            # time_per_move       = -1.0,
             n_particles         = 50,
-            sim_len             = -1,
+            sim_len             = debugger ? 1 : -1,
             max_trials          = -1,
+            # max_trials          = 100,
             debug               = debug,
             action_mode         = :tbd,     # assigned per test (will cause an error if not assigned)
             obs_mode            = :tbd)     # assigned per test (will cause an error if not assigned)
@@ -110,10 +112,10 @@ function batch_execute(;dims::Int64=1)
     # push!(test, LPDMTest(:standard, :discrete, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:extended, :discrete, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:blind_vl, :discrete, reward_mode, pconfig, n_sims))
-    # push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig, n_sims))
 
     # CONTINUOUS OBSERVATIONS
-    push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:blind_vl, :continuous, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:adaptive, :continuous, reward_mode, pconfig, n_sims))
@@ -123,12 +125,12 @@ function batch_execute(;dims::Int64=1)
     if dims == 1
         # push!(scen, LPDMScenario(LD1State(-2*π)))
         # push!(scen, LPDMScenario(LD1State(π/2)))
-        push!(scen, LPDMScenario(LD1State(3/2*π)))
+        # push!(scen, LPDMScenario(LD1State(3/2*π)))
         # push!(scen, LPDMScenario(LD1State(2*π)))
     elseif dims == 2
-        push!(scen, LPDMScenario(LD2State(-2*π, π)))
-        push!(scen, LPDMScenario(LD2State(π/2, -π/2)))
-        push!(scen, LPDMScenario(LD2State(π, 2*π)))
+        # push!(scen, LPDMScenario(LD2State(-2*π, π)))
+        # push!(scen, LPDMScenario(LD2State(π/2, -π/2)))
+        # push!(scen, LPDMScenario(LD2State(π, 2*π)))
         push!(scen, LPDMScenario(LD2State(2*π, -π)))
     end
 
