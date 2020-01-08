@@ -92,7 +92,7 @@ function LPDM.isterminal(pomdp::AbstractLD2, particles::Vector{LPDMParticle{LD2S
 end
 
 
-POMDPs.initial_state_distribution(p::AbstractLD2) = p.init_dist
+POMDPs.initialstate_distribution(p::AbstractLD2) = p.init_dist
 
 function POMDPs.reward(p::AbstractLD2, s::Vec2, a::Vec2)
     if isterminal(p,s)

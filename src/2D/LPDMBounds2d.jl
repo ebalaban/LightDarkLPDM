@@ -1,11 +1,12 @@
 import LPDM: bounds, best_lb_action, best_ub_action
-using LightDarkPOMDPs
+using LightDarkLPDM
 
 mutable struct LDBounds2d{S,A,O}
     lb_    ::Float64
     ub_    ::Float64
     best_lb_action_::Vec2
     best_ub_action_::Vec2
+    rng::RNGVector # dummy RNG, not used
 
     function LDBounds2d{S,A,O}(::POMDP{S,A,O}) where {S,A,O}
         this = new{S,A,O}()
@@ -13,6 +14,7 @@ mutable struct LDBounds2d{S,A,O}
         this.ub_ = -Inf
         this.best_lb_action_ = Vec2(NaN,NaN)
         this.best_ub_action_ = Vec2(NaN,NaN)
+        this.rng = RNGVector(1, UInt32(42))
         return this
     end
 end
