@@ -1,5 +1,5 @@
 using Discretizers
-import LPDM: default_action, next_actions, isterminal
+import LPDM: default_action, next_actions, isterminal, bv_action_pool, adaptive_actions
 import POMDPs: rand, actions
 
 mutable struct LightDark2DLpdm <: AbstractLD2
@@ -104,6 +104,19 @@ function POMDPs.actions(p::LightDark2DLpdm, ::Bool)
     end
 end
 
+# # for tree construction
+# function POMDPs.actions(p::LightDark2DLpdm)
+#      if p.action_mode == :standard
+#          return p.standard_action_space
+#      elseif p.action_mode == :extended
+#          return p.extended_action_space
+#      elseif p.action_mode ∈ [:blind_vl, :adaptive]
+#          return []
+#      else
+#          error("Action space type $(p.action_mode) is not valid for POMDP of type $(typeof(p))")
+#      end
+# end
+
 # for tree construction
 # Action setup starts here, goes to LPDM.next_actions, and then to LPDM - solver.jl
 function POMDPs.actions(p::LightDark2DLpdm)
@@ -111,10 +124,10 @@ function POMDPs.actions(p::LightDark2DLpdm)
          return p.standard_action_space
      elseif p.action_mode == :extended
          return p.extended_action_space
-     elseif p.action_mode ∈ [:blind_vl, :adaptive]
-         return []
-         #Will be a countinuous action space so it gets handled in LPDM.
-         #Returns an empty action space and LPDM will create the countinuous action space.
+     elseif p.action_mode == :blind_vl
+         return p.standard_action_space
+     elseif p.action_mode == :adaptive
+         return p.standard_action_space
      else
          error("Action space type $(p.action_mode) is not valid for POMDP of type $(typeof(p))")
      end
@@ -124,101 +137,45 @@ POMDPs.actions(p::LightDark2DLpdm, ::LD2State) = actions(p::LightDark2DLpdm)
 
 LPDM.max_actions(pomdp::LightDark2DLpdm) = pomdp.max_actions
 
-# For "simulated annealing" which is adaptive. 
-# Uses POMDPs.actions and Solver.jl to create the action space.
-# Actual countinuous action space creation occurs dynamically in LPDM, not explicity in this code.
-function LPDM.next_actions(pomdp::LightDark2DLpdm,
-                           depth::Int64,
-                           current_action_space::Vector{LD2Action},
-                           a_star::LD2Action,
-                           n_visits::Int64,
-                           T_solver::Float64, # "temperature"
-                           rng::RNGVector)::Vector{LD2Action}
+function LPDM.adaptive_actions(pomdp::LightDark2DLpdm,
+                               ::LD2State,
+                               T::Float64,
+                               a_star::LD2Action,
+                               current_action_space::Vector{LD2Action},
+                               rng::RNGVector)
 
+    # Use the full range as initial radius to accomodate points at the edges of it
+    radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * pomdp.action_range_fraction * T
     new_actions = Vector{LD2Action}(undef,pomdp.n_new_actions)
 
-    # simulated annealing temperature
-    if isempty(current_action_space) # initial request
-        # return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
-        if depth > 1
-            return pomdp.standard_action_space
-            # return pomdp.extended_action_space #DEBUG
-        else
-            # return pomdp.extended_action_space   #DEBUG, let's try this...
-            return pomdp.standard_action_space
-        end
-        #NOTE: Why do we do this? the logic is not required...
+    a_x = NaN
+    a_y = NaN
+    for i in 1:pomdp.n_new_actions
+       in_set = true
+       while in_set
+           a_x = (rand(rng, Uniform(a_star[1] - radius, a_star[1] + radius)))
+           a_y = (rand(rng, Uniform(a_star[2] - radius, a_star[2] + radius)))
+           a_x = clamp(a_x, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
+           a_y = clamp(a_y, pomdp.action_limits[1], pomdp.action_limits[2])
+           in_set = (Vec2(a_x,a_y) ∈ current_action_space) || (Vec2(a_x,a_y) ∈ new_actions)
+       end
+       new_actions[i]=Vec2(a_x,a_y)
     end
-
-    l_initial = length(pomdp.standard_action_space)
-
-    # don't count initial "seed" actions in computing T
-    T_actions = 1 - (length(current_action_space) - l_initial)/(LPDM.max_actions(pomdp) - l_initial)
-    T = minimum([T_solver T_actions])
-    # adj_exploit_visits = pomdp.exploit_visits * (1-T) # exploit more as T decreases
-
-    # generate new action(s)
-    # if (n_visits > adj_exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
-    if length(current_action_space) < LPDM.max_actions(pomdp)
-
-        # Use the full range as initial radius to accomodate points at the edges of it
-        radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * pomdp.action_range_fraction * T
-
-        a_x = NaN
-        a_y = NaN
-        for i in 1:pomdp.n_new_actions
-            in_set = true
-            while in_set
-                a_x = (rand(rng, Uniform(a_star[1] - radius, a_star[1] + radius)))
-                a_y = (rand(rng, Uniform(a_star[2] - radius, a_star[2] + radius)))
-                a_x = clamp(a_x, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
-                a_y = clamp(a_y, pomdp.action_limits[1], pomdp.action_limits[2])
-                in_set = (Vec2(a_x,a_y) ∈ current_action_space) || (Vec2(a_x,a_y) ∈ new_actions)
-            end
-            new_actions[i]=Vec2(a_x,a_y)
-        end
-
-        # println("a_star: $a_star, T: $T, radius: $radius, a: $a")
-        return new_actions
-    else
-        return Vec2[]
-    end
+    return new_actions
 end
 
-# version for Blind Value
-# Uses POMDPs.actions and Solver.jl to create the action space.
-# Actual countinuous action space creation occurs dynamically in LPDM, not explicity in this code.
-function LPDM.next_actions(pomdp::LightDark2DLpdm,
-                           current_action_space::Vector{LD2Action},
-                           Q::Vector{Float64},
-                           n_visits::Int64,
-                           rng::RNGVector)::Vector{LD2Action}
+function LPDM.bv_action_pool(pomdp::LightDark2DLpdm,
+                             ::LD2State,
+                             M::Int64,  # the number of actions to return in the pool
+                             rng::RNGVector)
 
-     # initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
-     # initial_space = [0.0]
-    M = pomdp.max_actions
+    # TODO: Create a formal sampler for RNGVector when there is time
+    a_pool_x = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]
+    a_pool_y = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]
+    a_pool = [LD2Action(a_pool_x[i],a_pool_y[i]) for i in 1:M]
+    σ_pool = std2d(hcat(a_pool_x, a_pool_y),[0.0,0.0]) # in our case distance to 0 (center of the domain) is just the abs. value of an action
 
-       # simulated annealing temperature
-    if isempty(current_action_space) # initial request
-           return pomdp.standard_action_space
-    end
-
-    if length(current_action_space) < LPDM.max_actions(pomdp)
-    # if (n_visits > pomdp.exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
-        # TODO: Create a formal sampler for RNGVector when there is time
-        Apool_x = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]
-        Apool_y = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i ∈ 1:M]
-        Apool = [LD2Action(Apool_x[i],Apool_y[i]) for i in 1:M]
-
-        σ_known = std(Q)
-        σ_pool = std2d(hcat(Apool_x, Apool_y),[0.0,0.0]) # in our case distance to 0 (center of the domain) is just the abs. value of an action
-        ρ = σ_known/σ_pool
-        bv_vector = [bv(a,ρ,current_action_space,Q) for a ∈ Apool]
-
-        return [Apool[argmax(bv_vector)]] # New action, returned as a one element vector.
-    else
-        return []
-    end
+    return a_pool, σ_pool
 end
 
 # TODO: Find a standard function for this and replace
@@ -231,62 +188,3 @@ function std2d(points2d::Array{Float64}, mean::Vector{Float64})
     end
     return norm_sum/sqrt(N-1)
 end
-
-# Blind Value function
-function bv(a::LD2Action, ρ::Float64, Aexpl::Vector{LD2Action}, Q::Vector{Float64})::LD2Action
-    # scores = [ρ*abs(a-Aexpl[i])+Q[i] for i in 1:length(Aexpl)]
-    scores = [ρ*norm(a-Aexpl[i])+Q[i] for i in 1:length(Aexpl)]
-    return Aexpl[argmin(scores)]
-end
-
-# NOTE: OLD VERSION. implements "fast" simulated annealing
-# function LPDM.next_actions(pomdp::LightDark2DLpdm,
-#                            current_action_space::Vector{LD2Action},
-#                            a_star::LD2Action,
-#                            n_visits::Int64,
-#                            rng::RNGVector)::Vector{LD2Action}
-#
-#     initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
-#
-#     # simulated annealing temperature
-#     if isempty(current_action_space) # initial request
-#         # return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
-#         return initial_space
-#     end
-#
-#     l_initial = length(initial_space)
-#
-#     # don't count initial "seed" actions in computing T
-#     T = 1 - (length(current_action_space) - l_initial)/(LPDM.max_actions(pomdp) - l_initial)
-#     adj_exploit_visits = pomdp.exploit_visits * (1-T) # exploit more as T decreases
-#
-#     # generate new action(s)
-#     if (n_visits > adj_exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
-#         # NOTE: use the actual point for now, convert to a distribution around it later
-#         left_d = abs(pomdp.action_limits[1]-a_star)
-#         right_d = abs(pomdp.action_limits[2]-a_star)
-#         d = left_d > right_d ? -left_d : right_d
-#         # println("a_star: $a_star, T: $T, left_d: $left_d, right_d: $right_d, d: $d, a: $(a_star + d*T)")
-#         return [a_star + d*T] # New action, returned as a one element vector. Value is scaled by T.
-#     else
-#         return []
-#     end
-# end
-
-# # Hard-coded version for now for debugging
-# function LPDM.next_actions(pomdp::LightDark2DLpdm, current_action_space::Vector{LD2Action})::Vector{LD2Action}
-#     if isempty(current_action_space) # initial request
-#         return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
-#     end
-#
-#     # index of the new action in the extended_action_space
-#     n = round(Int64, 0.5*(length(current_action_space) - (2*length(pomdp.standard_action_space) + 1))) + 1
-#     if (length(current_action_space) < pomdp.max_actions -1) && (n <= length(pomdp.extended_action_space))
-#         # println("current: $current_action_space")
-#         # accounting for zero with the first +1; 0.5 because we add in pairs.
-#
-#         return [-pomdp.extended_action_space[n], pomdp.extended_action_space[n]] # return as a 2-element vector
-#     else
-#         return []
-#     end
-# end
