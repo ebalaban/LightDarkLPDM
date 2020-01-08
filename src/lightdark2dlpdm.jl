@@ -137,6 +137,7 @@ POMDPs.actions(p::LightDark2DLpdm, ::LD2State) = actions(p::LightDark2DLpdm)
 LPDM.max_actions(pomdp::LightDark2DLpdm) = pomdp.max_actions
 
 function LPDM.adaptive_actions(pomdp::LightDark2DLpdm,
+                               ::LD2State,
                                T::Float64,
                                a_star::LD2Action,
                                current_action_space::Vector{LD2Action},
@@ -163,6 +164,7 @@ function LPDM.adaptive_actions(pomdp::LightDark2DLpdm,
 end
 
 function LPDM.bv_action_pool(pomdp::LightDark2DLpdm,
+                             ::LD2State,
                              M::Int64,  # the number of actions to return in the pool
                              rng::RNGVector)
 
