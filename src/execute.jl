@@ -6,11 +6,11 @@ using StatsFuns
 using Printf
 using Dates
 
-include("LightDarkPOMDPs.jl")
-using LightDarkPOMDPs
+include("LightDarkLPDM.jl")
+using LightDarkLPDM
 
-include("LPDMBounds1d.jl")
-include("LPDMBounds2d.jl")
+include("1D/LPDMBounds1d.jl")
+include("2D/LPDMBounds2d.jl")
 
 struct ProblemConfig
     n_bins                  ::Int64

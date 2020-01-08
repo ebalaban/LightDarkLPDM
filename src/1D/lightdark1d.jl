@@ -45,7 +45,7 @@ abstract type AbstractLD1 <: POMDP{Float64, Float64, Float64} end
     discount::Float64
         discount factor
 """
-@with_kw mutable struct LightDark1D <: LightDarkPOMDPs.AbstractLD1
+@with_kw mutable struct LightDark1D <: LightDarkLPDM.AbstractLD1
     min_noise::Float64      = 0.0
     min_noise_loc::Float64  = 5.0
     Q::Float64              = 0.5

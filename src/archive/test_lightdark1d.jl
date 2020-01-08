@@ -1,5 +1,5 @@
 using Revise
-import LPDM, D3Trees, LightDarkPOMDPs, execute1d
+import LPDM, D3Trees, LightDarkLPDM, execute1d
 # execute1d.execute(solver=:lpdm)
 steps = 1
 # execute1d.execute(s0=3/2*π, solver_mode = :lpdm, action_mode = :standard, obs_mode = :discrete, steps=steps, vis=Int64[], output=1)

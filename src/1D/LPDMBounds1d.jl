@@ -126,7 +126,7 @@ function lower_bound(p::AbstractLD1, particle::LPDMParticle{Float64})
     end
     return r1+r2, a1
 end
-# lower_bound(p::LightDarkPOMDPs.LightDark1DDespot, particle::LPDM.LPDMParticle{Float64}) = lower_bound(p, POMDPToolbox.Particle{Float64}(particle.state, particle.weight))
+# lower_bound(p::LightDarkLPDM.LightDark1DDespot, particle::LPDM.LPDMParticle{Float64}) = lower_bound(p, POMDPToolbox.Particle{Float64}(particle.state, particle.weight))
 
 # NOTE: not for direct calling
 # computes the reward for the straight-line path to target

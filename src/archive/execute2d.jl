@@ -6,7 +6,7 @@ using StatsFuns
 using Printf
 using Dates
 
-include("LightDarkPOMDPs.jl")
+include("LightDarkLPDM.jl")
 using LightDarkPOMDPs
 
 include("LPDMBounds2d.jl")
