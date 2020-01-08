@@ -118,6 +118,7 @@ end
 # end
 
 # for tree construction
+# Action setup starts here, goes to LPDM.next_actions, and then to LPDM - solver.jl
 function POMDPs.actions(p::LightDark2DLpdm)
      if p.action_mode == :standard
          return p.standard_action_space
