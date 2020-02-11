@@ -38,17 +38,17 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
 
     # General test parameters
     reward_mode                 = :quadratic
-    n_sims                      = debugger ? 1 : 50
+    n_sims                      = debugger ? 1 : 1
     vis::Vector{Int64}          = debugger ? Int64[1] : Int64[]
-    debug                       = 0
+    debug                       = debugger ? 3 : 0
 
     # 1D problem configuration
     n_bins1d                    = 10
-    max_actions1d               = 50
+    max_actions1d               = debugger ? 10 : 50
     n_new_actions1d             = 2
     action_range_fraction1d     = 0.25
     max_exploit_visits1d        = 0
-    max_belief_clusters1d       = 100
+    max_belief_clusters1d       = 10
 
     # 2D problem configuration
     n_bins2d                    = 10 # per dimension
@@ -56,7 +56,7 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
     n_new_actions2d             = 2
     action_range_fraction2d     = 0.25
     max_exploit_visits2d        = 0
-    max_belief_clusters2d       = 100
+    max_belief_clusters2d       = 10
 
     pconfig1d = ProblemConfig(n_bins1d, max_actions1d, n_new_actions1d, action_range_fraction1d, max_exploit_visits1d, max_belief_clusters1d)
     pconfig2d = ProblemConfig(n_bins2d, max_actions2d, n_new_actions2d, action_range_fraction2d, max_exploit_visits2d, max_belief_clusters2d)
@@ -69,6 +69,17 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
             n_particles         = 25,
             sim_len             = debugger ? 1 : -1,
             max_trials          = -1,
+            debug               = debug,
+            action_mode         = :tbd,     # assigned per test (will cause an error if not assigned)
+            obs_mode            = :tbd)     # assigned per test (will cause an error if not assigned)
+
+    sconfig1d_debug = LPDMConfig(
+            search_depth        = 30,
+            seed                = 0xffffffff, # assigned per scenario (will cause an error if not assigned)
+            time_per_move       = 1.0, # should normally be 1.0
+            n_particles         = 2,
+            sim_len             = 1,
+            max_trials          = 2,
             debug               = debug,
             action_mode         = :tbd,     # assigned per test (will cause an error if not assigned)
             obs_mode            = :tbd)     # assigned per test (will cause an error if not assigned)
@@ -94,7 +105,7 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
         O = LD1Obs
         B = LDBounds1d{S,A,O}
         pconfig = pconfig1d
-        sconfig = sconfig1d
+        sconfig = debugger ? sconfig1d_debug : sconfig1d
     elseif dims == 2
         S = LD2State
         A = LD2Action
@@ -112,10 +123,10 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
     # push!(test, LPDMTest(:standard, :discrete, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:extended, :discrete, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:blind_vl, :discrete, reward_mode, pconfig, n_sims))
-    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig, n_sims))
 
     # CONTINUOUS OBSERVATIONS
-    # push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
+    push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:blind_vl, :continuous, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:adaptive, :continuous, reward_mode, pconfig, n_sims))
@@ -126,12 +137,12 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
         # push!(scen, LPDMScenario(LD1State(-2*π)))
         # push!(scen, LPDMScenario(LD1State(π/2)))
         # push!(scen, LPDMScenario(LD1State(3/2*π)))
-        # push!(scen, LPDMScenario(LD1State(2*π)))
+        push!(scen, LPDMScenario(LD1State(2*π)))
     elseif dims == 2
         # push!(scen, LPDMScenario(LD2State(-2*π, π)))
         # push!(scen, LPDMScenario(LD2State(π/2, -π/2)))
         # push!(scen, LPDMScenario(LD2State(π, 2*π)))
-        push!(scen, LPDMScenario(LD2State(2*π, -π)))
+        # push!(scen, LPDMScenario(LD2State(2*π, -π)))
     end
 
     # Dummy execution, just to make sure all the code is compiled and loaded,

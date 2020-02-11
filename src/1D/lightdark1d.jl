@@ -5,7 +5,7 @@ import POMDPs:
         observation,
         generate_s,
         generate_o,
-        initial_state_distribution,
+        initialstate_distribution,
         discount,
         reward
 

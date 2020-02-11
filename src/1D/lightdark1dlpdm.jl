@@ -1,5 +1,5 @@
 using Discretizers
-import LPDM: default_action, next_actions, equivalent
+import LPDM: default_action, next_actions, equivalent, adaptive_actions
 import POMDPs: rand, actions
 
 mutable struct LightDark1DLpdm <: AbstractLD1
@@ -68,7 +68,8 @@ mutable struct LightDark1DLpdm <: AbstractLD1
         this.obs_epsilon             = 0.5
         this.exploit_visits          = max_exploit_visits
         this.max_belief_clusters     = max_belief_clusters
-        this.standard_action_space    = [1.0, 0.1, 0.01]
+        # this.standard_action_space    = [1.0, 0.1, 0.01]
+        this.standard_action_space   = [1.0] #DEBUG: For debugging only! RESTORE THE ABOVE WHEN DONE!
         this.extended_action_space   = vcat(1*this.standard_action_space,
                                             2*this.standard_action_space,
                                             3*this.standard_action_space,
@@ -101,56 +102,81 @@ end
 
 LPDM.max_actions(pomdp::LightDark1DLpdm) = pomdp.max_actions
 
-# For "simulated annealing"
-function LPDM.next_actions(pomdp::LightDark1DLpdm,
-                           depth::Int64,
-                           current_action_space::Vector{LD1Action},
-                           a_star::LD1Action,
-                           n_visits::Int64,
-                           T_solver::Float64, # "temperature"
-                           rng::RNGVector)::Vector{LD1Action}
+# # For "simulated annealing"
+# function LPDM.next_actions(pomdp::LightDark1DLpdm,
+#                            depth::Int64,
+#                            current_action_space::Vector{LD1Action},
+#                            a_star::LD1Action,
+#                            n_visits::Int64,
+#                            T_solver::Float64, # "temperature"
+#                            rng::RNGVector)::Vector{LD1Action}
+#
+#     # println("POMDP: adaptive actions")
+#     new_actions = Vector{LD1Action}(undef,pomdp.n_new_actions)
+#     initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
+#
+#     # simulated annealing temperature
+#     if isempty(current_action_space) # initial request
+#         # return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
+#         return initial_space
+#     end
+#
+#     l_initial = length(initial_space)
+#
+#     # don't count initial "seed" actions in computing T_actions
+#     T_actions = 1 - (length(current_action_space) - l_initial)/(LPDM.max_actions(pomdp) - l_initial)
+#     T = minimum([T_solver T_actions]) # use the lowest "temperature"
+#
+#     # adj_exploit_visits = pomdp.exploit_visits * (1-T) # exploit more as T decreases
+#
+#     # generate new action(s)
+#     # if (n_visits > adj_exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
+#     if length(current_action_space) < LPDM.max_actions(pomdp)
+#
+#         # Use the full range as initial radius to accomodate points at the edges of it
+#         radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * pomdp.action_range_fraction * T # DEBUG: testing 0.5
+#
+#         in_set = true
+#         a = NaN
+#         for i in 1:pomdp.n_new_actions
+#             in_set = true
+#             while in_set
+#                 a = (rand(rng, Uniform(a_star - radius, a_star + radius)))
+#                 a = clamp(a, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
+#                 in_set = a ∈ current_action_space
+#             end
+#             new_actions[i]=a
+#         end
+#         # println("a_star: $a_star, T: $T, radius: $radius, a: $a")
+#         return new_actions # New action, returned as a one element vector.
+#     else
+#         return LD1Action[]
+#     end
+# end
 
-    # println("POMDP: adaptive actions")
+function LPDM.adaptive_actions(pomdp::LightDark1DLpdm,
+                               ::LD1State,
+                               T::Float64,
+                               a_star::LD1Action,
+                               current_action_space::Vector{LD1Action},
+                               rng::RNGVector)
+
+    radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * pomdp.action_range_fraction * T # DEBUG: testing 0.5
     new_actions = Vector{LD1Action}(undef,pomdp.n_new_actions)
-    initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
 
-    # simulated annealing temperature
-    if isempty(current_action_space) # initial request
-        # return vcat(-pomdp.standard_action_space, [0], pomdp.standard_action_space)
-        return initial_space
-    end
-
-    l_initial = length(initial_space)
-
-    # don't count initial "seed" actions in computing T_actions
-    T_actions = 1 - (length(current_action_space) - l_initial)/(LPDM.max_actions(pomdp) - l_initial)
-    T = minimum([T_solver T_actions]) # use the lowest "temperature"
-
-    # adj_exploit_visits = pomdp.exploit_visits * (1-T) # exploit more as T decreases
-
-    # generate new action(s)
-    # if (n_visits > adj_exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
-    if length(current_action_space) < LPDM.max_actions(pomdp)
-
-        # Use the full range as initial radius to accomodate points at the edges of it
-        radius = abs(pomdp.action_limits[2]-pomdp.action_limits[1]) * pomdp.action_range_fraction * T # DEBUG: testing 0.5
-
+    in_set = true
+    a = NaN
+    for i in 1:pomdp.n_new_actions
         in_set = true
-        a = NaN
-        for i in 1:pomdp.n_new_actions
-            in_set = true
-            while in_set
-                a = (rand(rng, Uniform(a_star - radius, a_star + radius)))
-                a = clamp(a, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
-                in_set = a ∈ current_action_space
-            end
-            new_actions[i]=a
+        while in_set
+            a = (rand(rng, Uniform(a_star - radius, a_star + radius)))
+            a = clamp(a, pomdp.action_limits[1], pomdp.action_limits[2]) # if outside action space limits, clamp to them
+            in_set = a ∈ current_action_space
         end
-        # println("a_star: $a_star, T: $T, radius: $radius, a: $a")
-        return new_actions # New action, returned as a one element vector.
-    else
-        return LD1Action[]
+        new_actions[i]=a
     end
+    # println("a_star: $a_star, T: $T, radius: $radius, a: $a")
+    return new_actions # New action, returned as a one element vector.
 end
 
 # version for Blind Value
