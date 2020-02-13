@@ -19,7 +19,7 @@ const LD1Action = Float64
 const LD1Obs    = Float64
 const LD1Belief = LPDMBelief
 
-Base.show(io::IO, x::Float64) = print(io,"$(@sprintf("%.2f", x))")
+Base.show(io::IO, x::Float64) = print(io,"$(@sprintf("%.4f", x))")
 
 abstract type AbstractLD1 <: POMDP{Float64, Float64, Float64} end
 
@@ -71,7 +71,7 @@ function generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG)
         o_disc = p.bin_centers[encode(p.lindisc,o)]
         return o_disc
     elseif p.obs_mode == :continuous
-        o=clamp(o, -p.max_x, p.max_x)
+    #     o=clamp(o, -p.max_x, p.max_x) #TODO: EB, 02/11/2020: disable clamping for now, see if it stops clustering outliers into wrong clusters
         return o
     else
         error("Invalid obs_mode = $(p.obs_mode)")

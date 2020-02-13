@@ -68,8 +68,8 @@ mutable struct LightDark1DLpdm <: AbstractLD1
         this.obs_epsilon             = 0.5
         this.exploit_visits          = max_exploit_visits
         this.max_belief_clusters     = max_belief_clusters
-        # this.standard_action_space    = [1.0, 0.1, 0.01]
-        this.standard_action_space   = [1.0] #DEBUG: For debugging only! RESTORE THE ABOVE WHEN DONE!
+        this.standard_action_space    = [1.0, 0.1, 0.01]
+        # this.standard_action_space   = [1.0] #DEBUG: For debugging only! RESTORE THE ABOVE WHEN DONE!
         this.extended_action_space   = vcat(1*this.standard_action_space,
                                             2*this.standard_action_space,
                                             3*this.standard_action_space,

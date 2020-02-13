@@ -38,7 +38,7 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
 
     # General test parameters
     reward_mode                 = :quadratic
-    n_sims                      = debugger ? 1 : 1
+    n_sims                      = debugger ? 1 : 5
     vis::Vector{Int64}          = debugger ? Int64[1] : Int64[]
     debug                       = debugger ? 3 : 0
 
@@ -74,12 +74,12 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
             obs_mode            = :tbd)     # assigned per test (will cause an error if not assigned)
 
     sconfig1d_debug = LPDMConfig(
-            search_depth        = 30,
+            search_depth        = 2,
             seed                = 0xffffffff, # assigned per scenario (will cause an error if not assigned)
             time_per_move       = 1.0, # should normally be 1.0
-            n_particles         = 2,
+            n_particles         = 10,
             sim_len             = 1,
-            max_trials          = 2,
+            max_trials          = 3,
             debug               = debug,
             action_mode         = :tbd,     # assigned per test (will cause an error if not assigned)
             obs_mode            = :tbd)     # assigned per test (will cause an error if not assigned)
