@@ -42,6 +42,7 @@ export
     obs_std,
     rand,
     state_distribution,
+    generate_sor_det,
     LD1State,
     LD1Action,
     LD1Obs,

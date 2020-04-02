@@ -25,6 +25,7 @@ mutable struct LightDark1DLpdm <: AbstractLD1
     max_belief_clusters::Int64
     action_limits::Tuple{Float64,Float64}
     action_mode::Symbol
+    action_std::Float64
     obs_mode::Symbol
     obs_epsilon::Float64
     reward_mode::Symbol
@@ -37,6 +38,7 @@ mutable struct LightDark1DLpdm <: AbstractLD1
                              action_mode            ::Symbol   = :adaptive,
                              obs_mode               ::Symbol   = :continuous,
                              reward_mode            ::Symbol   = :quadratic,
+                             action_std             ::Float64  = 0.0,
                              n_bins                 ::Int64    = 10, # per linear dimension
                              max_actions            ::Int64    = 50,
                              n_new_actions          ::Int64    = 1,# number of new actions to select at the same time in SA
@@ -64,6 +66,7 @@ mutable struct LightDark1DLpdm <: AbstractLD1
         this.action_range_fraction   = action_range_fraction
         this.action_limits           = (-5.0,5.0)
         this.action_mode             = action_mode
+        this.action_std              = action_std
         this.obs_mode                = obs_mode
         this.obs_epsilon             = 0.5
         this.exploit_visits          = max_exploit_visits

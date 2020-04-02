@@ -58,7 +58,8 @@ abstract type AbstractLD1 <: POMDP{Float64, Float64, Float64} end
 end
 
 # POMDPs.jl API functions:
-POMDPs.generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = generate_s(p, s, a)
+# POMDPs.generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = generate_s(p, s, a, rng, det = false)
+POMDPs.generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = generate_s(p, s, a, rng, false)
 POMDPs.generate_o(p::AbstractLD1, s::Float64, a::Float64, sp::Float64, rng::AbstractRNG) = generate_o(p, sp, rng)
 POMDPs.observation(p::AbstractLD1, sp::Float64) = Normal1D(sp,obs_std(p,sp))
 POMDPs.observation(p::AbstractLD1, a::Float64, sp::Float64) = observation(p, sp)
@@ -152,10 +153,20 @@ POMDPs.pdf(d::Normal1D, o::Float64) = Distributions.pdf(Distributions.Normal(d.m
 #     return nothing
 # end
 
-function generate_s(p::AbstractLD1, s::Float64, a::Float64)
+# function generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::RNGVector; det::Bool = false)
+function generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::RNGVector, det::Bool = false)
     p.count += 1
-    return s+a
+    if p.action_std == 0.0 || det
+        return s + a
+    else
+        return s + LPDM.rand(rng, Distributions.Normal(a, p.action_std))
+    end
 end
+
+# function generate_s_det(p::AbstractLD1, s::Float64, a::Float64)
+#     p.count += 1
+#     return s+a
+# end
 
 # generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG) = sp #DEBUG: trying no noise at all
 
@@ -178,11 +189,13 @@ function state_distribution(pomdp::AbstractLD1, s0::LD1State, config::LPDMConfig
     return states
 end
 
-function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::RNGVector)
+function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::RNGVector, det::Bool = false)
+# function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::RNGVector; det::Bool = false)
 
-    s = generate_s(p,s,a,rng)
-    o = generate_o(p,s,rng)
-    r = reward(p,s,a)
+    # s = generate_s(p, s, a, rng, det = det)
+    s = generate_s(p, s, a, rng, det)
+    o = generate_o(p, s, rng)
+    r = reward(p, s, a)
     # println("o! $o")
     return s, o, r
 end
