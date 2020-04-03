@@ -64,7 +64,7 @@ abstract type AbstractLD2 <: POMDP{LD2State, LD2Action, LD2Obs} end
 end
 
 # POMDPs.jl API functions:
-POMDPs.generate_s(p::AbstractLD2, s::Vec2, a::Vec2, rng::AbstractRNG) = generate_s(p, s, a)
+POMDPs.generate_s(p::AbstractLD2, s::Vec2, a::Vec2, rng::AbstractRNG) = generate_s(p, s, a, rng, false)
 POMDPs.generate_o(p::AbstractLD2, s::Vec2, a::Vec2, sp::Vec2, rng::AbstractRNG) = generate_o(p, sp, rng)
 POMDPs.observation(p::AbstractLD2, a::Vec2, sp::Vec2) = observation(p, sp)
 # POMDPs.isterminal(p::AbstractLD2, s::Vec2) = LinearAlgebra.norm(s) <= p.term_radius
@@ -137,7 +137,7 @@ mode(d::SymmetricNormal2D) = d.mean
 Base.eltype(::Type{SymmetricNormal2D}) = Vec2
 # POMDPs.rand(p::AbstractLD2, s::LD2State, rng::LPDM.RNGVector) = rand(rng, SymmetricNormal2D(s,p.resample_std)) # for resampling
 POMDPs.rand(p::AbstractLD2, s::LD2State, rng::LPDM.RNGVector) = LD2State(rand(rng, Distributions.MvNormal([s[1],s[2]],[p.resample_std,p.resample_std]))) # for resampling
-
+# POMDPs.rand(p::AbstractLD2, a::LD2State, rng::LPDM.RNGVector) = LD2State(rand(rng, Distributions.MvNormal([a[1],a[2]],[p.action_std,p.action_std]))) # for resampling
 
 # chose this on 2/6/17 because I like the bowtie particle patterns it produces
 # unclear which one was actually used in the paper
@@ -145,9 +145,13 @@ POMDPs.rand(p::AbstractLD2, s::LD2State, rng::LPDM.RNGVector) = LD2State(rand(rn
 obs_std(p::AbstractLD2, x::Float64) = sqrt(0.5*(p.min_noise_loc-x)^2 + p.min_noise)
 # obs_std(p::AbstractLD2, x::Float64) = 0.5*(p.min_noise_loc-x)^2 + p.min_noise
 
-function generate_s(p::AbstractLD2, s::Vec2, a::Vec2)
+function generate_s(p::AbstractLD2, s::Vec2, a::Vec2, rng::AbstractRNG, det::Bool = false)
     p.count += 1
-    return s+a
+    if p.action_std == 0.0 || det
+        return s + a
+    else
+        return s + LPDM.rand(rng, Distributions.MvNormal([a[1],a[2]], [p.action_std,p.action_std]))
+    end
 end
 POMDPs.observation(p::AbstractLD2, sp::Vec2) = SymmetricNormal2D(sp, obs_std(p, sp[1]))
 POMDPs.observation(p::AbstractLD2, s::Vec2, a::Vec2, sp::Vec2) = observation(p,sp)
@@ -192,11 +196,11 @@ function state_distribution(pomdp::AbstractLD2, s0::LD2State, config::LPDMConfig
     return states
 end
 
-function POMDPs.generate_sor(p::AbstractLD2, s::Vec2, a::Vec2, rng::AbstractRNG)
+function POMDPs.generate_sor(p::AbstractLD2, s::Vec2, a::Vec2, rng::AbstractRNG, det::Bool = false)
 
-    s = generate_s(p,s,a,rng)
-    o = generate_o(p,s,rng)
-    r = reward(p,s,a)
+    s = generate_s(p, s, a, rng, det)
+    o = generate_o(p, s, rng)
+    r = reward(p, s, a)
 
     return s, o, r
 end

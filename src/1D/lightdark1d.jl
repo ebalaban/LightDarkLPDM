@@ -192,7 +192,6 @@ end
 function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::RNGVector, det::Bool = false)
 # function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::RNGVector; det::Bool = false)
 
-    # s = generate_s(p, s, a, rng, det = det)
     s = generate_s(p, s, a, rng, det)
     o = generate_o(p, s, rng)
     r = reward(p, s, a)

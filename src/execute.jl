@@ -125,12 +125,20 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
     # push!(test, LPDMTest(:standard, :discrete, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:extended, :discrete, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:blind_vl, :discrete, reward_mode, pconfig, n_sims))
+
     push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.0, pconfig, n_sims))
     push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.1, pconfig, n_sims))
     push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.2, pconfig, n_sims))
     push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.3, pconfig, n_sims))
     push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.4, pconfig, n_sims))
     push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.5, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.6, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.7, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.8, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.9, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 1.0, pconfig, n_sims))
+
+
     # CONTINUOUS OBSERVATIONS
     # push!(test, LPDMTest(:standard, :continuous, reward_mode, 0.0, pconfig, n_sims))
     # push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig, n_sims))
@@ -146,7 +154,7 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
         # push!(scen, LPDMScenario(LD1State(2*π)))
     elseif dims == 2
         # push!(scen, LPDMScenario(LD2State(-2*π, π)))
-        # push!(scen, LPDMScenario(LD2State(π/2, -π/2)))
+        push!(scen, LPDMScenario(LD2State(π/2, -π/2)))
         # push!(scen, LPDMScenario(LD2State(π, 2*π)))
         # push!(scen, LPDMScenario(LD2State(2*π, -π)))
     end
