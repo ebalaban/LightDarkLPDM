@@ -25,6 +25,7 @@ struct LPDMTest
     action_mode         ::Symbol
     obs_mode            ::Symbol
     reward_mode         ::Symbol
+    action_std          ::Float64
     problem_config      ::ProblemConfig
     n_sims              ::Int64
 end
@@ -38,17 +39,17 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
 
     # General test parameters
     reward_mode                 = :quadratic
-    n_sims                      = debugger ? 1 : 50
+    n_sims                      = debugger ? 1 : 100
     vis::Vector{Int64}          = debugger ? Int64[1] : Int64[]
-    debug                       = 0
+    debug                       = debugger ? 3 : 0
 
     # 1D problem configuration
     n_bins1d                    = 10
-    max_actions1d               = 50
+    max_actions1d               = debugger ? 10 : 50
     n_new_actions1d             = 2
     action_range_fraction1d     = 0.25
     max_exploit_visits1d        = 0
-    max_belief_clusters1d       = 100
+    max_belief_clusters1d       = 10
 
     # 2D problem configuration
     n_bins2d                    = 10 # per dimension
@@ -56,7 +57,7 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
     n_new_actions2d             = 2
     action_range_fraction2d     = 0.25
     max_exploit_visits2d        = 0
-    max_belief_clusters2d       = 100
+    max_belief_clusters2d       = 10
 
     pconfig1d = ProblemConfig(n_bins1d, max_actions1d, n_new_actions1d, action_range_fraction1d, max_exploit_visits1d, max_belief_clusters1d)
     pconfig2d = ProblemConfig(n_bins2d, max_actions2d, n_new_actions2d, action_range_fraction2d, max_exploit_visits2d, max_belief_clusters2d)
@@ -65,13 +66,25 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
     sconfig1d = LPDMConfig(
             search_depth        = 30,
             seed                = 0xffffffff, # assigned per scenario (will cause an error if not assigned)
-            time_per_move       = 1.0, # should normally be 1.0
+            time_per_move       = -1.0, # should normally be 1.0
             n_particles         = 25,
             sim_len             = debugger ? 1 : -1,
-            max_trials          = -1,
+            max_trials          = 10000,
             debug               = debug,
             action_mode         = :tbd,     # assigned per test (will cause an error if not assigned)
             obs_mode            = :tbd)     # assigned per test (will cause an error if not assigned)
+
+    sconfig1d_debug = LPDMConfig(
+            search_depth        = 2,
+            seed                = 0xffffffff, # assigned per scenario (will cause an error if not assigned)
+            time_per_move       = 1.0, # should normally be 1.0
+            n_particles         = 10,
+            sim_len             = 1,
+            max_trials          = 3,
+            debug               = debug,
+            action_mode         = :tbd,     # assigned per test (will cause an error if not assigned)
+            obs_mode            = :tbd)     # assigned per test (will cause an error if not assigned)
+
 
     # 2D solver configuration
     sconfig2d = LPDMConfig(
@@ -94,7 +107,7 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
         O = LD1Obs
         B = LDBounds1d{S,A,O}
         pconfig = pconfig1d
-        sconfig = sconfig1d
+        sconfig = debugger ? sconfig1d_debug : sconfig1d
     elseif dims == 2
         S = LD2State
         A = LD2Action
@@ -112,10 +125,22 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
     # push!(test, LPDMTest(:standard, :discrete, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:extended, :discrete, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:blind_vl, :discrete, reward_mode, pconfig, n_sims))
-    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, pconfig, n_sims))
+
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.0, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.1, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.2, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.3, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.4, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.5, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.6, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.7, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.8, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 0.9, pconfig, n_sims))
+    push!(test, LPDMTest(:adaptive, :discrete, reward_mode, 1.0, pconfig, n_sims))
+
 
     # CONTINUOUS OBSERVATIONS
-    # push!(test, LPDMTest(:standard, :continuous, reward_mode, pconfig, n_sims))
+    # push!(test, LPDMTest(:standard, :continuous, reward_mode, 0.0, pconfig, n_sims))
     # push!(test, LPDMTest(:extended, :continuous, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:blind_vl, :continuous, reward_mode, pconfig, n_sims))
     # push!(test, LPDMTest(:adaptive, :continuous, reward_mode, pconfig, n_sims))
@@ -124,14 +149,14 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
 
     if dims == 1
         # push!(scen, LPDMScenario(LD1State(-2*π)))
-        # push!(scen, LPDMScenario(LD1State(π/2)))
+        push!(scen, LPDMScenario(LD1State(π/2)))
         # push!(scen, LPDMScenario(LD1State(3/2*π)))
         # push!(scen, LPDMScenario(LD1State(2*π)))
     elseif dims == 2
         # push!(scen, LPDMScenario(LD2State(-2*π, π)))
-        # push!(scen, LPDMScenario(LD2State(π/2, -π/2)))
+        push!(scen, LPDMScenario(LD2State(π/2, -π/2)))
         # push!(scen, LPDMScenario(LD2State(π, 2*π)))
-        push!(scen, LPDMScenario(LD2State(2*π, -π)))
+        # push!(scen, LPDMScenario(LD2State(2*π, -π)))
     end
 
     # Dummy execution, just to make sure all the code is compiled and loaded,
@@ -166,12 +191,12 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
         end
 
         Printf.@printf(f,"SCENARIO %d, s0 = %s\n", i, "$(scen[i].s0)")
-        Printf.@printf(f,"================================================================\n")
-        Printf.@printf(f,"ACT. MODE\t\tOBS. MODE\t\t\tSTEPS (STD)\t\t\t\tREWARD (STD)\n")
-        Printf.@printf(f,"================================================================\n")
+        Printf.@printf(f,"==========================================================================\n")
+        Printf.@printf(f,"ACT. MODE\t\tOBS. MODE\t\t\tACT. STD\t\t\tSTEPS (STD)\t\t\t\tREWARD (STD)\n")
+        Printf.@printf(f,"==========================================================================\n")
         for t in test
             if debug >= 0
-                println("dimensions: $dims, actions: $(t.action_mode), observations: $(t.obs_mode), rewards: $(t.reward_mode)")
+                println("dimensions: $dims, actions: $(t.action_mode), observations: $(t.obs_mode), action std: $(t.action_std), rewards: $(t.reward_mode)")
             end
             steps_avg, steps_std, reward_avg, reward_std =
                         run_scenario(scen[i].s0, t, A, O, B, sconfig,
@@ -179,14 +204,14 @@ function batch_execute(;dims::Int64=1, debugger::Bool = false)
                                      n_sims    = n_sims,
                                      vis       = vis)
 
-            Printf.@printf(f,"%s\t\t%s\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
-                                            string(t.action_mode), string(t.obs_mode), steps_avg, steps_std, reward_avg, reward_std)
+            Printf.@printf(f,"%s\t\t%s\t\t\t%0.2f\t\t\t\t\t%05.2f (%06.2f)\t\t%06.2f (%06.2f)\n",
+                        string(t.action_mode), string(t.obs_mode), t.action_std, steps_avg, steps_std, reward_avg, reward_std)
             flush(f)
-            debug >=0 && println("\n*******************************************************************************************************")
-            debug >=0 && println("STATS: actions=$(t.action_mode), observations=$(t.obs_mode), steps = $(steps_avg) ($steps_std), reward = $(reward_avg) ($reward_std)")
-            debug >=0 && println("*******************************************************************************************************\n")
+            debug >=0 && println("\n*******************************************************************************************************************************")
+            debug >=0 && println("STATS: actions = $(t.action_mode), observations = $(t.obs_mode), action std = $(t.action_std), steps = $(steps_avg) ($steps_std), reward = $(reward_avg) ($reward_std)")
+            debug >=0 && println("*******************************************************************************************************************************\n")
         end
-        Printf.@printf(f,"================================================================\n\n")
+        Printf.@printf(f,"==========================================================================\n\n")
     end
     close(f)
 end
@@ -201,6 +226,7 @@ function run_scenario(s0::S, test::LPDMTest, A::Type, O::Type, B::Type, sconfig:
         p = LightDark1DLpdm(action_mode             = test.action_mode,
                             obs_mode                = test.obs_mode,
                             reward_mode             = test.reward_mode,
+                            action_std              = test.action_std,
                             n_bins                  = test.problem_config.n_bins,
                             max_actions             = test.problem_config.max_actions,
                             n_new_actions           = test.problem_config.n_new_actions,
@@ -212,6 +238,7 @@ function run_scenario(s0::S, test::LPDMTest, A::Type, O::Type, B::Type, sconfig:
         p = LightDark2DLpdm(action_mode             = test.action_mode,
                             obs_mode                = test.obs_mode,
                             reward_mode             = test.reward_mode,
+                            action_std              = test.action_std,
                             n_bins                  = test.problem_config.n_bins,
                             max_actions             = test.problem_config.max_actions,
                             n_new_actions           = test.problem_config.n_new_actions,
@@ -254,7 +281,7 @@ function run_scenario(s0::S, test::LPDMTest, A::Type, O::Type, B::Type, sconfig:
 
         if sconfig.debug >= 0
             println("")
-            println("*** SIM $sim (dimensions: $dims, action mode: $(test.action_mode), obs mode: $(test.obs_mode), s0: $s0)***")
+            println("*** SIM $sim (dimensions: $dims, action mode: $(test.action_mode), obs mode: $(test.obs_mode), action std: $(test.action_std), s0: $s0)***")
             println("")
         end
 
@@ -274,7 +301,9 @@ function run_scenario(s0::S, test::LPDMTest, A::Type, O::Type, B::Type, sconfig:
                 println("a: $a")
             end
 
-            s, o, r = POMDPs.generate_sor(p, s, a, world_rng)
+            # for now just use the deterministic action outcome version for the "world"
+            s, o, r = POMDPs.generate_sor(p, s, a, world_rng, true)
+
             push!(step_rewards, r)
             if sconfig.debug >= 1
                 println("s': $s")

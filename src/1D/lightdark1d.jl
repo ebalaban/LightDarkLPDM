@@ -5,7 +5,7 @@ import POMDPs:
         observation,
         generate_s,
         generate_o,
-        initial_state_distribution,
+        initialstate_distribution,
         discount,
         reward
 
@@ -19,7 +19,7 @@ const LD1Action = Float64
 const LD1Obs    = Float64
 const LD1Belief = LPDMBelief
 
-Base.show(io::IO, x::Float64) = print(io,"$(@sprintf("%.2f", x))")
+Base.show(io::IO, x::Float64) = print(io,"$(@sprintf("%.4f", x))")
 
 abstract type AbstractLD1 <: POMDP{Float64, Float64, Float64} end
 
@@ -58,7 +58,8 @@ abstract type AbstractLD1 <: POMDP{Float64, Float64, Float64} end
 end
 
 # POMDPs.jl API functions:
-POMDPs.generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = generate_s(p, s, a)
+# POMDPs.generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = generate_s(p, s, a, rng, det = false)
+POMDPs.generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::AbstractRNG) = generate_s(p, s, a, rng, false)
 POMDPs.generate_o(p::AbstractLD1, s::Float64, a::Float64, sp::Float64, rng::AbstractRNG) = generate_o(p, sp, rng)
 POMDPs.observation(p::AbstractLD1, sp::Float64) = Normal1D(sp,obs_std(p,sp))
 POMDPs.observation(p::AbstractLD1, a::Float64, sp::Float64) = observation(p, sp)
@@ -71,7 +72,7 @@ function generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG)
         o_disc = p.bin_centers[encode(p.lindisc,o)]
         return o_disc
     elseif p.obs_mode == :continuous
-        o=clamp(o, -p.max_x, p.max_x)
+    #     o=clamp(o, -p.max_x, p.max_x) #TODO: EB, 02/11/2020: disable clamping for now, see if it stops clustering outliers into wrong clusters
         return o
     else
         error("Invalid obs_mode = $(p.obs_mode)")
@@ -152,10 +153,20 @@ POMDPs.pdf(d::Normal1D, o::Float64) = Distributions.pdf(Distributions.Normal(d.m
 #     return nothing
 # end
 
-function generate_s(p::AbstractLD1, s::Float64, a::Float64)
+# function generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::RNGVector; det::Bool = false)
+function generate_s(p::AbstractLD1, s::Float64, a::Float64, rng::RNGVector, det::Bool = false)
     p.count += 1
-    return s+a
+    if p.action_std == 0.0 || det
+        return s + a
+    else
+        return s + LPDM.rand(rng, Distributions.Normal(a, p.action_std))
+    end
 end
+
+# function generate_s_det(p::AbstractLD1, s::Float64, a::Float64)
+#     p.count += 1
+#     return s+a
+# end
 
 # generate_o(p::AbstractLD1, sp::Float64, rng::AbstractRNG) = sp #DEBUG: trying no noise at all
 
@@ -178,11 +189,12 @@ function state_distribution(pomdp::AbstractLD1, s0::LD1State, config::LPDMConfig
     return states
 end
 
-function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::RNGVector)
+function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::RNGVector, det::Bool = false)
+# function POMDPs.generate_sor(p::AbstractLD1, s::Float64, a::Float64, rng::RNGVector; det::Bool = false)
 
-    s = generate_s(p,s,a,rng)
-    o = generate_o(p,s,rng)
-    r = reward(p,s,a)
+    s = generate_s(p, s, a, rng, det)
+    o = generate_o(p, s, rng)
+    r = reward(p, s, a)
     # println("o! $o")
     return s, o, r
 end

@@ -5,6 +5,7 @@ mutable struct LDBounds1d{S,A,O}
     ub_    ::Float64
     best_lb_action_::Float64
     best_ub_action_::Float64
+    rng::RNGVector # dummy RNG, not used
 
     function LDBounds1d{S,A,O}(::POMDP{S,A,O}) where {S,A,O}
         this = new()
@@ -12,6 +13,7 @@ mutable struct LDBounds1d{S,A,O}
         this.ub_ = -Inf
         this.best_lb_action_ = NaN
         this.best_ub_action_ = NaN
+        this.rng = RNGVector(1, UInt32(42))
         return this
     end
 end
