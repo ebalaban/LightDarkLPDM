@@ -1,5 +1,5 @@
 using Discretizers
-import LPDM: default_action, next_actions, equivalent, adaptive_actions
+import LPDM: default_action, next_actions, equivalent, bv_action_pool, value, adaptive_actions
 import POMDPs: rand, actions
 
 mutable struct LightDark1DLpdm <: AbstractLD1
@@ -182,42 +182,56 @@ function LPDM.adaptive_actions(pomdp::LightDark1DLpdm,
     return new_actions # New action, returned as a one element vector.
 end
 
-# version for Blind Value
-function LPDM.next_actions(pomdp::LightDark1DLpdm,
-                           current_action_space::Vector{LD1Action},
-                           Q::Vector{Float64},
-                           n_visits::Int64,
-                           rng::RNGVector)::Vector{LD1Action}
+# # version for Blind Value
+# function LPDM.next_actions(pomdp::LightDark1DLpdm,
+#                            current_action_space::Vector{LD1Action},
+#                            Q::Vector{Float64},
+#                            n_visits::Int64,
+#                            rng::RNGVector)::Vector{LD1Action}
+#
+#     # println("POMDP: blind value actions")
+#      initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
+#      # initial_space = [0.0]
+#      M = pomdp.max_actions
+#
+#        # simulated annealing temperature
+#      if isempty(current_action_space) # initial request
+#            return initial_space
+#      end
+#
+#     if (n_visits > pomdp.exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
+#         # TODO: Create a formal sampler for RNGVector when there is time
+#         Apool = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i in 1:M]
+#         σ_known = std(Q)
+#         σ_pool = std(Apool) # in our case distance to 0 (center of the domain) is just the abs. value of an action
+#         ρ = σ_known/σ_pool
+#         bv_vector = [bv(a,ρ,current_action_space,Q) for a in Apool]
+#
+#         return [Apool[argmax(bv_vector)]] # New action, returned as a one element vector.
+#     else
+#         return []
+#     end
+# end
 
-    # println("POMDP: blind value actions")
-     initial_space = vcat(-pomdp.standard_action_space, pomdp.standard_action_space)
-     # initial_space = [0.0]
-     M = pomdp.max_actions
+function LPDM.bv_action_pool(pomdp::LightDark1DLpdm,
+                             ::LD1State,
+                             M::Int64,  # the number of actions to return in the pool
+                             rng::RNGVector)
 
-       # simulated annealing temperature
-     if isempty(current_action_space) # initial request
-           return initial_space
-     end
+    a_pool = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i in 1:M]
+    σ_pool = std(a_pool) # in our case distance to 0 (center of the domain) is just the abs. value of an action
 
-    if (n_visits > pomdp.exploit_visits) && (length(current_action_space) < LPDM.max_actions(pomdp))
-        # TODO: Create a formal sampler for RNGVector when there is time
-        Apool = [rand(rng, Uniform(pomdp.action_limits[1], pomdp.action_limits[2])) for i in 1:M]
-        σ_known = std(Q)
-        σ_pool = std(Apool) # in our case distance to 0 (center of the domain) is just the abs. value of an action
-        ρ = σ_known/σ_pool
-        bv_vector = [bv(a,ρ,current_action_space,Q) for a in Apool]
-
-        return [Apool[argmax(bv_vector)]] # New action, returned as a one element vector.
-    else
-        return []
-    end
+    return a_pool, σ_pool
 end
 
-# Blind Value function
-function bv(a::LD1Action, ρ::Float64, Aexpl::Vector{LD1Action}, Q::Vector{Float64})::LD1Action
-    scores = [ρ*abs(a-Aexpl[i])+Q[i] for i in 1:length(Aexpl)]
-    return Aexpl[argmin(scores)]
-end
+
+LPDM.value(a::LD1Action) = a
+
+# # Blind Value function
+# function bv(a::LD1Action, ρ::Float64, Aexpl::Vector{LD1Action}, Q::Vector{Float64})::LD1Action
+#     scores = [ρ*abs(a-Aexpl[i])+Q[i] for i in 1:length(Aexpl)]
+#     return Aexpl[argmin(scores)]
+# end
 
 LPDM.max_belief_clusters(p::LightDark1DLpdm) = p.max_belief_clusters
 LPDM.equivalent(pomdp::LightDark1DLpdm, o1::LD1Obs, o2::LD1Obs)::Bool = abs(o2-o1) < pomdp.obs_epsilon
